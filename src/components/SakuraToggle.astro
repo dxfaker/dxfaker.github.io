@@ -1,0 +1,89 @@
+---
+// 这里不需要服务器端逻辑
+---
+
+<div class="sakura-toggle-wrapper">
+  <label class="switch">
+    <input type="checkbox" id="sakuraToggle" />
+    <span class="slider round"></span>
+  </label>
+  <span class="ml-2 text-70 text-sm">樱花飘落</span>
+</div>
+
+<style is:global>
+  /* 开关样式 - 使用主题颜色变量 */
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 48px;
+    height: 24px;
+  }
+
+  .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--card-bg); /* 使用卡片背景色 */
+    border: 1px solid var(--line-divider);
+    transition: 0.3s;
+    border-radius: 24px;
+  }
+
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 2px;
+    background-color: var(--primary); /* 使用主题主色 */
+    transition: 0.3s;
+    border-radius: 50%;
+  }
+
+  input:checked + .slider {
+    background-color: var(--primary-light, rgba(99, 102, 241, 0.2));
+    border-color: var(--primary);
+  }
+
+  input:checked + .slider:before {
+    transform: translateX(22px);
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const toggle = document.getElementById('sakuraToggle');
+    if (!toggle) return;
+
+    // 读取 localStorage 中的状态
+    const savedState = localStorage.getItem('sakuraEnabled');
+    if (savedState !== null) {
+      toggle.checked = savedState === 'true';
+    }
+
+    // 触发自定义事件，通知樱花组件更新状态
+    const updateSakura = (enabled) => {
+      window.dispatchEvent(new CustomEvent('sakura-toggle', { detail: enabled }));
+    };
+
+    // 初始化时触发一次
+    updateSakura(toggle.checked);
+
+    // 监听开关变化
+    toggle.addEventListener('change', (e) => {
+      const enabled = e.target.checked;
+      localStorage.setItem('sakuraEnabled', enabled);
+      updateSakura(enabled);
+    });
+  });
+</script>

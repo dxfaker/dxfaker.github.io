@@ -1,0 +1,89 @@
+---
+import { sakuraConfig } from "../config";
+---
+
+<canvas id="sakura-canvas" style="position:fixed; top:0; left:0; pointer-events:none; z-index:{sakuraConfig.zIndex};"></canvas>
+
+<script define:vars={{ sakuraConfig }}>
+  const config = {
+    sakuraNum: sakuraConfig.sakuraNum,
+    limitTimes: sakuraConfig.limitTimes,
+    size: { min: sakuraConfig.size.min, max: sakuraConfig.size.max },
+    speed: {
+      horizontal: { min: sakuraConfig.speed.horizontal.min, max: sakuraConfig.speed.horizontal.max },
+      vertical: { min: sakuraConfig.speed.vertical.min, max: sakuraConfig.speed.vertical.max },
+      rotation: sakuraConfig.speed.rotation
+    },
+    zIndex: sakuraConfig.zIndex
+  };
+
+  let sakuraInstance = null;
+  let canvas = null;
+
+  function initSakura() {
+    console.log('[Sakura] initSakura called');
+    if (sakuraInstance) {
+      console.log('[Sakura] already running');
+      return;
+    }
+    canvas = document.getElementById('sakura-canvas');
+    if (!canvas) {
+      console.error('[Sakura] Canvas not found!');
+      return;
+    }
+
+    // 如果全局 Sakura 未定义，则通过 CDN 加载脚本
+    if (typeof window.Sakura === 'undefined') {
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/sakura-js@1.1.1/lib/sakura.min.js';
+      script.onload = () => {
+        console.log('[Sakura] CDN script loaded');
+        canvas.style.display = 'block';
+        try {
+          sakuraInstance = new window.Sakura(canvas, config);
+          console.log('[Sakura] initialized successfully');
+        } catch (e) {
+          console.error('[Sakura] Failed to initialize:', e);
+        }
+      };
+      script.onerror = () => console.error('[Sakura] CDN script failed to load');
+      document.head.appendChild(script);
+    } else {
+      canvas.style.display = 'block';
+      sakuraInstance = new window.Sakura(canvas, config);
+      console.log('[Sakura] initialized successfully');
+    }
+  }
+
+  function destroySakura() {
+    console.log('[Sakura] destroySakura called');
+    if (sakuraInstance) {
+      sakuraInstance.stop();
+      sakuraInstance = null;
+      console.log('[Sakura] stopped');
+    }
+    if (canvas) {
+      canvas.style.display = 'none';
+    }
+  }
+
+  window.addEventListener('sakura-toggle', (e) => {
+    console.log('[Sakura] received toggle event:', e.detail);
+    if (e.detail) {
+      initSakura();
+    } else {
+      destroySakura();
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('[Sakura] DOMContentLoaded');
+    const saved = localStorage.getItem('sakuraEnabled');
+    const defaultEnable = sakuraConfig.enable;
+    const shouldEnable = saved !== null ? saved === 'true' : defaultEnable;
+    console.log('[Sakura] shouldEnable:', shouldEnable);
+    if (shouldEnable) {
+      initSakura();
+    }
+  });
+</script>
