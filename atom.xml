@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>dxfaker's blog</title>
+  <subtitle>一个默默无闻的小站</subtitle>
+  <link href="https://dxfaker.top/" rel="alternate" type="text/html"/>
+  <link href="https://dxfaker.top/atom.xml" rel="self" type="application/atom+xml"/>
+  <id>https://dxfaker.top/</id>
+  <updated>2026-02-23T23:38:15.247Z</updated>
+  <language>en</language>
+</feed>
