@@ -494,7 +494,7 @@ export const sakuraConfig: SakuraConfig = {
 // Pio 看板娘配置
 export const pioConfig: import("./types/config").PioConfig = {
 	enable: true, // 启用看板娘
-	model: "/live2d/lty/Hiyori/Hiyori.model3.json",
+	model: "/live2d/lty/lty.model.json",
 	position: "left", // 默认位置在右侧
 	width: 280, // 默认宽度
 	height: 250, // 默认高度
