@@ -1,0 +1,17 @@
+:root {
+  --cursor-normal: url('/cursor/Normal.cur'), auto;
+  --cursor-link: url('/cursor/Link.cur'), pointer;
+  --cursor-text: url('/cursor/Text.cur'), text;
+}
+
+* {
+  cursor: var(--cursor-normal) !important;
+}
+
+a:hover, button:hover, [role="button"]:hover, .clickable:hover {
+  cursor: var(--cursor-link) !important;
+}
+
+input, textarea, [contenteditable], code {
+  cursor: var(--cursor-text) !important;
+}
