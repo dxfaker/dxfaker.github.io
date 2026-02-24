@@ -1,3 +1,8 @@
+<svelte:head>
+  <!-- Live2D Cubism Core 库，用于支持 .moc3 模型 -->
+  <script src="https://cdn.jsdelivr.net/npm/live2d-cubismcore@latest/dist/live2dcubismcore.min.js"></script>
+</svelte:head>
+
 <script>
 import { onMount, onDestroy } from "svelte";
 import { pioConfig } from "@/config";
@@ -7,7 +12,8 @@ const pioOptions = {
 	mode: pioConfig.mode,
 	hidden: pioConfig.hiddenOnMobile,
 	content: pioConfig.dialog || {},
-	model: pioConfig.models || ["/pio/models/pio/model.json"],
+	// 修正：使用 pioConfig.model（单数），并包装为数组
+	model: pioConfig.model ? [pioConfig.model] : ["/pio/models/pio/model.json"],
 };
 
 // 全局Pio实例引用
@@ -15,8 +21,6 @@ let pioInstance = null;
 let pioInitialized = false;
 let pioContainer;
 let pioCanvas;
-
-// 样式已通过 Layout.astro 静态引入，无需动态加载
 
 // 等待 DOM 加载完成后再初始化 Pio
 function initPio() {
@@ -40,13 +44,9 @@ function initPio() {
 	}
 }
 
-// 样式已通过 Layout.astro 静态引入，无需动态加载函数
-
 // 加载必要的脚本
 function loadPioAssets() {
 	if (typeof window === "undefined") return;
-
-	// 样式已通过 Layout.astro 静态引入
 
 	// 加载JS脚本
 	const loadScript = (src, id) => {
@@ -75,8 +75,6 @@ function loadPioAssets() {
 			console.error("Failed to load Pio scripts:", error);
 		});
 }
-
-// 样式已通过 Layout.astro 静态引入，无需页面切换监听
 
 onMount(() => {
 	if (!pioConfig.enable) return;
