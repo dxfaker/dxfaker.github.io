@@ -69,10 +69,5 @@
 			{ "file": "motions/WakeUp.mtn" }
 		]
 	},
-	"textures": [
-		"textures/1.png",
-		"textures/2.png",
-		"textures/3.png",
-		"textures/4.png"
-	]
+	"textures": ["textures/2.png", "textures/3.png", "textures/4.png"]
 }
