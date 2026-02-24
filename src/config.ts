@@ -494,14 +494,14 @@ export const sakuraConfig: SakuraConfig = {
 // Pio 看板娘配置
 export const pioConfig: import("./types/config").PioConfig = {
 	enable: true, // 启用看板娘
-	model: "/live2d/lty/Hiyori.model3.json",
+	model: "/live2d/lty/Hiyori/Hiyori.model3.json",
 	position: "left", // 默认位置在右侧
 	width: 280, // 默认宽度
 	height: 250, // 默认高度
 	mode: "draggable", // 默认为可拖拽模式
 	hiddenOnMobile: true, // 默认在移动设备上隐藏
 	dialog: {
-		welcome: "Welcome to Mizuki Website!", // 欢迎词
+		welcome: "Welcome to dxfaker's site!", // 欢迎词
 		touch: [
 			"What are you doing?",
 			"Stop touching me!",
