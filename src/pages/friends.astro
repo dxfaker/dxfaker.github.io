@@ -60,7 +60,7 @@ const items = [
 		desc: "I pack my rhoughts and throw them, to you",
 		siteurl: "https://nkvd-1993.github.io/",
 		imgurl: "/images/friend/ningle.jpg",
-		tags: ["副歌？！", "大蛇"],
+		tags: ["现充", "小孩"],
 	},
 ];
 
@@ -81,11 +81,17 @@ const shuffledItems = shuffleArray(items);
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8 my-4">
                 {shuffledItems.map((item) => (
                     <div class="flex flex-nowrap items-stretch h-28 gap-4 rounded-[var(--radius-large)]">
-                        <div class="w-28 h-28 flex-shrink-0 rounded-lg overflow-hidden bg-zinc-200 dark:bg-zinc-900">
+                        {/* 头像改为可点击链接 */}
+                        <a
+                            href={item.siteurl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="w-28 h-28 flex-shrink-0 rounded-lg overflow-hidden bg-zinc-200 dark:bg-zinc-900"
+                        >
                             <img src={item.imgurl} alt="站点头像" class="w-full h-full object-cover">
-                        </div>
+                        </a>
                         <div class="grow w-full">
-                            {/* 名字改为可点击链接 */}
+                            {/* 名字链接保持不变 */}
                             <a
                                 href={item.siteurl}
                                 target="_blank"
@@ -108,6 +114,7 @@ const shuffledItems = shuffleArray(items);
                                 </div>
                             </div>
                         </div>
+                        {/* 右侧箭头按钮链接保持不变 */}
                         <a href={item.siteurl} target="_blank" rel="noopener noreferrer" class="flex btn-regular w-[3.25rem] rounded-lg bg-[var(--enter-btn-bg)] hover:bg-[var(--enter-btn-bg-hover)] active:bg-[var(--enter-btn-bg-active)] active:scale-95">
                             <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="transition text-[var(--primary)] text-4xl mx-auto iconify iconify--material-symbols" width="1em" height="1em" viewBox="0 0 24 24">
                                 <path fill="currentColor" d="M12.6 12L8.7 8.1q-.275-.275-.275-.7t.275-.7t.7-.275t.7.275l4.6 4.6q.15.15.213.325t.062.375t-.062.375t-.213.325l-4.6 4.6q-.275.275-.7.275t-.7-.275t-.275-.7t.275-.7z"></path>
