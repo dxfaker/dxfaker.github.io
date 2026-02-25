@@ -1,0 +1,153 @@
+---
+// src/components/ThemeSwitcher.astro
+---
+
+<div class="theme-switcher" id="themeSwitcher">
+  <button class="switch-btn" aria-label="切换主题">
+    <span class="current">🚀 新版</span>
+    <span class="arrow">↔</span>
+    <span class="target">🎨 经典</span>
+  </button>
+  
+  <div class="switch-menu" id="switchMenu">
+    <a href="/" class="menu-item active" data-theme="modern">
+      <span class="icon">🚀</span>
+      <div class="info">
+        <strong>Mizuki 新版</strong>
+        <small>现代化设计，流畅动画</small>
+      </div>
+    </a>
+    <a href="/classic/" class="menu-item" data-theme="classic">
+      <span class="icon">🎨</span>
+      <div class="info">
+        <strong>Butterfly 经典</strong>
+        <small>传统博客，功能丰富</small>
+      </div>
+    </a>
+  </div>
+</div>
+
+<style>
+.theme-switcher {
+  position: fixed;
+  bottom: 100px;
+  right: 20px;
+  z-index: 1000;
+}
+.switch-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: rgba(30, 41, 59, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50px;
+  color: #e2e8f0;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+.switch-btn:hover {
+  background: rgba(59, 130, 246, 0.9);
+  transform: translateY(-2px);
+}
+.arrow {
+  opacity: 0.6;
+  font-size: 12px;
+}
+.switch-menu {
+  position: absolute;
+  bottom: 60px;
+  right: 0;
+  width: 280px;
+  background: rgba(15, 23, 42, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 12px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  transition: all 0.3s;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+.theme-switcher:hover .switch-menu,
+.switch-menu.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  color: #e2e8f0;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.menu-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.menu-item.active {
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+.menu-item .icon {
+  font-size: 24px;
+}
+.menu-item .info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.menu-item .info strong {
+  font-size: 14px;
+}
+.menu-item .info small {
+  font-size: 12px;
+  opacity: 0.6;
+}
+@media (max-width: 768px) {
+  .theme-switcher {
+    bottom: 80px;
+    right: 10px;
+  }
+  .switch-btn .current,
+  .switch-btn .target {
+    display: none;
+  }
+  .switch-btn {
+    padding: 12px;
+    border-radius: 50%;
+  }
+  .arrow {
+    font-size: 16px;
+    transform: rotate(90deg);
+  }
+}
+</style>
+
+<script>
+// 获取元素并添加类型断言
+const switcher = document.getElementById('themeSwitcher') as HTMLElement | null;
+const menu = document.getElementById('switchMenu') as HTMLElement | null;
+
+if (switcher && menu) {
+  switcher.addEventListener('click', (e: MouseEvent) => {
+    const target = e.target as Element;
+    if (target.closest('.switch-btn')) {
+      menu.classList.toggle('active');
+    }
+  });
+
+  document.addEventListener('click', (e: MouseEvent) => {
+    const target = e.target as Element;
+    if (switcher && !switcher.contains(target)) {
+      menu.classList.remove('active');
+    }
+  });
+}
+</script>

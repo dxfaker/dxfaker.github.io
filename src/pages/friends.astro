@@ -4,65 +4,16 @@ import Markdown from "@components/misc/Markdown.astro";
 import I18nKey from "../i18n/i18nKey";
 import { i18n } from "../i18n/translation";
 import MainGridLayout from "../layouts/MainGridLayout.astro";
+import friendsData from "@/data/friends.json"; // 从统一数据文件导入
 
 const friendsPost = await getEntry("spec", "friends");
-
 if (!friendsPost) {
 	throw new Error("friends page content not found");
 }
-
 const { Content } = await render(friendsPost);
-const items = [
-	{
-		title: "樂依",
-		desc: "摆烂一小时 时候到了叫我 _(¦3」∠)_|",
-		siteurl: "https://leyi.live",
-		imgurl: "/images/friend/leyi.jpg",
-		tags: ["网安", "ctf大蛇"],
-	},
-	{
-		title: "坨子",
-		desc: "qu",
-		siteurl: "https://pluto-ming-cn.github.io/",
-		imgurl: "/images/friend/qu.jpg",
-		tags: ["后端", "软工"],
-	},
-	{
-		title: "xiaochai",
-		desc: "aaa网络维修",
-		siteurl: "https://xiaochai-123.github.io/",
-		imgurl: "/images/friend/xiaochai.jpg",
-		tags: ["比我强", "强悍的 web手"],
-	},
-	{
-		title: "晓堃",
-		desc: "OO有丝分裂就老了",
-		siteurl: "http://btop251.top",
-		imgurl: "/images/friend/xiaokun.jpg",
-		tags: ["强大的web手", "比我强"],
-	},
-	{
-		title: "hinanawiteriko",
-		desc: "爱玩种末地😋",
-		siteurl: "https://hinanawiteriko.github.io/",
-		imgurl: "/images/friend/tianzi.jpg",
-		tags: ["天子", "算法"],
-	},
-	{
-		title: "ruijian-huang",
-		desc: "ruijianhaung先森",
-		siteurl: "https://ruijian-huang.github.io/",
-		imgurl: "/images/friend/xiaohai.jpg",
-		tags: ["现充", "小孩"],
-	},
-	{
-		title: "宁乐",
-		desc: "I pack my rhoughts and throw them, to you",
-		siteurl: "https://nkvd-1993.github.io/",
-		imgurl: "/images/friend/ningle.jpg",
-		tags: ["副歌？！", "大蛇"],
-	},
-];
+
+// 直接使用导入的数据
+const items = friendsData;
 
 function shuffleArray(array) {
 	const newArray = [...array];
@@ -81,17 +32,17 @@ const shuffledItems = shuffleArray(items);
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8 my-4">
                 {shuffledItems.map((item) => (
                     <div class="flex flex-nowrap items-stretch h-28 gap-4 rounded-[var(--radius-large)]">
-                        {/* 头像改为可点击链接 */}
+                        {/* 头像链接 */}
                         <a
                             href={item.siteurl}
                             target="_blank"
                             rel="noopener noreferrer"
                             class="w-28 h-28 flex-shrink-0 rounded-lg overflow-hidden bg-zinc-200 dark:bg-zinc-900"
                         >
-                            <img src={item.imgurl} alt="站点头像" class="w-full h-full object-cover">
+                            <img src={item.imgurl} alt="站点头像" class="w-full h-full object-cover" />
                         </a>
                         <div class="grow w-full">
-                            {/* 名字链接保持不变 */}
+                            {/* 名字链接 */}
                             <a
                                 href={item.siteurl}
                                 target="_blank"
@@ -103,18 +54,21 @@ const shuffledItems = shuffleArray(items);
                             <div class="text-50 text-sm font-medium">{item.desc}</div>
                             <div class:list={["items-center", {"flex": true, "hidden md:flex" : false}]}>
                                 <div class="flex flex-row flex-nowrap items-center">
-                                    {(item.tags && item.tags.length > 0) && item.tags.map((tag,i) => (
-                                    <div class:list={[{"hidden": i==0}, "mx-1.5 text-[var(--meta-divider)] text-sm" ]}>
-                                        /
-                                    </div>
-                                    <span class="transition text-50 text-sm font-medium">
-                                        {tag}
-                                    </span>))}
+                                    {(item.tags && item.tags.length > 0) && item.tags.map((tag, i) => (
+                                        <>
+                                            <div class:list={[{"hidden": i==0}, "mx-1.5 text-[var(--meta-divider)] text-sm" ]}>
+                                                /
+                                            </div>
+                                            <span class="transition text-50 text-sm font-medium">
+                                                {tag}
+                                            </span>
+                                        </>
+                                    ))}
                                     {!(item.tags && item.tags.length > 0) && <div class="transition text-50 text-sm font-medium">{i18n(I18nKey.noTags)}</div>}
                                 </div>
                             </div>
                         </div>
-                        {/* 右侧箭头按钮链接保持不变 */}
+                        {/* 右侧箭头按钮 */}
                         <a href={item.siteurl} target="_blank" rel="noopener noreferrer" class="flex btn-regular w-[3.25rem] rounded-lg bg-[var(--enter-btn-bg)] hover:bg-[var(--enter-btn-bg-hover)] active:bg-[var(--enter-btn-bg-active)] active:scale-95">
                             <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="transition text-[var(--primary)] text-4xl mx-auto iconify iconify--material-symbols" width="1em" height="1em" viewBox="0 0 24 24">
                                 <path fill="currentColor" d="M12.6 12L8.7 8.1q-.275-.275-.275-.7t.275-.7t.7-.275t.7.275l4.6 4.6q.15.15.213.325t.062.375t-.062.375t-.213.325l-4.6 4.6q-.275.275-.7.275t-.7-.275t-.275-.7t.275-.7z"></path>

@@ -1,0 +1,91 @@
+# 站点基本信息
+title: dxfaker's site
+subtitle: 一个默默无闻的小站
+description: 随心所欲的分享
+keywords: personal site
+author: dxfaker
+language: zh-CN
+timezone: Asia/Shanghai
+
+# URL 设置（关键！确保子路径正确）
+url: https://dxfaker.top
+root: /classic/
+permalink: :year/:month/:day/:title/
+
+# 目录
+source_dir: source
+public_dir: public
+
+# 主题
+theme: butterfly
+
+# Butterfly 主题配置
+theme_config:
+  favicon: /images/favicon_io/favicon.ico
+  apple_touch_icon: /images/favicon_io/apple-touch-icon.png
+  index_img: /images/back.jpg
+  nav:
+    logo: /images/avatar.png
+    fixed: false
+
+  # ------------------- 导航菜单（多级，模仿 Mizuki）-------------------
+  menu:
+    首页: / || fas fa-home
+    归档: /archives/ || fas fa-archive
+    Links:
+      default: /links/ || fas fa-link
+      GitHub: https://github.com/dxfaker || fab fa-github
+      Bilibili: https://space.bilibili.com/479112329 || fab fa-bilibili
+      X: https://x.com/B0699914076454 || fab fa-twitter
+      贴吧: https://tieba.baidu.com/home/main?id=tb.1.ed372b7b.6us6IlRvKC4N61tXujNKEQ || fas fa-comments
+    My:
+      default: / || fas fa-user
+      Diary: /diary/ || fas fa-book
+      追番（先这样，后面改）: https://space.bilibili.com/479112329/bangumi || fab fa-bilibili
+    About:
+      default: /about/ || fas fa-info-circle
+      About: /about/ || fas fa-user
+      Friends: /friends/ || fas fa-heart
+    Others:
+      default: / || fas fa-ellipsis-h
+      Projects: /projects/ || fas fa-briefcase
+      Skills: /skills/ || fas fa-brain
+      Timeline: /timeline/ || fas fa-chart-line
+    旧版主题: https://dxfaker.top/ || fas fa-rocket
+
+  # ------------------- 封面图 -------------------
+  cover:
+    index_enable: true
+    aside_enable: true
+    archives_enable: true
+    default_cover:
+      - /img/default-cover.jpg
+
+  # ------------------- 社交链接（侧边栏）-------------------
+  social:
+    fab fa-github: https://github.com/dxfaker || GitHub
+    fab fa-bilibili: https://space.bilibili.com/479112329 || Bilibili
+
+  # ------------------- 文章打赏 -------------------
+  reward:
+    enable: false
+    comment: 坚持原创技术分享，您的支持将鼓励我继续创作！
+    qrcode:
+      - /img/wechat.jpg
+      - /img/alipay.jpg
+
+  # ------------------- 评论系统（以 Twikoo 为例）-------------------
+  comments:
+    use: twikoo
+    twikoo:
+      envId: your-env-id
+      region: ap-guangzhou
+
+  # ------------------- 背景与页脚 -------------------
+  background: /images/bg-pattern.png
+  footer_img: /images/footer-bg.jpg
+
+  # ------------------- 404页面 -------------------
+  error_404:
+    enable: true
+    background: /img/404.jpg
