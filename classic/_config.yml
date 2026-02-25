@@ -19,11 +19,12 @@ public_dir: public
 # 主题
 theme: butterfly
 
-# Butterfly 主题配置
+# Butterfly 主题配置（所有缩进使用两个空格）
 theme_config:
   favicon: /images/favicon_io/favicon.ico
   apple_touch_icon: /images/favicon_io/apple-touch-icon.png
   index_img: /images/back.jpg
+
   nav:
     logo: /images/avatar.png
     fixed: false

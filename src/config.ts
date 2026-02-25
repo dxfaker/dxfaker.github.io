@@ -291,6 +291,13 @@ export const navBarConfig: NavBarConfig = {
 				},
 			],
 		},
+		// ✨ 新增：跳转到 Butterfly 经典版
+		{
+			name: "经典版",
+			url: "/classic", // 替换为你的实际线上域名
+			//external: true,
+			icon: "fa6-solid:rocket", // 使用火箭图标，也可以换成其他你喜欢的图标
+		},
 	],
 };
 
