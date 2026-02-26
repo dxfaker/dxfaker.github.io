@@ -341,7 +341,8 @@ export const commentConfig: CommentConfig = {
 
 export const announcementConfig: AnnouncementConfig = {
 	title: "公告", // 公告标题
-	content: "随缘更新不定内容，敬请期待！！！", // 公告内容
+	content:
+		"随缘更新不定内容，敬请期待！！！（butterfly模块目前下架,等后期调试完整再上", // 公告内容
 	closable: true, // 允许用户关闭公告
 	link: {
 		enable: true, // 启用链接
