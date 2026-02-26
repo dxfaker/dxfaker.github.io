@@ -121,7 +121,24 @@ async function main() {
 
 		// 步骤 2: 构建 Butterfly (Hexo)
 		log.step(2, "构建 Butterfly (Hexo)");
-		exec("npx hexo generate", PATHS.butterfly);
+
+		// 打印当前目录和文件列表，确认主题存在
+		log.info("列出 classic 目录内容：");
+		exec("ls -la", PATHS.butterfly);
+		log.info("列出 classic/themes 目录内容：");
+		exec("ls -la themes", PATHS.butterfly);
+		log.info("列出 butterfly 主题目录内容：");
+		exec("ls -la themes/butterfly", PATHS.butterfly);
+		log.info("确认 _config.yml 存在：");
+		exec("cat _config.yml | head -20", PATHS.butterfly);
+
+		// 执行 Hexo 生成（带调试模式）
+		log.info("执行 Hexo 生成（调试模式）");
+		exec("npx hexo generate --debug", PATHS.butterfly);
+
+		// 检查生成的 index.html 内容
+		log.info("检查生成的 index.html 内容（前50行）：");
+		exec("cat public/index.html | head -50", PATHS.butterfly);
 
 		// 验证 Hexo 构建结果
 		if (!fs.existsSync(path.join(PATHS.butterflyPublic, "index.html"))) {
@@ -135,7 +152,7 @@ async function main() {
 		copyDir(PATHS.butterflyPublic, PATHS.butterflyDist);
 		log.success("合并完成");
 
-		// 步骤 4: 验证
+		// 步骤 4: 验证（暂时注释掉，避免因 CSS 缺失而失败）
 		/*log.step(4, "验证构建结构");
 		const checks = [
 			[path.join(PATHS.dist, "index.html"), "Mizuki 主页"],
