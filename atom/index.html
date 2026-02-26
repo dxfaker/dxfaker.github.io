@@ -40,7 +40,14 @@ const configHue = 210;
 			let offset = Math.floor(window.innerHeight * (BANNER_HEIGHT_EXTEND / 100));
 			offset = offset - offset % 4;
 			document.documentElement.style.setProperty('--banner-height-extend', `${offset}px`);
-		})();</script><!-- defines global css variables. This will be applied to <html> <body> and some other elements idk why --><!-- Pio 看板娘样式 --><link rel="stylesheet" href="/pio/static/pio.css"><link rel="stylesheet" href="/styles/cursor.css"><link rel="alternate" type="application/rss+xml" title href="https://dxfaker.top/rss.xml"><!-- Umami Analytics --><link rel="stylesheet" href="/_astro/Layout.CcrqmrpS.css">
+		})();</script><!-- defines global css variables. This will be applied to <html> <body> and some other elements idk why --><!-- Pio 看板娘样式 --><link rel="stylesheet" href="/pio/static/pio.css"><link rel="stylesheet" href="/styles/cursor.css"><link rel="alternate" type="application/rss+xml" title href="https://dxfaker.top/rss.xml"><!-- Umami Analytics --><script>
+          document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('a[href="/classic"], a[href="/classic/"]').forEach(link => {
+              link.setAttribute('target', '_blank');
+              link.setAttribute('rel', 'noopener noreferrer');
+            });
+          });
+        </script><link rel="stylesheet" href="/_astro/Layout.CcrqmrpS.css">
 <link rel="stylesheet" href="/_astro/Layout.BaHsn5fL.css">
 <link rel="stylesheet" href="/_astro/_page_.CCsvf5bY.css">
 <link rel="stylesheet" href="/_astro/_page_.DVq6hu9R.css">
