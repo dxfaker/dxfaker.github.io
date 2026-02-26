@@ -121,7 +121,7 @@ async function main() {
 
 		// 步骤 2: 构建 Butterfly (Hexo)
 		log.step(2, "构建 Butterfly (Hexo)");
-		exec("hexo generate", PATHS.butterfly);
+		exec("npx hexo generate", PATHS.butterfly);
 
 		// 验证 Hexo 构建结果
 		if (!fs.existsSync(path.join(PATHS.butterflyPublic, "index.html"))) {
