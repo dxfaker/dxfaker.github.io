@@ -4,9 +4,9 @@ import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/700.css";
 
 import ConfigCarrier from "@components/ConfigCarrier.astro";
+import ThemeSwitcher from "@components/ThemeSwitcher.astro"; // <--- 新增：主题切换按钮
 import MusicPlayer from "@components/widget/MusicPlayer.svelte";
 import Pio from "@components/widget/Pio.svelte"; // 使用 Svelte 版本的 Pio 组件
-import ThemeSwitcher from "@components/ThemeSwitcher.astro"; // <--- 新增：主题切换按钮
 import { profileConfig, siteConfig } from "@/config";
 import { widgetConfigs } from "../config";
 import { umamiConfig } from "../config.ts";
@@ -228,7 +228,14 @@ const umamiScripts = umamiConfig.scripts || ""; // 获取Umami scripts配置
 
 		<!-- Umami Analytics -->
 		{umamiEnabled && umamiScripts && <Fragment set:html={umamiScripts} />}
-
+        <script is:inline>
+          document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('a[href="/classic"], a[href="/classic/"]').forEach(link => {
+              link.setAttribute('target', '_blank');
+              link.setAttribute('rel', 'noopener noreferrer');
+            });
+          });
+        </script>
 </head>
 	<body class=" min-h-screen " class:list={[{"lg:is-home": isHomePage, "enable-banner": enableBanner, "zen-maru-gothic-enabled": siteConfig.font.zenMaruGothic.enable, "hanalei-enabled": siteConfig.font.hanalei.enable}]}
 		  data-overlayscrollbars-initialize
