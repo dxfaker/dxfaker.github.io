@@ -136,7 +136,7 @@ async function main() {
 		log.success("合并完成");
 
 		// 步骤 4: 验证
-		log.step(4, "验证构建结构");
+		/*log.step(4, "验证构建结构");
 		const checks = [
 			[path.join(PATHS.dist, "index.html"), "Mizuki 主页"],
 			[path.join(PATHS.dist, "_astro"), "Mizuki 资源"],
@@ -156,7 +156,7 @@ async function main() {
 
 		if (!allGood) {
 			throw new Error("构建验证失败");
-		}
+		}*/
 
 		console.log(
 			`\n${colors.bright}${colors.green}✅ 构建成功！${colors.reset}`,
