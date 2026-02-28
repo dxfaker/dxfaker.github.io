@@ -5,7 +5,7 @@
   <link href="https://dxfaker.top/" rel="alternate" type="text/html"/>
   <link href="https://dxfaker.top/atom.xml" rel="self" type="application/atom+xml"/>
   <id>https://dxfaker.top/</id>
-  <updated>2026-02-28T12:19:28.279Z</updated>
+  <updated>2026-02-28T12:21:29.327Z</updated>
   <language>en</language>
   <entry>
     <title>新开档：逆向</title>
@@ -16,7 +16,7 @@
     <summary>自用笔记</summary>
     <content type="html"><![CDATA[<h1>引言</h1>
 <p>借不到的爱恋镇楼（我一直在哭）</p>
-<p>我对这个模块最初的认知就是以前在某些神秘小游戏~~~（黄油）~~~改数据的时候用的CE(cheat engine)有印象，但是后面发现其实可以对IoT有所辅助，遂决定开始线往reverse方向学习。但是当我接触reverse的题目的时候，我就发现了一个很大的问题：我的C和py很差，因为大一上学期主要在纯学高数a，且刚放假学的是c++，一进来用ghidra反编译出的代码要么是C要么是python的时候就很绝望，很多逻辑运算都看不懂，自己点开vs code也不知道该敲什么，满脑子的都是<code>include&lt;iostream&gt;</code>...
+<p>我对这个模块最初的认知就是以前在某些神秘小游戏改数据的时候用的CE(cheat engine)有印象，但是后面发现其实可以对IoT有所辅助，遂决定开始线往reverse方向学习。但是当我接触reverse的题目的时候，我就发现了一个很大的问题：我的C和py很差，因为大一上学期主要在纯学高数a，且刚放假学的是c++，一进来用ghidra反编译出的代码要么是C要么是python的时候就很绝望，很多逻辑运算都看不懂，自己点开vs code也不知道该敲什么，满脑子的都是<code>include&lt;iostream&gt;</code>...
 于是，这篇文章便孕育而生，专门为的服务我这条蛆在忘记某些方面的知识的时候来复习的。
 <strong>这个模块也是随缘更新的，每学到一些东西便会记录，积累到一定程度便会端上来</strong></p>
 <h2>C</h2>
