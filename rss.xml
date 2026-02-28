@@ -1,4 +1,113 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>第一篇文章</title><link>https://dxfaker.top/posts/26224/</link><guid isPermaLink="true">https://dxfaker.top/posts/26224/</guid><description>讲讲开发这个网页的事</description><pubDate>Tue, 24 Feb 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;ai指导静态网页开发&lt;/h1&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>新开档：逆向</title><link>https://dxfaker.top/posts/26228/</link><guid isPermaLink="true">https://dxfaker.top/posts/26228/</guid><description>自用笔记</description><pubDate>Tue, 24 Feb 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;引言&lt;/h1&gt;
+&lt;p&gt;我对这个模块最初的认知就是以前在某些神秘小游戏~~~（黄油）~~~改数据的时候用的CE(cheat engine)有印象，但是后面发现其实可以对IoT有所辅助，遂决定开始线往reverse方向学习。但是当我接触reverse的题目的时候，我就发现了一个很大的问题：我的C和py很差，因为大一上学期主要在纯学高数a，且刚放假学的是c++，一进来用ghidra反编译出的代码要么是C要么是python的时候就很绝望，很多逻辑运算都看不懂，自己点开vs code也不知道该敲什么，满脑子的都是&lt;code&gt;include&amp;lt;iostream&amp;gt;&lt;/code&gt;...
+于是，这篇文章便孕育而生，专门为的服务我这条蛆在忘记某些方面的知识的时候来复习的。
+&lt;strong&gt;这个模块也是随缘更新的，每学到一些东西便会记录，积累到一定程度便会端上来&lt;/strong&gt;&lt;/p&gt;
+&lt;h2&gt;C&lt;/h2&gt;
+&lt;h3&gt;strcmp&lt;/h3&gt;
+&lt;blockquote&gt;
+&lt;p&gt;strcmp 是 C 语言标准库中的一个字符串比较函数，定义在 &amp;lt;string.h&amp;gt; 头文件中。
+比较两个字符串（以 \0 结尾的字符数组）是否相等，或者按照字典序（ASCII 码顺序）判断大小。
+比较过程是逐字符进行的，直到遇到第一个不同的字符或遇到字符串结束符 \0。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;code&gt;int strcmp(const char *s1, const char *s2);&lt;/code&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;返回 0：表示两个字符串相等（s1 和 s2 内容完全相同）。
+返回负数：表示 s1 小于 s2（例如 &quot;abc&quot; &amp;lt; &quot;abd&quot;）。
+返回正数：表示 s1 大于 s2（例如 &quot;abd&quot; &amp;gt; &quot;abc&quot;）。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3&gt;builtin_strncpy&lt;/h3&gt;
+&lt;p&gt;在 Ghidra 的反编译代码里，其实就是我们熟知的 strncpy 函数。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Ghidra 为了准确反映底层调用而使用的一种命名方式&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;code&gt;builtin_strncpy(local_7e8,&quot;(34sy_r3v3rs3)&quot;,0xf);&lt;/code&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;意思就是把字符串 &quot;(34sy_r3v3rs3)&quot; 的前 0xf (也就是十进制的 15) 个字符，复制到 local_7e8 这个字符数组里。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3&gt;builtin_ 前缀&lt;/h3&gt;
+&lt;blockquote&gt;
+&lt;p&gt;这是 Ghidra 反编译的一个小特点。当它识别出代码里调用了一个它认为很基础或内建的函数时，就会自动加上 builtin_ 这个前缀。你可以就把它当成一个普通的 strncpy 来理解，在分析代码逻辑时，它的作用完全等同于 strncpy。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2&gt;gets&lt;/h2&gt;
+&lt;p&gt;gets 是一个 C 语言标准库函数，用于从标准输入（通常是键盘）读取一行字符串，直到遇到换行符（回车）为止。&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;gets(locak_58)&lt;/code&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;它会将读取到的字符串（包括换行符会被自动替换为字符串结束符 \0）存储到 local_58 这个字符数组中。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;strong&gt;注意&lt;/strong&gt;:gets 非常危险，因为它不检查目标缓冲区的大小，如果输入过长会导致缓冲区溢出。但在逆向题中常见。&lt;/p&gt;
+&lt;h2&gt;strlen&lt;/h2&gt;
+&lt;p&gt;strlen 是 C 语言标准库函数，用于计算字符串的长度（不包括结尾的 \0）。&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;sVar1 = strlen(local_58);&lt;/code&gt;
+&lt;code&gt;local_10 = (int)sVar1;&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;这里将 local_58 字符串的长度计算出来，赋值给变量 sVar1。
+然后将 sVar1 强制转换为 int 类型，然后赋值给 local_10。&lt;/p&gt;
+&lt;h2&gt;python&lt;/h2&gt;
+&lt;h3&gt;len&lt;/h3&gt;
+&lt;p&gt;&lt;code&gt;for i in range(len(list))&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;表示循环次数等于列表长度&lt;/p&gt;
+&lt;h3&gt;运算符&lt;/h3&gt;
+&lt;h4&gt;&amp;amp; 按位与&lt;/h4&gt;
+&lt;p&gt;两个二进制位都为1时，结果才为1，否则为0。&lt;/p&gt;
+&lt;p&gt;操作过程：&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;5 &amp;amp; 3&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;5:     &lt;code&gt;0 1 0 1&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;3:     &lt;code&gt;0 0 1 1&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;结果:  &lt;code&gt;0 0 0 1&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;结果为1（0001）&lt;/p&gt;
+&lt;h4&gt;| 按位或&lt;/h4&gt;
+&lt;p&gt;两个二进制位只要有一个为1，结果就为1,操作过程同上&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;5 | 3&lt;/code&gt; -&amp;gt; 0111 -&amp;gt; 7&lt;/p&gt;
+&lt;h4&gt;^ 按位异或&lt;/h4&gt;
+&lt;p&gt;两个二进制位不同则为1，相同则为0，操作过程同上&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;5 ^ 3&lt;/code&gt; -&amp;gt; 0110 -&amp;gt; 6&lt;/p&gt;
+&lt;h4&gt;~ 按位取反&lt;/h4&gt;
+&lt;p&gt;将每一位取反（0变1，1变0），操作过程同上。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;注意在Python中，结果是补码形式，可能得到负数，不过初学可以先放一放。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4&gt;&amp;lt;&amp;lt; 右移&lt;/h4&gt;
+&lt;p&gt;将二进制位整体向左移动，右边低位补0。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;每左移一位，相当于乘以2。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;code&gt;5 &amp;lt;&amp;lt; 1&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;0101&lt;/code&gt; -&amp;gt; &lt;code&gt;1010&lt;/code&gt; -&amp;gt; 10(5*2)&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;5 &amp;lt;&amp;lt; 3&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;0101&lt;/code&gt; -&amp;gt; &lt;code&gt;0101000&lt;/code&gt; -&amp;gt;40(5&lt;em&gt;2&lt;/em&gt;2*2)&lt;/p&gt;
+&lt;h4&gt;&amp;gt;&amp;gt; 左移&lt;/h4&gt;
+&lt;p&gt;将二进制位整体向右移动，左边高位补0（对于非负数）。操作同上，生活不顺心大可以换成十进制计算后再换成二进制以达到目标。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;每右移一位，相当于除以2取整。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4&gt;[a:]&lt;/h4&gt;
+&lt;p&gt;作用：切片操作，从字符串的第 a 个字符开始取，即去掉开头的 &lt;code&gt;&apos;0x&apos;&lt;/code&gt;。
+&lt;code&gt;&apos;0x61&apos;[2:]&lt;/code&gt; → &lt;code&gt;&apos;61&apos;&lt;/code&gt;，&lt;code&gt;&apos;0xa&apos;[2:]&lt;/code&gt; → &lt;code&gt;&apos;a&apos;&lt;/code&gt;&lt;/p&gt;
+&lt;h4&gt;+=&lt;/h4&gt;
+&lt;h3&gt;ord&lt;/h3&gt;
+&lt;p&gt;将字符转换为其对应的 Unicode 码点（整数）。&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;ord(A)&lt;/code&gt; -&amp;gt; 65&lt;/p&gt;
+&lt;h3&gt;hex&lt;/h3&gt;
+&lt;p&gt;将整数转换成十六进制字符串，格式为&lt;code&gt;0x...&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;hex(97)&lt;/code&gt; -&amp;gt; &lt;code&gt;0x61&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;hex(10)&lt;/code&gt; -&amp;gt; &lt;code&gt;0xa&lt;/code&gt;&lt;/p&gt;
+&lt;h3&gt;str&lt;/h3&gt;
+&lt;p&gt;将结果转换为字符串&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;str()&lt;/code&gt;&lt;/p&gt;
+&lt;h3&gt;.zfill(a)&lt;/h3&gt;
+&lt;p&gt;用零在左侧填充到指定宽度（这里是 a）。如果字符串长度不足 a 位，就在左边补零；如果已经 a 位或以上，则不变&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;&apos;a&apos;.zfill(2)&lt;/code&gt; → &lt;code&gt;&apos;0a&apos;&lt;/code&gt;，&lt;code&gt;&apos;61&apos;.zfill(2)&lt;/code&gt; → &lt;code&gt;&apos;61&apos;&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;现在来理解这样一段([题源:SWPUCTF 2021 新生赛]简简单单的逻辑)&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;flag = &apos;xxxxxxxxxxxxxxxxxx&apos;
+list = [47, 138, 127, 57, 117, 188, 51, 143, 17, 84, 42, 135, 76, 105, 28, 169, 25]
+result = &apos;&apos;
+for i in range(len(list)):
+    key = (list[i]&amp;gt;&amp;gt;4)+((list[i] &amp;amp; 0xf)&amp;lt;&amp;lt;4)
+    result += str(hex(ord(flag[i])^key))[2:].zfill(2)
+print(result)
+# result=bcfba4d0038d48bd4b00f82796d393dfec
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;就先这样？&lt;/p&gt;
+</content:encoded></item><item><title>第一篇文章</title><link>https://dxfaker.top/posts/26224/</link><guid isPermaLink="true">https://dxfaker.top/posts/26224/</guid><description>讲讲开发这个网页的事</description><pubDate>Tue, 24 Feb 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;ai指导静态网页开发&lt;/h1&gt;
 &lt;h2&gt;起因&lt;/h2&gt;
 &lt;p&gt;第一篇就拿很熟悉的一张当封面吧
 由于要开始准备数学考试了，几天前回的学校。
