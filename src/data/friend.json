@@ -1,51 +1,58 @@
 [
-  {
-    "title": "樂依",
-    "desc": "摆烂一小时 时候到了叫我 _(¦3」∠)_|",
-    "siteurl": "https://leyi.live",
-    "imgurl": "/images/friend/leyi.jpg",
-    "tags": ["网安", "ctf大蛇"]
-  },
-  {
-    "title": "坨子",
-    "desc": "qu",
-    "siteurl": "https://pluto-ming-cn.github.io/",
-    "imgurl": "/images/friend/qu.jpg",
-    "tags": ["后端", "软工"]
-  },
-  {
-    "title": "xiaochai",
-    "desc": "aaa网络维修",
-    "siteurl": "https://xiaochai-123.github.io/",
-    "imgurl": "/images/friend/xiaochai.jpg",
-    "tags": ["比我强", "强悍的 web手"]
-  },
-  {
-    "title": "晓堃",
-    "desc": "OO有丝分裂就老了",
-    "siteurl": "http://btop251.top",
-    "imgurl": "/images/friend/xiaokun.jpg",
-    "tags": ["强大的web手", "比我强"]
-  },
-  {
-    "title": "hinanawiteriko",
-    "desc": "爱玩种末地😋",
-    "siteurl": "https://hinanawiteriko.github.io/",
-    "imgurl": "/images/friend/tianzi.jpg",
-    "tags": ["天子", "算法"]
-  },
-  {
-    "title": "ruijian-huang",
-    "desc": "ruijianhaung先森",
-    "siteurl": "https://ruijian-huang.github.io/",
-    "imgurl": "/images/friend/xiaohai.jpg",
-    "tags": ["现充", "小孩"]
-  },
-  {
-    "title": "宁乐",
-    "desc": "I pack my rhoughts and throw them, to you",
-    "siteurl": "https://nkvd-1993.github.io/",
-    "imgurl": "/images/friend/ningle.jpg",
-    "tags": ["副歌？！", "大蛇"]
-  }
+	{
+		"title": "樂依",
+		"desc": "摆烂一小时 时候到了叫我 _(¦3」∠)_|",
+		"siteurl": "https://leyi.live",
+		"imgurl": "/images/friend/leyi.jpg",
+		"tags": ["网安", "ctf大蛇"]
+	},
+	{
+		"title": "坨子",
+		"desc": "qu",
+		"siteurl": "https://pluto-ming-cn.github.io/",
+		"imgurl": "/images/friend/qu.jpg",
+		"tags": ["后端", "软工"]
+	},
+	{
+		"title": "xiaochai",
+		"desc": "aaa网络维修",
+		"siteurl": "https://xiaochai-123.github.io/",
+		"imgurl": "/images/friend/xiaochai.jpg",
+		"tags": ["比我强", "强悍的 web手"]
+	},
+	{
+		"title": "晓堃",
+		"desc": "OO有丝分裂就老了",
+		"siteurl": "http://btop251.top",
+		"imgurl": "/images/friend/xiaokun.jpg",
+		"tags": ["强大的web手", "比我强"]
+	},
+	{
+		"title": "hinanawiteriko",
+		"desc": "爱玩种末地😋",
+		"siteurl": "https://hinanawiteriko.github.io/",
+		"imgurl": "/images/friend/tianzi.jpg",
+		"tags": ["天子", "算法"]
+	},
+	{
+		"title": "ruijian-huang",
+		"desc": "ruijianhaung先森",
+		"siteurl": "https://ruijian-huang.github.io/",
+		"imgurl": "/images/friend/xiaohai.jpg",
+		"tags": ["现充", "小孩"]
+	},
+	{
+		"title": "宁乐",
+		"desc": "I pack my rhoughts and throw them, to you",
+		"siteurl": "https://nkvd-1993.github.io/",
+		"imgurl": "/images/friend/ningle.jpg",
+		"tags": ["副歌？！", "大蛇"]
+	},
+	{
+		"title": "nepenthe",
+		"desc": "我舍友",
+		"siteurl": "https://lzbfornepenthe.github.io/",
+		"imgurl": "/images/friend/nene.jpg",
+		"tags": ["比我强", "AI"]
+	}
 ]
