@@ -1,4 +1,76 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>处理线性方程组题型</title><link>https://dxfaker.top/posts/2634/</link><guid isPermaLink="true">https://dxfaker.top/posts/2634/</guid><description>基于WSL的处理办法</description><pubDate>Thu, 05 Mar 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;写在前面&lt;/h1&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>基于win11的主题优化</title><link>https://dxfaker.top/posts/%E5%9F%BA%E4%BA%8Ewin11%E7%9A%84%E4%B8%BB%E9%A2%98%E4%BC%98%E5%8C%96/</link><guid isPermaLink="true">https://dxfaker.top/posts/%E5%9F%BA%E4%BA%8Ewin11%E7%9A%84%E4%B8%BB%E9%A2%98%E4%BC%98%E5%8C%96/</guid><description>分享一下</description><pubDate>Thu, 05 Mar 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;写在前面&lt;/h1&gt;
+&lt;p&gt;镇楼：另一个世界线的我，希望看到这里的读者能像他们一样把握住机会，不要让自己后悔吧&lt;/p&gt;
+&lt;p&gt;不然，在你成熟前你就要一直内耗了&lt;/p&gt;
+&lt;p&gt;（&lt;/p&gt;
+&lt;h1&gt;正题&lt;/h1&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/26.3.5.3.png&quot; alt=&quot;26.3.5.3&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;这个是最终的效果，如果觉得生活太如意的话，大可以把任务栏再删的精简一点&lt;/p&gt;
+&lt;h2&gt;壁纸（付费）&lt;/h2&gt;
+&lt;p&gt;wallpaper，这个我就不多说了，找个中意的壁纸下载就行了，至于别的内容，甚至某些壁纸，也谨慎下载，毕竟你也不知道里面装了些什么&lt;/p&gt;
+&lt;p&gt;其实还有一个低配， 我记得叫 livepaper来着，不过那个壁纸就得你自己去找了&lt;/p&gt;
+&lt;h2&gt;任务栏&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;TranslucentTB&lt;/strong&gt;（微软商店免费）&lt;/p&gt;
+&lt;p&gt;作用：任务栏透明/亚克力效果
+操作：安装后，在系统托盘图标中选择 &lt;strong&gt;“清晰”&lt;/strong&gt;（全透明）或 &lt;strong&gt;“亚克力”&lt;/strong&gt;（毛玻璃）&lt;/p&gt;
+&lt;p&gt;我选择的是全透明&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;RoundedTB&lt;/strong&gt;（微软商店免费）
+作用：任务栏圆角 + 悬浮（设置边距 Margin）
+操作：安装后，在设置中调整 &lt;strong&gt;Margin（边距）&lt;/strong&gt; 数值（如底部设为 &lt;code&gt;5&lt;/code&gt;），实现四边悬空&lt;/p&gt;
+&lt;p&gt;作用不是很明显，可下可不下&lt;/p&gt;
+&lt;h2&gt;文件资源管理器&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;ExplorerBlurMica&lt;/strong&gt;（GitHub开源）&lt;/p&gt;
+&lt;p&gt;窗口背景半透明（透出桌面）&lt;/p&gt;
+&lt;p&gt;窗口全透明要搞麻烦一点的&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;操作步骤&lt;/strong&gt;：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;下载并解压到文件夹（如 &lt;code&gt;Release_x64&lt;/code&gt;）&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;用记事本打开 &lt;code&gt;config.ini&lt;/code&gt;，修改关键参数：&lt;/p&gt;
+&lt;p&gt;ini&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;effect = 1          
+[light]
+a = 0               ; 浅色模式透明度0（完全透明）
+[dark]
+a = 0               ; 深色模式透明度0
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;以管理员身份运行&lt;/strong&gt; &lt;code&gt;register.cmd&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;重启资源管理器（任务管理器重启“Windows 资源管理器”或重启电脑）&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;卸载方法&lt;/strong&gt;：以管理员身份运行同文件夹下的 &lt;code&gt;uninstall.cmd&lt;/code&gt; 并重启资源管理器&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;Windows 终端 (PowerShell / WSL)&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;目标&lt;/strong&gt;：亚克力透明背景&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;工具&lt;/strong&gt;：Windows Terminal 自带功能&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;操作步骤&lt;/strong&gt;：
+&lt;ol&gt;
+&lt;li&gt;打开 Windows Terminal，点击下拉菜单 → &lt;strong&gt;设置&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;左侧选择配置文件（如“Windows PowerShell”或“Ubuntu”）&lt;/li&gt;
+&lt;li&gt;点击 &lt;strong&gt;“外观”&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;将 &lt;strong&gt;“背景效果”&lt;/strong&gt; 从“不透明”改为 &lt;strong&gt;“亚克力”&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;调整下方 &lt;strong&gt;“亚克力不透明度”&lt;/strong&gt; 滑块（如 70%）&lt;/li&gt;
+&lt;li&gt;点击 &lt;strong&gt;“保存”&lt;/strong&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/26.3.5.4.png&quot; alt=&quot;26.3.5.4&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;要是觉得影响注意力了把板子加上去就是了&lt;/p&gt;
+&lt;h1&gt;final&lt;/h1&gt;
+&lt;p&gt;推荐一首歌：洛天依的千金胧梦&lt;/p&gt;
+&lt;p&gt;今天莫名其妙压抑了起来，该🛫了&lt;/p&gt;
+</content:encoded></item><item><title>处理线性方程组题型</title><link>https://dxfaker.top/posts/2634/</link><guid isPermaLink="true">https://dxfaker.top/posts/2634/</guid><description>基于WSL的处理办法</description><pubDate>Thu, 05 Mar 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;写在前面&lt;/h1&gt;
 &lt;p&gt;镇楼：届不到的爱恋&lt;/p&gt;
 &lt;p&gt;感谢leyi发的新生赛RE题，不愧是逆神的题目，我第二题就卡住了，脱壳没有什么问题，但是我点开IDA后发现流程图长这样：&lt;img src=&quot;https://dxfaker.top/images/post/26.3.5.png&quot; alt=&quot;屏幕截图 2026-03-04 110911&quot; /&gt;&lt;/p&gt;
 &lt;p&gt;这个时候，有人就要问了：B哥，B哥，这他妈什么jb？&lt;/p&gt;
