@@ -5,8 +5,627 @@
   <link href="https://dxfaker.top/" rel="alternate" type="text/html"/>
   <link href="https://dxfaker.top/atom.xml" rel="self" type="application/atom+xml"/>
   <id>https://dxfaker.top/</id>
-  <updated>2026-03-05T05:11:00.433Z</updated>
+  <updated>2026-03-05T05:15:00.694Z</updated>
   <language>en</language>
+  <entry>
+    <title>处理线性方程组题型</title>
+    <link href="https://dxfaker.top/posts/2634/" rel="alternate" type="text/html"/>
+    <id>https://dxfaker.top/posts/2634/</id>
+    <published>2026-03-05T00:00:00.000Z</published>
+    <updated>2026-03-05T00:00:00.000Z</updated>
+    <summary>基于WSL的处理办法</summary>
+    <content type="html"><![CDATA[<h1>写在前面</h1>
+<p>镇楼：届不到的爱恋</p>
+<p>感谢leyi发的新生赛RE题，不愧是逆神的题目，我第二题就卡住了，脱壳没有什么问题，但是我点开IDA后发现流程图长这样：![屏幕截图 2026-03-04 110911](D:\mywebsite\mizukii\public\images\post\屏幕截图 2026-03-04 110911.png)</p>
+<p>这个时候，有人就要问了：B哥，B哥，这他妈什么jb？</p>
+<p>那我问你，我才刚学，我知道个蛋</p>
+<p>于是我去问了AI，说是有两种题型：</p>
+<p>1.线性方程组题型</p>
+<p>2.控制流平坦化题型</p>
+<h2>线性方程组题型的典型特征</h2>
+<ul>
+<li><strong>结构</strong>：主函数中只有一个巨大的 <code>if</code> 语句，里面包含几十个由 <code>&amp;&amp;</code> 连接的等式。</li>
+<li><strong>表达式形式</strong>：每个等式都是形如 <code>(系数1 * 字节1 + 系数2 * 字节2 + ... + 系数32 * 字节32) == 常数</code> 的线性组合。</li>
+<li><strong>变量命名</strong>：IDA 可能会自动将输入分解为几个连续的变量（如 <code>v4, v5, v6, v7</code>），每个变量通过 <code>SBYTE1</code>、<code>SBYTE2</code> 等宏访问其内部的字节。</li>
+<li><strong>没有循环/switch</strong>：除了输入读取和字符范围检查的循环外，验证部分全是顺序的数学运算，没有复杂跳转。</li>
+</ul>
+<h3>控制流平坦化题型的典型特征</h3>
+<ul>
+<li><strong>结构</strong>：反编译后是一个巨大的 <code>while(1)</code> 循环，里面嵌套 <code>switch</code> 或大量 <code>if-else</code>，所有功能块都被打散。</li>
+<li><strong>状态变量</strong>：存在一个局部变量（如 <code>v1</code>）作为“状态”，控制当前执行哪个块。</li>
+<li><strong>分发器</strong>：每次循环都会根据状态变量跳转到对应块，块末尾会更新状态变量并跳回循环开头。</li>
+<li><strong>代码碎片化</strong>：原本顺序的算法被拆成许多小块，块之间通过状态变量连接。</li>
+</ul>
+<h1>如何快速确认是线性方程组</h1>
+<p>当你看到类似你贴出的代码时，可以按以下步骤确认：</p>
+<p><strong>观察输入处理</strong></p>
+<ul>
+<li>代码开头通常有 <code>get_input(&amp;v4)</code>，并且 <code>v4</code> 是 8 字节变量（<code>__int64</code>）。</li>
+<li>随后可能有一个循环调用 <code>check_char</code> 验证每个字符的范围（比如是否为可打印字符）。</li>
+<li>这说明输入被存储在连续的 32 字节中，分在 4 个 8 字节变量里。</li>
+</ul>
+<p>![屏幕截图 2026-03-04 205108](D:\mywebsite\mizukii\public\images\post\屏幕截图 2026-03-04 205108.png)</p>
+<p><strong>查看验证部分</strong></p>
+<ul>
+<li>如果看到大量形如 <code>a * SBYTE1(v4) + b * (char)v5 + ... == 常数</code> 的表达式，且系数都是常数，那就是线性组合。</li>
+<li>注意移位运算如 <code>(SBYTE1(v4) &lt;&lt; 7)</code> 实际就是乘以 128，仍是线性。</li>
+</ul>
+<p>![屏幕截图 2026-03-04 205802](D:\mywebsite\mizukii\public\images\post\屏幕截图 2026-03-04 205802.png)</p>
+<blockquote>
+<p>79 * SBYTE5(v7)<code>是</code>79` 乘以 v7 的第 5 个字节，等等。</p>
+</blockquote>
+<p>这种形式就是典型的线性方程：<code>Σ (系数_i * 字节_i) = 常数</code>。所有项都是<strong>一次</strong>的，没有平方、异或等非线性运算。移位如 <code>(x &lt;&lt; 7)</code> 也等价于 <code>128 * x</code>，仍然是线性。</p>
+<p><strong>计数方程个数</strong></p>
+<ul>
+<li>数一数 <code>&amp;&amp;</code> 连接了多少个等式。如果个数正好等于输入字节数（32），那么极有可能是一个<strong>线性方程组</strong>，通过求解这些方程就能得到输入。</li>
+</ul>
+<p><strong>尝试简化</strong></p>
+<ul>
+<li>可以将所有字节编号为 <code>b0~b31</code>，把每个等式整理成 <code>Σ coeff_i * b_i = const</code> 的形式。如果系数矩阵是满秩的，那么就有唯一解。(这个以后再说)</li>
+</ul>
+<h1>补充知识</h1>
+<h2>变量与字节的对应关系</h2>
+<p>根据之前的内存布局（栈帧 <code>rbp-30h</code> 到 <code>rbp-11h</code>），四个 64 位变量 <code>v4</code>, <code>v5</code>, <code>v6</code>, <code>v7</code> 连续存放了 32 个字符。每个变量内部，字节从小端序排列：</p>
+<ul>
+<li><code>(char)v4</code> → 最低地址字节 → 输入的第 0 个字符</li>
+<li><code>SBYTE1(v4)</code> → 下一个字节 → 输入的第 1 个字符</li>
+<li>...</li>
+<li><code>SHIBYTE(v4)</code> → 最高地址字节 → 输入的第 7 个字符</li>
+</ul>
+<p>即：每个宏对应一个唯一的字节索引</p>
+<p>在 Z3 脚本中，我们不能直接写 <code>SBYTE6(v7)</code>，因为 Z3 不认识这些宏。我们需要将方程中的每一项都转化为关于输入字符的线性组合。也就是说，我们需要把伪代码中的：</p>
+<pre><code>117 * SBYTE6(v7) + 79 * SBYTE5(v7) + ...
+</code></pre>
+<p>翻译成 Z3 能理解的：</p>
+<pre><code>117 * flag[30] + 79 * flag[29] + ...
+</code></pre>
+<h2>字节映射</h2>
+<pre><code>int __fastcall main(int argc, const char **argv, const char **envp)
+{
+  __int64 v4; // [rsp+20h] [rbp-30h] BYREF
+  __int64 v5; // [rsp+28h] [rbp-28h]
+  __int64 v6; // [rsp+30h] [rbp-20h]
+  __int64 v7; // [rsp+38h] [rbp-18h]
+  int i; // [rsp+4Ch] [rbp-4h]
+
+  _main(argc, argv, envp);
+  printf("tell me the answer:");
+  v4 = 0i64;
+  v5 = 0i64;
+  v6 = 0i64;
+  v7 = 0i64;
+  get_input(&amp;v4);
+  printf("your input is: %s\n", (const char *)&amp;v4);
+  for ( i = 0; i &lt;= 31; ++i )
+  {
+    if ( !(unsigned int)check_char((unsigned int)*((char *)&amp;v4 + i)) )
+    {
+      puts("nope");
+      return 0;
+    }
+  }
+  // ... 后面是一大堆方程
+}
+</code></pre>
+<ul>
+<li>定义了四个 8 字节变量：<code>v4</code>, <code>v5</code>, <code>v6</code>, <code>v7</code>。它们的类型是 <code>__int64</code>，即 64 位整数。</li>
+<li>它们在栈上是连续的：<code>v4</code> 在 <code>rbp-30h</code>，<code>v5</code> 在 <code>rbp-28h</code>，<code>v6</code> 在 <code>rbp-20h</code>，<code>v7</code> 在 <code>rbp-18h</code>。因为栈向下增长，所以 <code>v4</code> 地址最低，<code>v7</code> 地址最高。</li>
+<li><code>get_input(&amp;v4)</code> 将用户输入的字符串存储到以 <code>v4</code> 为起始地址的缓冲区。由于 <code>v4</code> 是 8 字节，但后面跟着 <code>v5</code>、<code>v6</code>、<code>v7</code>，所以实际上这 4 个变量连续占据了 32 字节的空间（4 * 8 = 32）。因此，输入的字符串会被完整放在这 32 字节中。</li>
+</ul>
+<h2>宏</h2>
+<p>宏是一种预处理符号，它代表一段代码片段。在 IDA 的反编译伪代码中，这些宏被用来简化对多字节变量（如 <code>__int64</code>）的字节级访问。它们不是 C 语言标准的一部分，而是 IDA 为了让反编译结果更易读而创造的。</p>
+<h2>字节顺序与宏的含义</h2>
+<p>在后续的方程中，你会看到诸如 <code>(char)v4</code>、<code>SBYTE1(v4)</code>、<code>SHIBYTE(v4)</code> 等宏。这些是 IDA 对位域或字节提取的表示，它们的含义取决于机器的<strong>小端序</strong>（x86/x64 是小端）。</p>
+<ul>
+<li><code>(char)v4</code>：取 <code>v4</code> 的最低字节（即地址最低的字节）。</li>
+<li><code>SBYTE1(v4)</code>：取 <code>v4</code> 的第二个字节（地址次低的字节）。</li>
+<li><code>SBYTE2(v4)</code>：第三个字节。</li>
+<li>...</li>
+<li><code>SBYTE6(v4)</code>：第七个字节。</li>
+<li><code>SHIBYTE(v4)</code>：最高字节（第八个字节）。</li>
+</ul>
+<p>因为 <code>v4</code> 是 8 字节，所以它有 8 个字节，索引从 0（最低）到 7（最高）。同理 <code>v5</code> 也有 8 个字节，索引 8~15，以此类推。</p>
+<h3>完整的字节映射表</h3>
+<p>结合栈地址和字节顺序，我们可以将每个宏映射到一个具体的字节索引（<code>b0</code> ~ <code>b31</code>）。假设输入字符串的第一个字符存入 <code>v4</code> 的最低字节，最后一个字符存入 <code>v7</code> 的最高字节。</p>
+<h3>举例说明</h3>
+<p>看第一个方程的一小部分：</p>
+<p>text</p>
+<pre><code>117 * SBYTE6(v7) + 79 * SBYTE5(v7) + 56 * SBYTE2(v7) + 91 * SBYTE1(v7) + ...
+</code></pre>
+<ul>
+<li><code>SBYTE6(v7)</code> 对应 <code>v7</code> 的第七个字节，即 <code>b30</code>。</li>
+<li><code>SBYTE5(v7)</code> 对应 <code>b29</code>。</li>
+<li><code>SBYTE2(v7)</code> 对应 <code>b26</code>。</li>
+<li><code>SBYTE1(v7)</code> 对应 <code>b25</code>。</li>
+</ul>
+<p>因此，这一部分的系数贡献是：</p>
+<ul>
+<li>b30 加 117</li>
+<li>b29 加 79</li>
+<li>b26 加 56</li>
+<li>b25 加 91</li>
+</ul>
+<p>以此类推，每个方程都要根据映射表将每个项的系数加到对应的字节索引上。</p>
+<h2>为什么这个映射很重要</h2>
+<p>如果你映射错了，比如把 <code>SBYTE6(v7)</code> 当成 b29 而不是 b30，那么整个方程组就会错位，Z3 就会无解。这是手动提取最容易出错的地方之一。</p>
+<h2>z3库与anger脚本</h2>
+<p>网上有很多，本人见识有限，后面会补充</p>
+<h1>解题</h1>
+<p>以下是基于IDA PRO:</p>
+<p>左边functions下的functinon name,找到main, 点击F5看伪代码（就是上面那些图片</p>
+<p>首先是AURORA给的：</p>
+<pre><code>from z3 import *
+flag = [BitVec('flag{}'.format(i),8) for i in range(32)]
+alphabet = b"AUVabcdhikorsuvyz012345{}_\'"
+s = Solver()
+for i in range(32):
+s.add(Or([flag[i] == c for c in alphabet]))
+s.add(85 * flag[0] + 185 * flag[1] + 80 * flag[2] + 81 * flag[3] + 130 * flag[4]
++ 95 * flag[5] + 126 * flag[6] + 197 * flag[7] + 148 * flag[8] + 228 * flag[9] +
+213 * flag[10] + 107 * flag[11] + 195 * flag[12] + 183 * flag[13] + 200 *
+flag[14] + 47 * flag[15] + 194 * flag[16] + 16 * flag[17] + 51 * flag[18] + 222 *
+flag[19] + 191 * flag[20] + 44 * flag[21] + 153 * flag[22] + 217 * flag[23] + 192
+* flag[24] + 91 * flag[25] + 56 * flag[26] + 178 * flag[27] + 27 * flag[28] + 79
+* flag[29] + 117 * flag[30] + 98 * flag[31] == 422531)
+s.add(93 * flag[0] + 128 * flag[1] + 111 * flag[2] + 16 * flag[3] + 163 * flag[4]
++ 215 * flag[5] + 223 * flag[6] + 51 * flag[7] + 81 * flag[8] + 1 * flag[9] + 198
+* flag[10] + 247 * flag[11] + 88 * flag[12] + 176 * flag[13] + 110 * flag[14] +
+250 * flag[15] + 196 * flag[16] + 161 * flag[17] + 63 * flag[18] + 159 * flag[19]
++ 191 * flag[20] + 239 * flag[21] + 69 * flag[22] + 119 * flag[23] + 136 *
+flag[24] + 30 * flag[25] + 86 * flag[26] + 185 * flag[27] + 14 * flag[28] + 26 *
+flag[29] + 50 * flag[30] + 237 * flag[31] == 377679)
+s.add(17 * flag[0] + 108 * flag[1] + 169 * flag[2] + 83 * flag[3] + 129 * flag[4]
++ 191 * flag[5] + 3 * flag[6] + 249 * flag[7] + 163 * flag[8] + 138 * flag[9] + 2
+* flag[10] + 123 * flag[11] + 23 * flag[12] + 162 * flag[13] + 155 * flag[14] +
+152 * flag[15] + 46 * flag[16] + 80 * flag[17] + 215 * flag[18] + 6 * flag[19] +
+229 * flag[20] + 128 * flag[21] + 53 * flag[22] + 255 * flag[23] + 71 * flag[24]
++ 212 * flag[25] + 208 * flag[26] + 47 * flag[27] + 36 * flag[28] + 75 * flag[29]
++ 218 * flag[30] + 144 * flag[31] == 377733)
+s.add(204 * flag[0] + 247 * flag[1] + 15 * flag[2] + 66 * flag[3] + 166 * flag[4]
++ 87 * flag[5] + 102 * flag[6] + 186 * flag[7] + 82 * flag[8] + 141 * flag[9] + 9
+* flag[10] + 120 * flag[11] + 145 * flag[12] + 69 * flag[13] + 18 * flag[14] + 65
+* flag[15] + 137 * flag[16] + 171 * flag[17] + 167 * flag[18] + 184 * flag[19] +
+183 * flag[20] + 251 * flag[21] + 153 * flag[22] + 3 * flag[23] + 84 * flag[24] +
+201 * flag[25] + 189 * flag[26] + 34 * flag[27] + 79 * flag[28] + 64 * flag[29] +
+230 * flag[30] + 197 * flag[31] == 382101)
+s.add(234 * flag[0] + 225 * flag[1] + 195 * flag[2] + 117 * flag[3] + 8 * flag[4]
++ 89 * flag[5] + 254 * flag[6] + 173 * flag[7] + 251 * flag[8] + 223 * flag[9] +
+87 * flag[10] + 165 * flag[11] + 114 * flag[12] + 242 * flag[13] + 232 * flag[14]
++ 126 * flag[15] + 105 * flag[16] + 121 * flag[17] + 155 * flag[18] + 194 *
+flag[19] + 64 * flag[20] + 154 * flag[21] + 120 * flag[22] + 80 * flag[23] + 151
+* flag[24] + 111 * flag[25] + 144 * flag[26] + 243 * flag[27] + 159 * flag[28] +
+239 * flag[29] + 93 * flag[30] + 97 * flag[31] == 476378)
+s.add(32 * flag[0] + 64 * flag[1] + 155 * flag[2] + 131 * flag[3] + 161 * flag[4]
++ 223 * flag[5] + 210 * flag[6] + 15 * flag[7] + 205 * flag[8] + 164 * flag[9] +
+146 * flag[10] + 27 * flag[11] + 108 * flag[12] + 35 * flag[13] + 63 * flag[14] +
+87 * flag[15] + 215 * flag[16] + 163 * flag[17] + 170 * flag[18] + 95 * flag[19]
++ 70 * flag[20] + 60 * flag[21] + 81 * flag[22] + 241 * flag[23] + 122 * flag[24]
++ 50 * flag[25] + 123 * flag[26] + 177 * flag[27] + 172 * flag[28] + 106 *
+flag[29] + 51 * flag[30] + 230 * flag[31] == 403748)
+s.add(204 * flag[0] + 78 * flag[1] + 92 * flag[2] + 64 * flag[3] + 125 * flag[4]
++ 161 * flag[5] + 185 * flag[6] + 194 * flag[7] + 74 * flag[8] + 1 * flag[9] +
+155 * flag[10] + 109 * flag[11] + 132 * flag[12] + 19 * flag[13] + 110 * flag[14]
++ 201 * flag[15] + 29 * flag[16] + 3 * flag[17] + 177 * flag[18] + 53 * flag[19]
++ 129 * flag[20] + 224 * flag[21] + 205 * flag[22] + 146 * flag[23] + 71 *
+flag[24] + 128 * flag[25] + 203 * flag[26] + 145 * flag[27] + 68 * flag[28] + 100
+* flag[29] + 80 * flag[30] + 57 * flag[31] == 345842)
+s.add(169 * flag[0] + 98 * flag[1] + 28 * flag[2] + 204 * flag[3] + 149 * flag[4]
++ 252 * flag[5] + 172 * flag[6] + 141 * flag[7] + 134 * flag[8] + 116 * flag[9] +
+39 * flag[10] + 48 * flag[11] + 247 * flag[12] + 128 * flag[13] + 164 * flag[14]
++ 43 * flag[15] + 7 * flag[16] + 245 * flag[17] + 241 * flag[18] + 15 * flag[19]
++ 93 * flag[20] + 197 * flag[21] + 209 * flag[22] + 100 * flag[23] + 25 *
+flag[24] + 129 * flag[25] + 227 * flag[26] + 58 * flag[27] + 54 * flag[28] + 123
+* flag[29] + 5 * flag[30] + 118 * flag[31] == 373897)
+s.add(187 * flag[0] + 133 * flag[1] + 70 * flag[2] + 244 * flag[3] + 169 *
+flag[4] + 168 * flag[5] + 172 * flag[6] + 48 * flag[7] + 119 * flag[8] + 155 *
+flag[9] + 127 * flag[10] + 222 * flag[11] + 170 * flag[12] + 217 * flag[13] + 107
+* flag[14] + 88 * flag[15] + 162 * flag[16] + 206 * flag[17] + 75 * flag[18] + 2
+* flag[19] + 7 * flag[20] + 184 * flag[21] + 130 * flag[22] + 192 * flag[23] +
+163 * flag[24] + 255 * flag[25] + 196 * flag[26] + 221 * flag[27] + 27 * flag[28]
++ 62 * flag[29] + 213 * flag[30] + 248 * flag[31] == 452443)
+s.add(200 * flag[0] + 18 * flag[1] + 135 * flag[2] + 79 * flag[3] + 150 * flag[4]
++ 193 * flag[5] + 78 * flag[6] + 245 * flag[7] + 164 * flag[8] + 85 * flag[9] +
+192 * flag[10] + 66 * flag[11] + 209 * flag[12] + 250 * flag[13] + 44 * flag[14]
++ 196 * flag[15] + 141 * flag[16] + 139 * flag[17] + 224 * flag[18] + 252 *
+flag[19] + 181 * flag[20] + 8 * flag[21] + 180 * flag[22] + 2 * flag[23] + 112 *
+flag[24] + 58 * flag[25] + 191 * flag[26] + 39 * flag[27] + 242 * flag[28] + 14 *
+flag[29] + 169 * flag[30] + 99 * flag[31] == 403460)
+s.add(48 * flag[0] + 131 * flag[1] + 229 * flag[2] + 237 * flag[3] + 68 * flag[4]
++ 174 * flag[5] + 71 * flag[6] + 87 * flag[7] + 89 * flag[8] + 121 * flag[9] +
+206 * flag[10] + 151 * flag[11] + 3 * flag[12] + 51 * flag[13] + 187 * flag[14] +
+5 * flag[15] + 8 * flag[16] + 32 * flag[17] + 45 * flag[18] + 63 * flag[19] + 211
+* flag[20] + 28 * flag[21] + 169 * flag[22] + 243 * flag[23] + 39 * flag[24] +
+216 * flag[25] + 120 * flag[26] + 30 * flag[27] + 177 * flag[28] + 189 * flag[29]
++ 209 * flag[30] + 73 * flag[31] == 375277)
+s.add(196 * flag[0] + 107 * flag[1] + 36 * flag[2] + 163 * flag[3] + 229 *
+flag[4] + 244 * flag[5] + 181 * flag[6] + 71 * flag[7] + 141 * flag[8] + 44 *
+flag[9] + 126 * flag[10] + 43 * flag[11] + 110 * flag[12] + 198 * flag[13] + 66 *
+flag[14] + 18 * flag[15] + 197 * flag[16] + 56 * flag[17] + 33 * flag[18] + 2 *
+flag[19] + 98 * flag[20] + 13 * flag[21] + 130 * flag[22] + 180 * flag[23] + 133
+* flag[24] + 228 * flag[25] + 46 * flag[26] + 171 * flag[27] + 40 * flag[28] + 84
+* flag[29] + 27 * flag[30] + 94 * flag[31] == 346617)
+s.add(153 * flag[0] + 129 * flag[1] + 215 * flag[2] + 90 * flag[3] + 245 *
+flag[4] + 247 * flag[5] + 84 * flag[6] + 192 * flag[7] + 108 * flag[8] + 116 *
+flag[9] + 38 * flag[10] + 255 * flag[11] + 123 * flag[12] + 32 * flag[13] + 107 *
+flag[14] + 121 * flag[15] + 87 * flag[16] + 99 * flag[17] + 35 * flag[18] + 6 *
+flag[19] + 23 * flag[20] + 1 * flag[21] + 175 * flag[22] + 66 * flag[23] + 111 *
+flag[24] + 134 * flag[25] + 79 * flag[26] + 73 * flag[27] + 8 * flag[28] + 193 *
+flag[29] + 154 * flag[30] + 229 * flag[31] == 359346)
+s.add(32 * flag[0] + 179 * flag[1] + 26 * flag[2] + 178 * flag[3] + 25 * flag[4]
++ 175 * flag[5] + 96 * flag[6] + 195 * flag[7] + 47 * flag[8] + 174 * flag[9] +
+207 * flag[10] + 198 * flag[11] + 33 * flag[12] + 66 * flag[13] + 71 * flag[14] +
+248 * flag[15] + 128 * flag[16] + 162 * flag[17] + 254 * flag[18] + 59 * flag[19]
++ 123 * flag[20] + 135 * flag[21] + 63 * flag[22] + 57 * flag[23] + 75 * flag[24]
++ 210 * flag[25] + 34 * flag[26] + 64 * flag[27] + 13 * flag[28] + 166 * flag[29]
++ 165 * flag[30] + 78 * flag[31] == 349475)
+s.add(138 * flag[0] + 90 * flag[1] + 102 * flag[2] + 94 * flag[3] + 254 * flag[4]
++ 111 * flag[5] + 34 * flag[6] + 165 * flag[7] + 125 * flag[8] + 133 * flag[9] +
+80 * flag[10] + 92 * flag[11] + 77 * flag[12] + 141 * flag[13] + 126 * flag[14] +
+196 * flag[15] + 45 * flag[16] + 61 * flag[17] + 25 * flag[18] + 14 * flag[19] +
+5 * flag[20] + 135 * flag[21] + 168 * flag[22] + 63 * flag[23] + 186 * flag[24] +
+229 * flag[25] + 234 * flag[26] + 85 * flag[27] + 119 * flag[28] + 239 * flag[29]
++ 214 * flag[30] + 248 * flag[31] == 384145)
+s.add(91 * flag[0] + 208 * flag[1] + 133 * flag[2] + 151 * flag[3] + 177 *
+flag[4] + 24 * flag[5] + 188 * flag[6] + 90 * flag[7] + 243 * flag[8] + 163 *
+flag[9] + 34 * flag[10] + 98 * flag[11] + 124 * flag[12] + 76 * flag[13] + 99 *
+flag[14] + 201 * flag[15] + 212 * flag[16] + 71 * flag[17] + 107 * flag[18] + 164
+* flag[19] + 233 * flag[20] + 221 * flag[21] + 197 * flag[22] + 19 * flag[23] +
+152 * flag[24] + 122 * flag[25] + 144 * flag[26] + 77 * flag[27] + 128 * flag[28]
++ 92 * flag[29] + 168 * flag[30] + 74 * flag[31] == 409437)
+s.add(184 * flag[0] + 154 * flag[1] + 147 * flag[2] + 138 * flag[3] + 42 *
+flag[4] + 171 * flag[5] + 174 * flag[6] + 164 * flag[7] + 134 * flag[8] + 85 *
+flag[9] + 99 * flag[10] + 116 * flag[11] + 136 * flag[12] + 213 * flag[13] + 3 *
+flag[14] + 2 * flag[15] + 156 * flag[16] + 217 * flag[17] + 209 * flag[18] + 95 *
+flag[19] + 202 * flag[20] + 145 * flag[21] + 25 * flag[22] + 216 * flag[23] + 251
+* flag[24] + 165 * flag[25] + 225 * flag[26] + 83 * flag[27] + 34 * flag[28] +
+140 * flag[29] + 135 * flag[30] + 77 * flag[31] == 417097)
+s.add(202 * flag[0] + 130 * flag[1] + 89 * flag[2] + 99 * flag[3] + 194 * flag[4]
++ 120 * flag[5] + 93 * flag[6] + 126 * flag[7] + 107 * flag[8] + 32 * flag[9] +
+249 * flag[10] + 28 * flag[11] + 109 * flag[12] + 179 * flag[13] + 12 * flag[14]
++ 183 * flag[15] + 193 * flag[16] + 175 * flag[17] + 207 * flag[18] + 215 *
+flag[19] + 7 * flag[20] + 55 * flag[21] + 180 * flag[22] + 10 * flag[23] + 237 *
+flag[24] + 151 * flag[25] + 164 * flag[26] + 106 * flag[27] + 154 * flag[28] + 29
+* flag[29] + 39 * flag[30] + 60 * flag[31] == 361950)
+s.add(5 * flag[0] + 177 * flag[1] + 125 * flag[2] + 162 * flag[3] + 194 * flag[4]
++ 26 * flag[5] + 168 * flag[6] + 198 * flag[7] + 195 * flag[8] + 39 * flag[9] +
+109 * flag[10] + 43 * flag[11] + 240 * flag[12] + 217 * flag[13] + 14 * flag[14]
++ 90 * flag[15] + 218 * flag[16] + 154 * flag[17] + 220 * flag[18] + 197 *
+flag[19] + 202 * flag[20] + 36 * flag[21] + 232 * flag[22] + 60 * flag[23] + 230
+* flag[24] + 148 * flag[25] + 231 * flag[26] + 142 * flag[27] + 200 * flag[28] +
+58 * flag[29] + 159 * flag[30] + 115 * flag[31] == 449324)
+s.add(133 * flag[0] + 210 * flag[1] + 80 * flag[2] + 161 * flag[3] + 89 * flag[4]
++ 72 * flag[5] + 238 * flag[6] + 201 * flag[7] + 138 * flag[8] + 44 * flag[9] +
+17 * flag[10] + 204 * flag[11] + 99 * flag[12] + 24 * flag[13] + 183 * flag[14] +
+165 * flag[15] + 122 * flag[16] + 9 * flag[17] + 236 * flag[18] + 121 * flag[19]
++ 12 * flag[20] + 216 * flag[21] + 254 * flag[22] + 229 * flag[23] + 0 * flag[24]
++ 74 * flag[25] + 1 * flag[26] + 60 * flag[27] + 157 * flag[28] + 57 * flag[29] +
+211 * flag[30] + 225 * flag[31] == 386144)
+s.add(99 * flag[0] + 176 * flag[1] + 75 * flag[2] + 47 * flag[3] + 143 * flag[4]
++ 37 * flag[5] + 24 * flag[6] + 124 * flag[7] + 79 * flag[8] + 118 * flag[9] + 13
+* flag[10] + 97 * flag[11] + 224 * flag[12] + 71 * flag[13] + 192 * flag[14] + 67
+* flag[15] + 139 * flag[16] + 104 * flag[17] + 94 * flag[18] + 74 * flag[19] +
+183 * flag[20] + 16 * flag[21] + 185 * flag[22] + 244 * flag[23] + 220 * flag[24]
++ 134 * flag[25] + 108 * flag[26] + 146 * flag[27] + 132 * flag[28] + 159 *
+flag[29] + 230 * flag[30] + 84 * flag[31] == 384126)
+s.add(208 * flag[0] + 9 * flag[1] + 40 * flag[2] + 50 * flag[3] + 158 * flag[4] +
+150 * flag[5] + 42 * flag[6] + 5 * flag[7] + 104 * flag[8] + 85 * flag[9] + 73 *
+flag[10] + 255 * flag[11] + 230 * flag[12] + 238 * flag[13] + 160 * flag[14] +
+233 * flag[15] + 61 * flag[16] + 138 * flag[17] + 1 * flag[18] + 86 * flag[19] +
+117 * flag[20] + 209 * flag[21] + 39 * flag[22] + 166 * flag[23] + 74 * flag[24]
++ 62 * flag[25] + 162 * flag[26] + 21 * flag[27] + 51 * flag[28] + 26 * flag[29]
++ 19 * flag[30] + 112 * flag[31] == 295799)
+s.add(104 * flag[0] + 148 * flag[1] + 181 * flag[2] + 240 * flag[3] + 137 *
+flag[4] + 195 * flag[5] + 196 * flag[6] + 225 * flag[7] + 233 * flag[8] + 37 *
+flag[9] + 52 * flag[10] + 194 * flag[11] + 10 * flag[12] + 175 * flag[13] + 219 *
+flag[14] + 45 * flag[15] + 85 * flag[16] + 185 * flag[17] + 111 * flag[18] + 244
+* flag[19] + 76 * flag[20] + 207 * flag[21] + 95 * flag[22] + 87 * flag[23] + 220
+* flag[24] + 26 * flag[25] + 227 * flag[26] + 132 * flag[27] + 88 * flag[28] + 56
+* flag[29] + 193 * flag[30] + 135 * flag[31] == 432591)
+s.add(246 * flag[0] + 155 * flag[1] + 163 * flag[2] + 242 * flag[3] + 116 *
+flag[4] + 254 * flag[5] + 157 * flag[6] + 104 * flag[7] + 230 * flag[8] + 202 *
+flag[9] + 205 * flag[10] + 236 * flag[11] + 49 * flag[12] + 198 * flag[13] + 7 *
+flag[14] + 221 * flag[15] + 124 * flag[16] + 128 * flag[17] + 134 * flag[18] + 86
+* flag[19] + 174 * flag[20] + 74 * flag[21] + 70 * flag[22] + 56 * flag[23] + 99
+* flag[24] + 231 * flag[25] + 119 * flag[26] + 218 * flag[27] + 219 * flag[28] +
+75 * flag[29] + 60 * flag[30] + 97 * flag[31] == 446934)
+s.add(112 * flag[0] + 248 * flag[1] + 96 * flag[2] + 60 * flag[3] + 67 * flag[4]
++ 0 * flag[5] + 179 * flag[6] + 237 * flag[7] + 15 * flag[8] + 206 * flag[9] + 73
+* flag[10] + 35 * flag[11] + 16 * flag[12] + 228 * flag[13] + 201 * flag[14] + 78
+* flag[15] + 191 * flag[16] + 137 * flag[17] + 108 * flag[18] + 88 * flag[19] +
+95 * flag[20] + 102 * flag[21] + 6 * flag[22] + 239 * flag[23] + 1 * flag[24] +
+175 * flag[25] + 227 * flag[26] + 31 * flag[27] + 128 * flag[28] + 106 * flag[29]
++ 186 * flag[30] + 204 * flag[31] == 387609)
+s.add(168 * flag[0] + 195 * flag[1] + 238 * flag[2] + 204 * flag[3] + 128 *
+flag[4] + 102 * flag[5] + 116 * flag[6] + 36 * flag[7] + 96 * flag[8] + 98 *
+flag[9] + 136 * flag[10] + 51 * flag[11] + 70 * flag[12] + 222 * flag[13] + 82 *
+flag[14] + 91 * flag[15] + 247 * flag[16] + 97 * flag[17] + 52 * flag[18] + 9 *
+flag[19] + 48 * flag[20] + 254 * flag[21] + 236 * flag[22] + 245 * flag[23] + 113
+* flag[24] + 119 * flag[25] + 104 * flag[26] + 172 * flag[27] + 143 * flag[28] +
+44 * flag[29] + 146 * flag[30] + 135 * flag[31] == 396022)
+s.add(204 * flag[0] + 241 * flag[1] + 244 * flag[2] + 234 * flag[3] + 168 *
+flag[4] + 8 * flag[5] + 189 * flag[6] + 12 * flag[7] + 112 * flag[8] + 71 *
+flag[9] + 33 * flag[10] + 201 * flag[11] + 102 * flag[12] + 255 * flag[13] + 7 *
+flag[14] + 24 * flag[15] + 209 * flag[16] + 238 * flag[17] + 172 * flag[18] + 107
+* flag[19] + 57 * flag[20] + 75 * flag[21] + 167 * flag[22] + 18 * flag[23] + 151
+* flag[24] + 108 * flag[25] + 207 * flag[26] + 120 * flag[27] + 45 * flag[28] +
+184 * flag[29] + 157 * flag[30] + 217 * flag[31] == 412078)
+s.add(213 * flag[0] + 44 * flag[1] + 103 * flag[2] + 148 * flag[3] + 202 *
+flag[4] + 168 * flag[5] + 22 * flag[6] + 225 * flag[7] + 104 * flag[8] + 13 *
+flag[9] + 189 * flag[10] + 230 * flag[11] + 157 * flag[12] + 211 * flag[13] + 199
+* flag[14] + 115 * flag[15] + 86 * flag[16] + 37 * flag[17] + 97 * flag[18] + 185
+* flag[19] + 208 * flag[20] + 70 * flag[21] + 218 * flag[22] + 239 * flag[23] +
+224 * flag[24] + 117 * flag[25] + 42 * flag[26] + 125 * flag[27] + 217 * flag[28]
++ 0 * flag[29] + 151 * flag[30] + 176 * flag[31] == 426365)
+s.add(62 * flag[0] + 162 * flag[1] + 20 * flag[2] + 142 * flag[3] + 172 * flag[4]
++ 198 * flag[5] + 184 * flag[6] + 182 * flag[7] + 169 * flag[8] + 191 * flag[9] +
+124 * flag[10] + 129 * flag[11] + 215 * flag[12] + 246 * flag[13] + 8 * flag[14]
++ 180 * flag[15] + 190 * flag[16] + 74 * flag[17] + 69 * flag[18] + 84 * flag[19]
++ 66 * flag[20] + 107 * flag[21] + 115 * flag[22] + 139 * flag[23] + 161 *
+flag[24] + 67 * flag[25] + 255 * flag[26] + 31 * flag[27] + 197 * flag[28] + 216
+* flag[29] + 49 * flag[30] + 76 * flag[31] == 406285)
+s.add(98 * flag[0] + 46 * flag[1] + 241 * flag[2] + 166 * flag[3] + 156 * flag[4]
++ 208 * flag[5] + 58 * flag[6] + 216 * flag[7] + 28 * flag[8] + 32 * flag[9] + 24
+* flag[10] + 60 * flag[11] + 15 * flag[12] + 18 * flag[13] + 49 * flag[14] + 33 *
+flag[15] + 188 * flag[16] + 106 * flag[17] + 85 * flag[18] + 119 * flag[19] + 90
+* flag[20] + 231 * flag[21] + 164 * flag[22] + 168 * flag[23] + 186 * flag[24] +
+62 * flag[25] + 158 * flag[26] + 36 * flag[27] + 117 * flag[28] + 239 * flag[29]
++ 251 * flag[30] + 250 * flag[31] == 379323)
+s.add(92 * flag[0] + 140 * flag[1] + 109 * flag[2] + 252 * flag[3] + 165 *
+flag[4] + 130 * flag[5] + 164 * flag[6] + 151 * flag[7] + 38 * flag[8] + 85 *
+flag[9] + 65 * flag[10] + 53 * flag[11] + 191 * flag[12] + 37 * flag[13] + 189 *
+flag[14] + 79 * flag[15] + 41 * flag[16] + 104 * flag[17] + 2 * flag[18] + 106 *
+flag[19] + 154 * flag[20] + 77 * flag[21] + 34 * flag[22] + 198 * flag[23] + 232
+* flag[24] + 131 * flag[25] + 11 * flag[26] + 248 * flag[27] + 185 * flag[28] +
+249 * flag[29] + 84 * flag[30] + 83 * flag[31] == 401097)
+s.add(60 * flag[0] + 197 * flag[1] + 144 * flag[2] + 84 * flag[3] + 48 * flag[4]
++ 14 * flag[5] + 103 * flag[6] + 244 * flag[7] + 123 * flag[8] + 67 * flag[9] +
+33 * flag[10] + 128 * flag[11] + 93 * flag[12] + 90 * flag[13] + 166 * flag[14] +
+211 * flag[15] + 167 * flag[16] + 233 * flag[17] + 50 * flag[18] + 161 * flag[19]
++ 116 * flag[20] + 141 * flag[21] + 98 * flag[22] + 122 * flag[23] + 229 *
+flag[24] + 224 * flag[25] + 162 * flag[26] + 21 * flag[27] + 117 * flag[28] + 44
+* flag[29] + 230 * flag[30] + 192 * flag[31] == 390156)
+print(s.check())
+print(s.model())
+</code></pre>
+<p>实际上这个你真用WSL跑是搞不出来的：</p>
+<ol>
+<li><strong>缩进错误</strong>：<code>for i in range(32):</code> 下面的 <code>s.add(...)</code> 必须缩进，否则会报 <code>IndentationError</code>。</li>
+<li><strong><code>Or</code> 的用法错误</strong>：<code>Or([...])</code> 应该改为 <code>Or(*[...])</code>，因为 Z3 的 <code>Or</code> 需要多个参数，而不是一个列表。</li>
+<li><strong>变量类型问题</strong>：用 <code>BitVec(8)</code> 会导致乘法溢出（模256），而方程中的常数很大，应该用 <code>Int</code> 类型。</li>
+</ol>
+<p>重点讲讲第三条吧，昨晚主要主要卡在这了</p>
+<h2>Int 与 BitVec的区别</h2>
+<p>有这样一个方程：</p>
+<pre><code>200 * x = 400
+</code></pre>
+<p>如果x是整数，那解为x=2</p>
+<p>但如果x是8位计算机的整数，那乘法就会所谓溢出：</p>
+<blockquote>
+<p>200 × 2 = 400，但 400 超过了 255，计算机只保留 400 mod 256 = 144。
+所以实际方程变成了 200 × x = 144，解就不是 2 了。</p>
+</blockquote>
+<p>使用z3,只要将看到的题目伪代码方程翻译成等式，加入字符集约束，即可求解</p>
+<h2>方程列表</h2>
+<p>刚刚的AURORA版本中代码大部分是那32个方程，伪代码中:</p>
+<pre><code>117 * SBYTE6(v7) + 79 * SBYTE5(v7) + ...  == 422531
+</code></pre>
+<p>然后就是建立映射表，将每个宏替换成flag数组中的对映元素。</p>
+<pre><code>85 * flag[0] + 185 * flag[1] + ... + 98 * flag[31] == 422531
+</code></pre>
+<p>还有处理位移和括号，将"&lt;&lt;"变成乘法之类的</p>
+<p>之后将等式化成Z3约束</p>
+<blockquote>
+<p>在Z3中，我们需要定义一个长度为32的整数变量列表<code>flag[i]</code>，然后对每个等式，用<code>sum(coeff[i] * flag[i]) == const</code>的形式添加约束。</p>
+<p>先前WP中给出的代码是用<code>BitVec</code>写的，但这是错误的，因为系数和常数很大，乘法会溢出。正确的做法是用<code>Int</code>类型。我们修正后的脚本就是用了<code>Int</code>。</p>
+</blockquote>
+<p>最后添加字符集约束</p>
+<blockquote>
+<p>从<code>check_char</code>函数可以知道，每个字符必须属于一个特定的字母表。WP中给出了字母表<code>b"AUVabcdhikorsuvyz012345{}_'"</code>，我们需要将每个变量限制为这个集合中的值。这通过<code>Or(*[flag[i] == c for c in alphabet])</code>实现。</p>
+</blockquote>
+<h2>anger</h2>
+<p>当然，对于B哥来说，现在就需要一点节约时间且简单的脚本来跳过调整31个方程这个过程</p>
+<pre><code>#!/usr/bin/env python3
+import angr
+import claripy
+import logging
+
+# 关闭烦人的警告，保持输出简洁（可选）
+logging.getLogger('angr').setLevel('ERROR')
+
+def main():
+    # -------------------- 用户配置区域 --------------------
+    # 目标程序路径（相对或绝对路径）
+    BINARY_PATH = "./challenge.exe"
+
+    # 输入的长度（字节数），如果未知可以设大一点，但会增加求解时间
+    INPUT_LEN = 32
+
+    # 成功条件：可以是地址，也可以是自定义函数
+    # 方式1：使用地址（推荐，最稳定）
+    SUCCESS_ADDR = 0x40517C   # 替换为输出成功信息的指令地址
+    FAILURE_ADDR = 0x40518A   # 替换为输出失败信息的指令地址（可选）
+
+    # 方式2：使用输出字符串（如果地址难找）
+    # 定义 success 函数，当程序输出包含特定字符串时认为成功
+    # def is_success(state):
+    #     return b"you saved" in state.posix.dumps(1)
+    # def is_avoid(state):
+    #     return b"messed up" in state.posix.dumps(1) or b"nope" in state.posix.dumps(1)
+
+    # 是否已知输入字符的范围（例如可打印ASCII），可以加速求解
+    USE_CHAR_CONSTRAINT = True
+    MIN_CHAR = 32          # 最小允许的ASCII码
+    MAX_CHAR = 126         # 最大允许的ASCII码
+    # 或者指定具体字母表（例如 b"ABCDEFG..."）
+    # ALPHABET = b"ABCDEFG{}_"
+
+    # 是否启用 veritesting（合并路径，强烈推荐）
+    USE_VERITESTING = True
+
+    # 是否填充未初始化的寄存器/内存为0（减少符号变量，提高效率）
+    ZERO_FILL_UNCONSTRAINED = True
+    # ----------------------------------------------------
+
+    # 1. 加载二进制文件
+    proj = angr.Project(BINARY_PATH, auto_load_libs=False)
+
+    # 2. 创建符号输入（不加换行符，因为题目通常自己读一行）
+    flag_chars = [claripy.BVS(f'c{i}', 8) for i in range(INPUT_LEN)]
+    flag = claripy.Concat(*flag_chars)
+
+    # 3. 构造初始状态，将符号输入绑定到 stdin
+    state = proj.factory.entry_state(stdin=flag)
+
+    # 4. 可选优化：填充未初始化的寄存器/内存为0
+    if ZERO_FILL_UNCONSTRAINED:
+        state.options.add(angr.options.ZERO_FILL_UNCONSTRAINED_REGISTERS)
+        state.options.add(angr.options.ZERO_FILL_UNCONSTRAINED_MEMORY)
+
+    # 5. 添加字符范围约束（如果已知）
+    if USE_CHAR_CONSTRAINT:
+        # 方式A：范围约束
+        for c in flag_chars:
+            state.solver.add(c &gt;= MIN_CHAR, c &lt;= MAX_CHAR)
+        # 方式B：具体字母表（注释掉上面，改用下面）
+        # for c in flag_chars:
+        #     state.solver.add(Or(*[c == ord(ch) for ch in ALPHABET]))
+
+    # 6. 创建 simulation manager
+    if USE_VERITESTING:
+        simgr = proj.factory.simulation_manager(state, veritesting=True)
+    else:
+        simgr = proj.factory.simulation_manager(state)
+
+    # 7. 设置探索目标
+    # 如果使用地址方式
+    if 'SUCCESS_ADDR' in dir() and SUCCESS_ADDR is not None:
+        simgr.explore(find=SUCCESS_ADDR, avoid=FAILURE_ADDR if 'FAILURE_ADDR' in dir() else None)
+    # 如果使用字符串方式
+    elif 'is_success' in dir():
+        simgr.explore(find=is_success, avoid=is_avoid if 'is_avoid' in dir() else None)
+    else:
+        print("[-] 请定义成功条件（地址或函数）")
+        return
+
+    # 8. 输出结果
+    if simgr.found:
+        found = simgr.found[0]
+        # 求解符号输入的具体值
+        flag_value = found.solver.eval(flag, cast_to=bytes)
+        print("[+] Flag found:", flag_value.decode('ascii', errors='ignore'))
+        # 如果 flag 包含不可见字符，可以用十六进制打印
+        # print("[+] Flag (hex):", flag_value.hex())
+    else:
+        print("[-] No solution found")
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+<ul>
+<li><strong>BINARY_PATH</strong>：你的目标程序路径。</li>
+<li><strong>INPUT_LEN</strong>：输入长度（字节）。如果未知，可以先设大一点（如 64），但会增加求解时间。通常题目会明确提示（如 <code>printf("input %d chars:")</code>）或可以从 <code>check_char</code> 循环次数推断。</li>
+<li><strong>成功地址</strong>：这是最关键的一步。你需要用 IDA 找到输出成功信息的指令地址。例如，在本题中是 <code>0x40517C</code>。如果找不到地址，可以改用字符串匹配方式（注释掉的 <code>is_success</code> 函数），但地址方式更可靠。</li>
+<li><strong>失败地址</strong>（可选）：告诉 angr 避开哪些路径，可以大幅加速。</li>
+<li><strong>字符范围</strong>：如果已知输入只能是可打印字符或特定字母表，添加约束能缩小解空间，加速求解。如果不确定，可以注释掉，让 angr 自由探索。</li>
+</ul>
+<h3>常见问题与调整</h3>
+<ul>
+<li><strong>地址不对</strong>：如果程序开启了 PIE（地址随机化），你在 IDA 中看到的可能是文件偏移，需要在脚本中加上基址（通常为 <code>0x400000</code>）或先在 IDA 中 rebase 到 <code>0x400000</code>。</li>
+<li><strong>路径爆炸</strong>：启用 <code>veritesting=True</code> 可以合并相似路径，极大缓解路径爆炸。如果还不行，可以尝试手动添加更多 <code>avoid</code> 地址（如所有错误输出的地址）。</li>
+<li><strong>长时间无结果</strong>：可以尝试去掉字符范围约束，或改用 <code>simgr.run()</code> 然后手动查看状态，但通常 <code>explore</code> 就够了。</li>
+<li><strong>输入包含换行符</strong>：大多数程序用 <code>gets</code> 或 <code>scanf</code> 读取字符串，不会把换行符存入缓冲区，所以我们构造符号输入时<strong>不加换行符</strong>。如果程序确实需要换行符（例如用 <code>read</code> 读取固定长度），可以在 <code>flag</code> 后面加上 <code>claripy.BVV(b'\n')</code>。</li>
+</ul>
+<p>这个题目，需要这样更改：</p>
+<pre><code>BINARY_PATH = "./homework.exe"
+INPUT_LEN = 32
+SUCCESS_ADDR = 0x40517C
+FAILURE_ADDR = 0x40518A
+USE_CHAR_CONSTRAINT = True
+MIN_CHAR = 32
+MAX_CHAR = 126
+USE_VERITESTING = True
+ZERO_FILL_UNCONSTRAINED = True
+</code></pre>
+<p>但是，我选择的是直接让ai给我修映射，因为当时用这个找答案的时候总是遇到卡死的问题。</p>
+<p>然后在WSL上操作</p>
+<pre><code>cd /mnt/你的地址
+</code></pre>
+<p><em>确保该目录下存在你的文件。</em></p>
+<p>然后激活 conda 环境</p>
+<pre><code>conda activate deflat
+</code></pre>
+<p><em>确保命令行前缀变成 <code>(deflat)</code>，表示已进入正确的 Python 环境。</em></p>
+<p>然后就是python的事了</p>
+<h1>反思</h1>
+<p>我倒是觉得没啥好反思的，因为这是我遇到过的的第一个这种类型的题目，不过这个过程倒是学到很多东西，不赖</p>
+<h1>附件</h1>
+<ul>
+<li>题目<a href="/other/homework.exe">homework.exe</a></li>
+</ul>
+<p>我昨晚用这个做出来的</p>
+<pre><code>from z3 import *
+
+flag = [Int(f'flag{i}') for i in range(32)]
+alphabet = [ord(c) for c in "AUVabcdhikorsuvyz012345{}_'"]
+s = Solver()
+
+# 每个字符必须在字母表中
+for i in range(32):
+    s.add(Or(*[flag[i] == c for c in alphabet]))
+
+# 32个方程的系数和常数
+equations = [
+    ([85,185,80,81,130,95,126,197,148,228,213,107,195,183,200,47,194,16,51,222,191,44,153,217,192,91,56,178,27,79,117,98], 422531),
+    ([93,128,111,16,163,215,223,51,81,1,198,247,88,176,110,250,196,161,63,159,191,239,69,119,136,30,86,185,14,26,50,237], 377679),
+    ([17,108,169,83,129,191,3,249,163,138,2,123,23,162,155,152,46,80,215,6,229,128,53,255,71,212,208,47,36,75,218,144], 377733),
+    ([204,247,15,66,166,87,102,186,82,141,9,120,145,69,18,65,137,171,167,184,183,251,153,3,84,201,189,34,79,64,230,197], 382101),
+    ([234,225,195,117,8,89,254,173,251,223,87,165,114,242,232,126,105,121,155,194,64,154,120,80,151,111,144,243,159,239,93,97], 476378),
+    ([32,64,155,131,161,223,210,15,205,164,146,27,108,35,63,87,215,163,170,95,70,60,81,241,122,50,123,177,172,106,51,230], 403748),
+    ([204,78,92,64,125,161,185,194,74,1,155,109,132,19,110,201,29,3,177,53,129,224,205,146,71,128,203,145,68,100,80,57], 345842),
+    ([169,98,28,204,149,252,172,141,134,116,39,48,247,128,164,43,7,245,241,15,93,197,209,100,25,129,227,58,54,123,5,118], 373897),
+    ([187,133,70,244,169,168,172,48,119,155,127,222,170,217,107,88,162,206,75,2,7,184,130,192,163,255,196,221,27,62,213,248], 452443),
+    ([200,18,135,79,150,193,78,245,164,85,192,66,209,250,44,196,141,139,224,252,181,8,180,2,112,58,191,39,242,14,169,99], 403460),
+    ([48,131,229,237,68,174,71,87,89,121,206,151,3,51,187,5,8,32,45,63,211,28,169,243,39,216,120,30,177,189,209,73], 375277),
+    ([196,107,36,163,229,244,181,71,141,44,126,43,110,198,66,18,197,56,33,2,98,13,130,180,133,228,46,171,40,84,27,94], 346617),
+    ([153,129,215,90,245,247,84,192,108,116,38,255,123,32,107,121,87,99,35,6,23,1,175,66,111,134,79,73,8,193,154,229], 359346),
+    ([32,179,26,178,25,175,96,195,47,174,207,198,33,66,71,248,128,162,254,59,123,135,63,57,75,210,34,64,13,166,165,78], 349475),
+    ([138,90,102,94,254,111,34,165,125,133,80,92,77,141,126,196,45,61,25,14,5,135,168,63,186,229,234,85,119,239,214,248], 384145),
+    ([91,208,133,151,177,24,188,90,243,163,34,98,124,76,99,201,212,71,107,164,233,221,197,19,152,122,144,77,128,92,168,74], 409437),
+    ([184,154,147,138,42,171,174,164,134,85,99,116,136,213,3,2,156,217,209,95,202,145,25,216,251,165,225,83,34,140,135,77], 417097),
+    ([202,130,89,99,194,120,93,126,107,32,249,28,109,179,12,183,193,175,207,215,7,55,180,10,237,151,164,106,154,29,39,60], 361950),
+    ([5,177,125,162,194,26,168,198,195,39,109,43,240,217,14,90,218,154,220,197,202,36,232,60,230,148,231,142,200,58,159,115], 449324),
+    ([133,210,80,161,89,72,238,201,138,44,17,204,99,24,183,165,122,9,236,121,12,216,254,229,0,74,1,60,157,57,211,225], 386144),
+    ([99,176,75,47,143,37,24,124,79,118,13,97,224,71,192,67,139,104,94,74,183,16,185,244,220,134,108,146,132,159,230,84], 384126),
+    ([208,9,40,50,158,150,42,5,104,85,73,255,230,238,160,233,61,138,1,86,117,209,39,166,74,62,162,21,51,26,19,112], 295799),
+    ([104,148,181,240,137,195,196,225,233,37,52,194,10,175,219,45,85,185,111,244,76,207,95,87,220,26,227,132,88,56,193,135], 432591),
+    ([246,155,163,242,116,254,157,104,230,202,205,236,49,198,7,221,124,128,134,86,174,74,70,56,99,231,119,218,219,75,60,97], 446934),
+    ([112,248,96,60,67,0,179,237,15,206,73,35,16,228,201,78,191,137,108,88,95,102,6,239,1,175,227,31,128,106,186,204], 387609),
+    ([168,195,238,204,128,102,116,36,96,98,136,51,70,222,82,91,247,97,52,9,48,254,236,245,113,119,104,172,143,44,146,135], 396022),
+    ([204,241,244,234,168,8,189,12,112,71,33,201,102,255,7,24,209,238,172,107,57,75,167,18,151,108,207,120,45,184,157,217], 412078),
+    ([213,44,103,148,202,168,22,225,104,13,189,230,157,211,199,115,86,37,97,185,208,70,218,239,224,117,42,125,217,0,151,176], 426365),
+    ([62,162,20,142,172,198,184,182,169,191,124,129,215,246,8,180,190,74,69,84,66,107,115,139,161,67,255,31,197,216,49,76], 406285),
+    ([98,46,241,166,156,208,58,216,28,32,24,60,15,18,49,33,188,106,85,119,90,231,164,168,186,62,158,36,117,239,251,250], 379323),
+    ([92,140,109,252,165,130,164,151,38,85,65,53,191,37,189,79,41,104,2,106,154,77,34,198,232,131,11,248,185,249,84,83], 401097),
+    ([60,197,144,84,48,14,103,244,123,67,33,128,93,90,166,211,167,233,50,161,116,141,98,122,229,224,162,21,117,44,230,192], 390156),
+]
+
+for coeffs, const in equations:
+    expr = sum(coeff * flag[i] for i, coeff in enumerate(coeffs))
+    s.add(expr == const)
+
+if s.check() == sat:
+    m = s.model()
+    result = ''.join(chr(m[flag[i]].as_long()) for i in range(32))
+    print("Flag:", result)
+else:
+    print("No solution")
+</code></pre>
+]]></content>
+    <author>
+      <name></name>
+    </author>
+    <category term="WP"></category>
+  </entry>
   <entry>
     <title>今日一题</title>
     <link href="https://dxfaker.top/posts/pywp1/" rel="alternate" type="text/html"/>
