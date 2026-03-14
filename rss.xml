@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>基于PyRTL的AES-128时序侧信道脆弱性分析</title><link>https://dxfaker.top/posts/timing-side-channel-vulnerability-analysis-of-aes-128-using-pyrtl/</link><guid isPermaLink="true">https://dxfaker.top/posts/timing-side-channel-vulnerability-analysis-of-aes-128-using-pyrtl/</guid><description>硬件侧信道攻击对加密芯片的安全构成严重威胁。本文提出一种基于PyRTL的预硅验证方法，对AES-128加密电路进行时序分析，量化不同输入汉明权重与关键路径延迟的相关性。实验结果表明，在130nm工艺下，关键路径延迟与输入汉明权重的皮尔逊相关系数达到0.999997，证实了单周期AES实现存在明显的时序泄漏。进一步采用相关性能量分析（CPA）模拟，仅用50条功耗迹线即可成功恢复密钥字节。研究还初步评估了时序掩码防护的有效性。本研究为芯片设计早期的安全评估提供了轻量级、可量化的解决方案，对硬件安全设计与验证具有重要参考价值。</description><pubDate>Sat, 14 Mar 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;dxfaker&lt;/p&gt;
 &lt;p&gt;(深圳大学医学部， 广东 深圳)&lt;/p&gt;
 &lt;p&gt;email: 258615688@qq.com&lt;/p&gt;
+&lt;h1&gt;摘要&lt;/h1&gt;
+&lt;p&gt;硬件侧信道攻击对加密芯片的安全构成严重威胁。本文提出一种基于PyRTL的预硅验证方法，对AES-128加密电路进行时序分析，量化不同输入汉明权重与关键路径延迟的相关性。实验结果表明，在130nm工艺下，关键路径延迟与输入汉明权重的皮尔逊相关系数达到0.999997，证实了单周期AES实现存在明显的时序泄漏。进一步采用相关性能量分析（CPA）模拟，仅用50条功耗迹线即可成功恢复密钥字节。研究还初步评估了时序掩码防护的有效性。本研究为芯片设计早期的安全评估提供了轻量级、可量化的解决方案，对硬件安全设计与验证具有重要参考价值。&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;关键词&lt;/strong&gt;：侧信道攻击；时序分析；AES；PyRTL；预硅验证；CPA&lt;/p&gt;
 &lt;h1&gt;引言&lt;/h1&gt;
 &lt;p&gt;在分析一些 CTF 题目时，我遇到过一种叫做“时序侧信道”的漏洞——比如程序在比较字符串时，一旦发现字符不匹配就立即返回，导致攻击者可以通过测量比较时间的长短来逐字节猜出正确的密码。这种漏洞的本质是：&lt;strong&gt;程序的执行时间与处理的数据相关&lt;/strong&gt;。&lt;/p&gt;
@@ -286,7 +288,7 @@ best_guess, best_corr, all_corrs = cpa_attack(traces, plaintexts, 0, real_key)
 &lt;h2&gt;结论&lt;/h2&gt;
 &lt;p&gt;本文基于PyRTL框架对AES-128加密电路进行了时序侧信道脆弱性分析。实验证明，单周期AES实现存在极强的时序泄漏（r=0.999997），且可通过CPA攻击在50条迹线下成功恢复密钥。本研究为芯片设计早期的安全评估提供了一种轻量级、可量化的方法，有助于在设计阶段发现潜在漏洞，降低流片后修复成本。未来工作将扩展至多周期实现、采用更精确的时序库（如Yosys+ABC），并探索结合FPGA实测验证。&lt;/p&gt;
 &lt;h1&gt;致谢&lt;/h1&gt;
-&lt;p&gt;感谢我的同僚（名字按拼音排序）：anno、比那名居天子、光风霁月、黄ruijian、KRNK、宁樂、塔比、txt、坨子哥、晓堃、xiaoshabi、樂依等人，感谢你们在我做该项目时给予我的付出&lt;/p&gt;
+&lt;p&gt;感谢我的同僚（名字按拼音排序）：anno、比那名居天子、光风霁月、henry、黄ruijian、KRNK、宁樂、塔比、txt、坨子哥、晓堃、xiaoshabi、樂依等人，感谢你们在我做该项目时给予我的付出&lt;/p&gt;
 &lt;p&gt;感谢我的家人们在我实施该项目时做出的情绪上的慰问，经济上的支持。&lt;/p&gt;
 &lt;p&gt;感谢我的室友，他们给我提供了一个顶级的环境&lt;/p&gt;
 &lt;p&gt;感谢深圳大学，为我提供了这么好的一个平台&lt;/p&gt;
