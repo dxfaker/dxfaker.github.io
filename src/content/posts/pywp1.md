@@ -5,7 +5,7 @@ description: '解题思路之类的'
 author: 'dxfaker'
 image: '/images/post/26.3.2.1.jpg'
 tags: ['python']
-category: 'wp'
+category: 'WP'
 toc: true
 ---
 # 写在前面
