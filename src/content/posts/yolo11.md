@@ -162,6 +162,6 @@ yolo predict model=best.pt source=test.mp4 save=True
 
 详细内容放下文PDF。
 
-{{< embed-pdf url="/other/report.pdf" width="100%" height="800px" >}}
+<embed src="/other/report.pdf" width="100%" height="800px" type="application/pdf">
 
 **致谢**：感谢深圳大学戴林蕙老师的课程指导，以及RoboFlow平台提供的开源数据集。
