@@ -5,8 +5,203 @@
   <link href="https://dxfaker.top/" rel="alternate" type="text/html"/>
   <link href="https://dxfaker.top/atom.xml" rel="self" type="application/atom+xml"/>
   <id>https://dxfaker.top/</id>
-  <updated>2026-03-14T08:05:40.804Z</updated>
+  <updated>2026-04-20T12:03:00.918Z</updated>
   <language>en</language>
+  <entry>
+    <title>YOLOv11 行人与车辆检测模型训练全记录</title>
+    <link href="https://dxfaker.top/posts/yolo11/" rel="alternate" type="text/html"/>
+    <id>https://dxfaker.top/posts/yolo11/</id>
+    <published>2026-04-20T00:00:00.000Z</published>
+    <updated>2026-04-20T00:00:00.000Z</updated>
+    <summary>深圳大学电信院的人工智能课程的实验</summary>
+    <content type="html"><![CDATA[<p>zhen</p>
+<h1>YOLOv11 行人与车辆检测模型训练全记录</h1>
+<p><strong>摘要</strong>：目标检测是计算机视觉的核心任务之一，在自动驾驶、智能交通等领域具有重要应用。本文以YOLOv11为基础模型，详细记录了从环境配置、数据集构建、模型训练到视频部署的完整流程。实验结果表明，在515张交通场景图片（含412张训练、103张验证）上训练80轮后，模型整体mAP50达到0.905，其中汽车检测mAP50为0.939，行人检测mAP50为0.871，推理速度达145 FPS。本文重点分析了数据规模对模型性能的决定性作用，并总结了训练过程中遇到的典型问题及解决方案。</p>
+<p><strong>关键词</strong>：YOLOv11；目标检测；行人检测；车辆检测；数据扩充；WSL2</p>
+<h2>1. 引言</h2>
+<p>近年来，基于深度学习的目标检测算法发展迅速，YOLO系列凭借其端到端、实时性高的特点成为工业界和学术界的常用工具。YOLOv11在YOLOv8的基础上引入了C3K2模块、C2PSA注意力机制和SPPF多尺度融合，进一步提升了检测精度与速度。</p>
+<p>本文旨在通过一次完整的行人与车辆检测模型训练实践，探讨小规模数据集下模型性能的瓶颈，以及数据扩充带来的显著提升。本文记录的所有实验均在个人笔记本（WSL2 + Ubuntu 24.04）上完成。</p>
+<h2>2. 实验环境与配置</h2>
+<h3>2.1 硬件与操作系统</h3>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>配置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>操作系统</td>
+<td>Windows 11 + WSL2 (Ubuntu 24.04)</td>
+</tr>
+<tr>
+<td>CPU</td>
+<td>AMD Ryzen 9 7940HS</td>
+</tr>
+<tr>
+<td>GPU</td>
+<td>NVIDIA GeForce RTX 5070 Laptop (8GB)</td>
+</tr>
+<tr>
+<td>内存</td>
+<td>32GB DDR5</td>
+</tr>
+</tbody>
+</table>
+<h3>2.2 软件环境</h3>
+<ul>
+<li>Python 3.11</li>
+<li>PyTorch 2.11.0+cu128 (CUDA 12.8)</li>
+<li>Ultralytics 8.4.33</li>
+<li>OpenCV, Matplotlib</li>
+</ul>
+<h3>2.3 环境配置步骤</h3>
+<pre><code>
+# 创建conda虚拟环境
+conda create -n yolo_train python=3.11 -y
+conda activate yolo_train
+
+# 安装PyTorch GPU版
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+
+# 安装Ultralytics
+pip install ultralytics
+</code></pre>
+<p>验证GPU可用：</p>
+<pre><code>import torch
+print(torch.cuda.is_available())  # 应输出 True
+print(torch.cuda.get_device_name(0))  # NVIDIA GeForce RTX 5070 Laptop GPU
+</code></pre>
+<h2>3. 数据集准备</h2>
+<h3>3.1 初始数据集（小规模）</h3>
+<p>从RoboFlow下载person-car数据集，共141张图片，包含car和person两个类别。标注格式为YOLO格式（每张图片对应一个.txt文件）。数据集划分如下：</p>
+<p>训练集：113张</p>
+<p>测试集：28张（未提供独立验证集，临时将测试集用作验证）</p>
+<h3>3.2 数据扩充</h3>
+<p>初始数据集训练后，行人检测mAP50仅0.330，表明数据量不足。为此，从RoboFlow搜索并下载另一个交通场景数据集，共515张图片，类别同样为car和person。下载后的数据只有train文件夹，需手动划分验证集：</p>
+<pre><code>cd /mnt/e/作业提交_深度学习实验/car-person.yolov11
+mkdir -p valid/images valid/labels
+cd train/images
+ls *.jpg | shuf -n 103 | while read f; do
+    mv "$f" ../../valid/images/
+    base="${f%.jpg}"
+    mv "../labels/${base}.txt" ../../valid/labels/
+done
+</code></pre>
+<h2>4. 训练</h2>
+<p>训练命令</p>
+<pre><code>yolo train data=data.yaml model=yolo11n.pt epochs=80 batch=16 imgsz=640 device=0
+</code></pre>
+<p>结果：mAP50稳步提升.</p>
+<p>训练过程中遇到AMP（自动混合精度训练，同时使用FP16和FP32加速并节省显存）检查卡在网络下载，通过手动下载yolo26n.pt或添加amp=False参数解决。</p>
+<h2>5. 实验结果</h2>
+<h3>5.1 验证集性能</h3>
+<p>在103张验证集上的评估结果如表1所示。这里解释几个关键指标：</p>
+<ul>
+<li><strong>精确率（Precision）</strong>：预测为正样本中真正为正的比例，高精确率意味着误检少。</li>
+<li><strong>召回率（Recall）</strong>：真正为正样本中被预测出来的比例，高召回率意味着漏检少。</li>
+<li><strong>mAP50</strong>：当<strong>IoU</strong>（预测框与真实框的交集面积除以并集面积，衡量框的重叠程度）阈值取0.5时的平均精度均值。</li>
+<li><strong>mAP50-95</strong>：IoU从0.5到0.95步长0.05的多个阈值下的平均精度均值，要求更严格。</li>
+</ul>
+<p><strong>表1 模型在验证集上的性能指标</strong></p>
+<table>
+<thead>
+<tr>
+<th>类别</th>
+<th>图片数</th>
+<th>实例数</th>
+<th>精确率(P)</th>
+<th>召回率(R)</th>
+<th>mAP50</th>
+<th>mAP50-95</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>全部</td>
+<td>103</td>
+<td>355</td>
+<td>0.926</td>
+<td>0.807</td>
+<td>0.905</td>
+<td>0.668</td>
+</tr>
+<tr>
+<td>汽车 (car)</td>
+<td>70</td>
+<td>192</td>
+<td>0.908</td>
+<td>0.871</td>
+<td>0.939</td>
+<td>0.760</td>
+</tr>
+<tr>
+<td>行人 (person)</td>
+<td>76</td>
+<td>163</td>
+<td>0.944</td>
+<td>0.742</td>
+<td>0.871</td>
+<td>0.577</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>整体mAP50达到0.905，说明模型能够准确检测绝大多数目标。</li>
+<li>汽车检测效果最佳（mAP50=0.939），召回率0.871，仅有少量漏检。</li>
+<li>行人检测mAP50=0.871，相比小数据集训练的0.330有了质的飞跃，证明了<strong>数据扩充</strong>的有效性。</li>
+<li>精确率普遍较高（&gt;0.90），表明模型误检较少。</li>
+</ul>
+<h3>5.2 与初始模型的对比</h3>
+<p><strong>表2 数据集规模对性能的影响</strong></p>
+<table>
+<thead>
+<tr>
+<th>数据集</th>
+<th>图片数</th>
+<th>行人mAP50</th>
+<th>汽车mAP50</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>初始数据集</td>
+<td>141</td>
+<td>0.330</td>
+<td>0.657</td>
+</tr>
+<tr>
+<td>扩充数据集</td>
+<td>515</td>
+<td>0.871</td>
+<td>0.939</td>
+</tr>
+</tbody>
+</table>
+<p>扩充数据集后，行人检测mAP50提升<strong>164%</strong>，汽车检测mAP50提升<strong>43%</strong>。这充分说明<strong>数据量是决定模型性能的核心因素</strong>。</p>
+<h3>5.3 视频检测性能</h3>
+<p>使用训练好的模型对一段30秒、1280×720分辨率的路况视频进行检测：</p>
+<pre><code>yolo predict model=best.pt source=test.mp4 save=True
+</code></pre>
+<p>性能数据：</p>
+<ul>
+<li>平均<strong>推理速度</strong>：145 <strong>FPS</strong>（帧/秒），远超实时要求（30 FPS）</li>
+<li>单帧处理时间：约6.9 ms（预处理0.1ms + 推理1.1ms + 后处理2.5ms等）</li>
+<li>检测效果：在白天、阴天、夜间场景下均能稳定检测出行人和车辆，仅极少数远距离小目标出现漏检。</li>
+</ul>
+<h2>7. 结论</h2>
+<p>本文完整记录了一次基于YOLOv11的行人与车辆检测模型训练实践。通过对比小数据集与扩充数据集的实验结果，证明了<strong>数据规模对深度学习模型性能具有决定性影响</strong>。最终模型在515张图片上训练80轮后，整体mAP50达到0.905，推理速度145 FPS。本文总结的训练技巧和问题解决方案可为类似项目提供参考。</p>
+<p>后面还会对该项目进行进一步修理改进。</p>
+<p>详细内容放下文PDF。</p>
+<p>{{&lt; embed-pdf url="/other/report.pdf" width="100%" height="800px" &gt;}}</p>
+<p><strong>致谢</strong>：感谢深圳大学戴林蕙老师的课程指导，以及RoboFlow平台提供的开源数据集。</p>
+]]></content>
+    <author>
+      <name></name>
+    </author>
+    <category term="实验报告"></category>
+  </entry>
   <entry>
     <title>基于PyRTL的AES-128时序侧信道脆弱性分析</title>
     <link href="https://dxfaker.top/posts/timing-side-channel-vulnerability-analysis-of-aes-128-using-pyrtl/" rel="alternate" type="text/html"/>

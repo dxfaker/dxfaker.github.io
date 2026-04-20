@@ -1,4 +1,186 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>基于PyRTL的AES-128时序侧信道脆弱性分析</title><link>https://dxfaker.top/posts/timing-side-channel-vulnerability-analysis-of-aes-128-using-pyrtl/</link><guid isPermaLink="true">https://dxfaker.top/posts/timing-side-channel-vulnerability-analysis-of-aes-128-using-pyrtl/</guid><description>硬件侧信道攻击对加密芯片的安全构成严重威胁。本文提出一种基于PyRTL的预硅验证方法，对AES-128加密电路进行时序分析，量化不同输入汉明权重与关键路径延迟的相关性。实验结果表明，在130nm工艺下，关键路径延迟与输入汉明权重的皮尔逊相关系数达到0.999997，证实了单周期AES实现存在明显的时序泄漏。进一步采用相关性能量分析（CPA）模拟，仅用50条功耗迹线即可成功恢复密钥字节。研究还初步评估了时序掩码防护的有效性。本研究为芯片设计早期的安全评估提供了轻量级、可量化的解决方案，对硬件安全设计与验证具有重要参考价值。</description><pubDate>Sat, 14 Mar 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;dxfaker&lt;/p&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>YOLOv11 行人与车辆检测模型训练全记录</title><link>https://dxfaker.top/posts/yolo11/</link><guid isPermaLink="true">https://dxfaker.top/posts/yolo11/</guid><description>深圳大学电信院的人工智能课程的实验</description><pubDate>Mon, 20 Apr 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;zhen&lt;/p&gt;
+&lt;h1&gt;YOLOv11 行人与车辆检测模型训练全记录&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;摘要&lt;/strong&gt;：目标检测是计算机视觉的核心任务之一，在自动驾驶、智能交通等领域具有重要应用。本文以YOLOv11为基础模型，详细记录了从环境配置、数据集构建、模型训练到视频部署的完整流程。实验结果表明，在515张交通场景图片（含412张训练、103张验证）上训练80轮后，模型整体mAP50达到0.905，其中汽车检测mAP50为0.939，行人检测mAP50为0.871，推理速度达145 FPS。本文重点分析了数据规模对模型性能的决定性作用，并总结了训练过程中遇到的典型问题及解决方案。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;关键词&lt;/strong&gt;：YOLOv11；目标检测；行人检测；车辆检测；数据扩充；WSL2&lt;/p&gt;
+&lt;h2&gt;1. 引言&lt;/h2&gt;
+&lt;p&gt;近年来，基于深度学习的目标检测算法发展迅速，YOLO系列凭借其端到端、实时性高的特点成为工业界和学术界的常用工具。YOLOv11在YOLOv8的基础上引入了C3K2模块、C2PSA注意力机制和SPPF多尺度融合，进一步提升了检测精度与速度。&lt;/p&gt;
+&lt;p&gt;本文旨在通过一次完整的行人与车辆检测模型训练实践，探讨小规模数据集下模型性能的瓶颈，以及数据扩充带来的显著提升。本文记录的所有实验均在个人笔记本（WSL2 + Ubuntu 24.04）上完成。&lt;/p&gt;
+&lt;h2&gt;2. 实验环境与配置&lt;/h2&gt;
+&lt;h3&gt;2.1 硬件与操作系统&lt;/h3&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;项目&lt;/th&gt;
+&lt;th&gt;配置&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;操作系统&lt;/td&gt;
+&lt;td&gt;Windows 11 + WSL2 (Ubuntu 24.04)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;CPU&lt;/td&gt;
+&lt;td&gt;AMD Ryzen 9 7940HS&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;GPU&lt;/td&gt;
+&lt;td&gt;NVIDIA GeForce RTX 5070 Laptop (8GB)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;内存&lt;/td&gt;
+&lt;td&gt;32GB DDR5&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h3&gt;2.2 软件环境&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;Python 3.11&lt;/li&gt;
+&lt;li&gt;PyTorch 2.11.0+cu128 (CUDA 12.8)&lt;/li&gt;
+&lt;li&gt;Ultralytics 8.4.33&lt;/li&gt;
+&lt;li&gt;OpenCV, Matplotlib&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;2.3 环境配置步骤&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;
+# 创建conda虚拟环境
+conda create -n yolo_train python=3.11 -y
+conda activate yolo_train
+
+# 安装PyTorch GPU版
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+
+# 安装Ultralytics
+pip install ultralytics
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;验证GPU可用：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;import torch
+print(torch.cuda.is_available())  # 应输出 True
+print(torch.cuda.get_device_name(0))  # NVIDIA GeForce RTX 5070 Laptop GPU
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;3. 数据集准备&lt;/h2&gt;
+&lt;h3&gt;3.1 初始数据集（小规模）&lt;/h3&gt;
+&lt;p&gt;从RoboFlow下载person-car数据集，共141张图片，包含car和person两个类别。标注格式为YOLO格式（每张图片对应一个.txt文件）。数据集划分如下：&lt;/p&gt;
+&lt;p&gt;训练集：113张&lt;/p&gt;
+&lt;p&gt;测试集：28张（未提供独立验证集，临时将测试集用作验证）&lt;/p&gt;
+&lt;h3&gt;3.2 数据扩充&lt;/h3&gt;
+&lt;p&gt;初始数据集训练后，行人检测mAP50仅0.330，表明数据量不足。为此，从RoboFlow搜索并下载另一个交通场景数据集，共515张图片，类别同样为car和person。下载后的数据只有train文件夹，需手动划分验证集：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;cd /mnt/e/作业提交_深度学习实验/car-person.yolov11
+mkdir -p valid/images valid/labels
+cd train/images
+ls *.jpg | shuf -n 103 | while read f; do
+    mv &quot;$f&quot; ../../valid/images/
+    base=&quot;${f%.jpg}&quot;
+    mv &quot;../labels/${base}.txt&quot; ../../valid/labels/
+done
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;4. 训练&lt;/h2&gt;
+&lt;p&gt;训练命令&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;yolo train data=data.yaml model=yolo11n.pt epochs=80 batch=16 imgsz=640 device=0
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;结果：mAP50稳步提升.&lt;/p&gt;
+&lt;p&gt;训练过程中遇到AMP（自动混合精度训练，同时使用FP16和FP32加速并节省显存）检查卡在网络下载，通过手动下载yolo26n.pt或添加amp=False参数解决。&lt;/p&gt;
+&lt;h2&gt;5. 实验结果&lt;/h2&gt;
+&lt;h3&gt;5.1 验证集性能&lt;/h3&gt;
+&lt;p&gt;在103张验证集上的评估结果如表1所示。这里解释几个关键指标：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;精确率（Precision）&lt;/strong&gt;：预测为正样本中真正为正的比例，高精确率意味着误检少。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;召回率（Recall）&lt;/strong&gt;：真正为正样本中被预测出来的比例，高召回率意味着漏检少。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;mAP50&lt;/strong&gt;：当&lt;strong&gt;IoU&lt;/strong&gt;（预测框与真实框的交集面积除以并集面积，衡量框的重叠程度）阈值取0.5时的平均精度均值。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;mAP50-95&lt;/strong&gt;：IoU从0.5到0.95步长0.05的多个阈值下的平均精度均值，要求更严格。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;表1 模型在验证集上的性能指标&lt;/strong&gt;&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;类别&lt;/th&gt;
+&lt;th&gt;图片数&lt;/th&gt;
+&lt;th&gt;实例数&lt;/th&gt;
+&lt;th&gt;精确率(P)&lt;/th&gt;
+&lt;th&gt;召回率(R)&lt;/th&gt;
+&lt;th&gt;mAP50&lt;/th&gt;
+&lt;th&gt;mAP50-95&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;全部&lt;/td&gt;
+&lt;td&gt;103&lt;/td&gt;
+&lt;td&gt;355&lt;/td&gt;
+&lt;td&gt;0.926&lt;/td&gt;
+&lt;td&gt;0.807&lt;/td&gt;
+&lt;td&gt;0.905&lt;/td&gt;
+&lt;td&gt;0.668&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;汽车 (car)&lt;/td&gt;
+&lt;td&gt;70&lt;/td&gt;
+&lt;td&gt;192&lt;/td&gt;
+&lt;td&gt;0.908&lt;/td&gt;
+&lt;td&gt;0.871&lt;/td&gt;
+&lt;td&gt;0.939&lt;/td&gt;
+&lt;td&gt;0.760&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;行人 (person)&lt;/td&gt;
+&lt;td&gt;76&lt;/td&gt;
+&lt;td&gt;163&lt;/td&gt;
+&lt;td&gt;0.944&lt;/td&gt;
+&lt;td&gt;0.742&lt;/td&gt;
+&lt;td&gt;0.871&lt;/td&gt;
+&lt;td&gt;0.577&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;ul&gt;
+&lt;li&gt;整体mAP50达到0.905，说明模型能够准确检测绝大多数目标。&lt;/li&gt;
+&lt;li&gt;汽车检测效果最佳（mAP50=0.939），召回率0.871，仅有少量漏检。&lt;/li&gt;
+&lt;li&gt;行人检测mAP50=0.871，相比小数据集训练的0.330有了质的飞跃，证明了&lt;strong&gt;数据扩充&lt;/strong&gt;的有效性。&lt;/li&gt;
+&lt;li&gt;精确率普遍较高（&amp;gt;0.90），表明模型误检较少。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;5.2 与初始模型的对比&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;表2 数据集规模对性能的影响&lt;/strong&gt;&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;数据集&lt;/th&gt;
+&lt;th&gt;图片数&lt;/th&gt;
+&lt;th&gt;行人mAP50&lt;/th&gt;
+&lt;th&gt;汽车mAP50&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;初始数据集&lt;/td&gt;
+&lt;td&gt;141&lt;/td&gt;
+&lt;td&gt;0.330&lt;/td&gt;
+&lt;td&gt;0.657&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;扩充数据集&lt;/td&gt;
+&lt;td&gt;515&lt;/td&gt;
+&lt;td&gt;0.871&lt;/td&gt;
+&lt;td&gt;0.939&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;扩充数据集后，行人检测mAP50提升&lt;strong&gt;164%&lt;/strong&gt;，汽车检测mAP50提升&lt;strong&gt;43%&lt;/strong&gt;。这充分说明&lt;strong&gt;数据量是决定模型性能的核心因素&lt;/strong&gt;。&lt;/p&gt;
+&lt;h3&gt;5.3 视频检测性能&lt;/h3&gt;
+&lt;p&gt;使用训练好的模型对一段30秒、1280×720分辨率的路况视频进行检测：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;yolo predict model=best.pt source=test.mp4 save=True
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;性能数据：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;平均&lt;strong&gt;推理速度&lt;/strong&gt;：145 &lt;strong&gt;FPS&lt;/strong&gt;（帧/秒），远超实时要求（30 FPS）&lt;/li&gt;
+&lt;li&gt;单帧处理时间：约6.9 ms（预处理0.1ms + 推理1.1ms + 后处理2.5ms等）&lt;/li&gt;
+&lt;li&gt;检测效果：在白天、阴天、夜间场景下均能稳定检测出行人和车辆，仅极少数远距离小目标出现漏检。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;7. 结论&lt;/h2&gt;
+&lt;p&gt;本文完整记录了一次基于YOLOv11的行人与车辆检测模型训练实践。通过对比小数据集与扩充数据集的实验结果，证明了&lt;strong&gt;数据规模对深度学习模型性能具有决定性影响&lt;/strong&gt;。最终模型在515张图片上训练80轮后，整体mAP50达到0.905，推理速度145 FPS。本文总结的训练技巧和问题解决方案可为类似项目提供参考。&lt;/p&gt;
+&lt;p&gt;后面还会对该项目进行进一步修理改进。&lt;/p&gt;
+&lt;p&gt;详细内容放下文PDF。&lt;/p&gt;
+&lt;p&gt;{{&amp;lt; embed-pdf url=&quot;/other/report.pdf&quot; width=&quot;100%&quot; height=&quot;800px&quot; &amp;gt;}}&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;致谢&lt;/strong&gt;：感谢深圳大学戴林蕙老师的课程指导，以及RoboFlow平台提供的开源数据集。&lt;/p&gt;
+</content:encoded></item><item><title>基于PyRTL的AES-128时序侧信道脆弱性分析</title><link>https://dxfaker.top/posts/timing-side-channel-vulnerability-analysis-of-aes-128-using-pyrtl/</link><guid isPermaLink="true">https://dxfaker.top/posts/timing-side-channel-vulnerability-analysis-of-aes-128-using-pyrtl/</guid><description>硬件侧信道攻击对加密芯片的安全构成严重威胁。本文提出一种基于PyRTL的预硅验证方法，对AES-128加密电路进行时序分析，量化不同输入汉明权重与关键路径延迟的相关性。实验结果表明，在130nm工艺下，关键路径延迟与输入汉明权重的皮尔逊相关系数达到0.999997，证实了单周期AES实现存在明显的时序泄漏。进一步采用相关性能量分析（CPA）模拟，仅用50条功耗迹线即可成功恢复密钥字节。研究还初步评估了时序掩码防护的有效性。本研究为芯片设计早期的安全评估提供了轻量级、可量化的解决方案，对硬件安全设计与验证具有重要参考价值。</description><pubDate>Sat, 14 Mar 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;dxfaker&lt;/p&gt;
 &lt;p&gt;(深圳大学医学部， 广东 深圳)&lt;/p&gt;
 &lt;p&gt;email: 258615688@qq.com&lt;/p&gt;
 &lt;h1&gt;摘要&lt;/h1&gt;
