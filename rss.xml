@@ -178,7 +178,7 @@ done
 &lt;p&gt;本文完整记录了一次基于YOLOv11的行人与车辆检测模型训练实践。通过对比小数据集与扩充数据集的实验结果，证明了&lt;strong&gt;数据规模对深度学习模型性能具有决定性影响&lt;/strong&gt;。最终模型在515张图片上训练80轮后，整体mAP50达到0.905，推理速度145 FPS。本文总结的训练技巧和问题解决方案可为类似项目提供参考。&lt;/p&gt;
 &lt;p&gt;后面还会对该项目进行进一步修理改进。&lt;/p&gt;
 &lt;p&gt;详细内容放下文PDF。&lt;/p&gt;
-&lt;p&gt;{{&amp;lt; embed-pdf url=&quot;/other/report.pdf&quot; width=&quot;100%&quot; height=&quot;800px&quot; &amp;gt;}}&lt;/p&gt;
+&lt;p&gt;&amp;lt;embed src=&quot;/other/report.pdf&quot; width=&quot;100%&quot; height=&quot;800px&quot; type=&quot;application/pdf&quot;&amp;gt;&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;致谢&lt;/strong&gt;：感谢深圳大学戴林蕙老师的课程指导，以及RoboFlow平台提供的开源数据集。&lt;/p&gt;
 </content:encoded></item><item><title>基于PyRTL的AES-128时序侧信道脆弱性分析</title><link>https://dxfaker.top/posts/timing-side-channel-vulnerability-analysis-of-aes-128-using-pyrtl/</link><guid isPermaLink="true">https://dxfaker.top/posts/timing-side-channel-vulnerability-analysis-of-aes-128-using-pyrtl/</guid><description>硬件侧信道攻击对加密芯片的安全构成严重威胁。本文提出一种基于PyRTL的预硅验证方法，对AES-128加密电路进行时序分析，量化不同输入汉明权重与关键路径延迟的相关性。实验结果表明，在130nm工艺下，关键路径延迟与输入汉明权重的皮尔逊相关系数达到0.999997，证实了单周期AES实现存在明显的时序泄漏。进一步采用相关性能量分析（CPA）模拟，仅用50条功耗迹线即可成功恢复密钥字节。研究还初步评估了时序掩码防护的有效性。本研究为芯片设计早期的安全评估提供了轻量级、可量化的解决方案，对硬件安全设计与验证具有重要参考价值。</description><pubDate>Sat, 14 Mar 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;dxfaker&lt;/p&gt;
 &lt;p&gt;(深圳大学医学部， 广东 深圳)&lt;/p&gt;

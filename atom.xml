@@ -5,7 +5,7 @@
   <link href="https://dxfaker.top/" rel="alternate" type="text/html"/>
   <link href="https://dxfaker.top/atom.xml" rel="self" type="application/atom+xml"/>
   <id>https://dxfaker.top/</id>
-  <updated>2026-04-20T12:03:00.918Z</updated>
+  <updated>2026-04-20T12:11:36.966Z</updated>
   <language>en</language>
   <entry>
     <title>YOLOv11 行人与车辆检测模型训练全记录</title>
@@ -194,7 +194,7 @@ done
 <p>本文完整记录了一次基于YOLOv11的行人与车辆检测模型训练实践。通过对比小数据集与扩充数据集的实验结果，证明了<strong>数据规模对深度学习模型性能具有决定性影响</strong>。最终模型在515张图片上训练80轮后，整体mAP50达到0.905，推理速度145 FPS。本文总结的训练技巧和问题解决方案可为类似项目提供参考。</p>
 <p>后面还会对该项目进行进一步修理改进。</p>
 <p>详细内容放下文PDF。</p>
-<p>{{&lt; embed-pdf url="/other/report.pdf" width="100%" height="800px" &gt;}}</p>
+<p>&lt;embed src="/other/report.pdf" width="100%" height="800px" type="application/pdf"&gt;</p>
 <p><strong>致谢</strong>：感谢深圳大学戴林蕙老师的课程指导，以及RoboFlow平台提供的开源数据集。</p>
 ]]></content>
     <author>
