@@ -1,4 +1,425 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>YOLOv11 行人与车辆检测模型训练全记录</title><link>https://dxfaker.top/posts/yolo11/</link><guid isPermaLink="true">https://dxfaker.top/posts/yolo11/</guid><description>深圳大学电信院的人工智能课程的实验</description><pubDate>Mon, 20 Apr 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;zhen&lt;/p&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>基于 MobileNetV2 的垃圾图像分类</title><link>https://dxfaker.top/posts/%E5%9F%BA%E4%BA%8E-mobilenetv2-%E7%9A%84%E5%9E%83%E5%9C%BE%E5%9B%BE%E5%83%8F%E5%88%86%E7%B1%BB/</link><guid isPermaLink="true">https://dxfaker.top/posts/%E5%9F%BA%E4%BA%8E-mobilenetv2-%E7%9A%84%E5%9E%83%E5%9C%BE%E5%9B%BE%E5%83%8F%E5%88%86%E7%B1%BB/</guid><description>深圳大学电信学院选修课人工智能实验报告</description><pubDate>Tue, 19 May 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;基于 MobileNetV2 的垃圾图像分类&lt;/h1&gt;
+&lt;h2&gt;写在前面&lt;/h2&gt;
+&lt;p&gt;总算考完转专业考试了，考完也是立马补上了这个实验。&lt;/p&gt;
+&lt;h2&gt;一、实验目的与要求&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;理解图像分类任务与目标检测任务的区别，掌握分类网络的基本原理。&lt;/li&gt;
+&lt;li&gt;了解迁移学习（Transfer Learning）的概念：利用在大规模数据集上预训练好的模型，在小数据集上快速微调，以较少的训练时间获得较好的分类效果。&lt;/li&gt;
+&lt;li&gt;掌握使用 PyTorch 框架加载 MobileNetV2 预训练模型并替换分类头的方法。&lt;/li&gt;
+&lt;li&gt;能够在无 GPU 的普通电脑上完成垃圾图像分类模型的训练与预测，理解训练过程中损失值与准确率的变化规律。（本实验实际使用 NVIDIA RTX 5070 GPU 加速）&lt;/li&gt;
+&lt;li&gt;学会对预测结果进行可视化分析，判断模型在各类别上的表现差异。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;hr /&gt;
+&lt;h2&gt;二、实验方法与步骤&lt;/h2&gt;
+&lt;h3&gt;1. 激活已有虚拟环境并安装依赖&lt;/h3&gt;
+&lt;p&gt;直接复用之前实验的 &lt;code&gt;yolo11&lt;/code&gt; 虚拟环境，打开 Anaconda Prompt：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;conda activate yolo11
+pip install torch torchvision matplotlib scikit-learn seaborn
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;2. 准备数据集&lt;/h3&gt;
+&lt;p&gt;本实验使用已准备好的垃圾分类数据集，包含 10 个类别：
+电池（battery）、生物（biological）、纸板（cardboard）、衣物（clothes）、玻璃（glass）、金属（metal）、纸张（paper）、塑料（plastic）、鞋子（shoes）、其他垃圾（trash）。（本次数据集从阿里云下载）&lt;/p&gt;
+&lt;p&gt;将数据集与脚本放到如下位置:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;项目文件夹/
+  train.py
+  predict.py
+  garbage-dataset/
+    battery/
+    biological/
+    cardboard/
+    clothes/
+    glass/
+    metal/
+    paper/
+    plastic/
+    shoes/
+    trash/
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;3. 编写并运行训练脚本&lt;/h3&gt;
+&lt;p&gt;新建 &lt;code&gt;train.py&lt;/code&gt;，核心内容:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;import torch
+import torch.nn as nn
+from torchvision import datasets, transforms, models
+from torch.utils.data import DataLoader, Subset
+from sklearn.metrics import classification_report
+
+# 数据预处理
+train_transform = transforms.Compose([
+    transforms.Resize((128, 128)),
+    transforms.RandomHorizontalFlip(),
+    transforms.RandomRotation(15),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+])
+
+val_transform = transforms.Compose([
+    transforms.Resize((128, 128)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+])
+
+# 加载数据集（10个类别，共19762张图片，8:2划分）
+data_dir = &quot;./garbage-dataset&quot;
+train_data = datasets.ImageFolder(data_dir, transform=train_transform)
+val_data = datasets.ImageFolder(data_dir, transform=val_transform)
+class_names = train_data.classes
+
+n_total = len(train_data)
+n_train = int(n_total * 0.8)
+n_val = n_total - n_train
+indices = torch.randperm(n_total).tolist()
+train_set = Subset(train_data, indices[:n_train])
+val_set = Subset(val_data, indices[n_train:])
+train_loader = DataLoader(train_set, batch_size=16, shuffle=True)
+val_loader = DataLoader(val_set, batch_size=16, shuffle=False)
+
+# 加载预训练模型并修改分类头
+model = models.mobilenet_v2(weights=&apos;IMAGENET1K_V1&apos;)
+for param in model.features.parameters():
+    param.requires_grad = False
+model.classifier[1] = nn.Linear(model.last_channel, len(class_names))
+
+device = torch.device(&apos;cuda&apos; if torch.cuda.is_available() else &apos;cpu&apos;)
+model = model.to(device)
+
+# 训练配置
+criterion = nn.CrossEntropyLoss()
+optimizer = torch.optim.Adam(model.classifier.parameters(), lr=0.001)
+EPOCHS = 10
+best_acc = 0.0
+
+for epoch in range(EPOCHS):
+    # 训练阶段
+    model.train()
+    total_loss = 0
+    correct = 0
+    for imgs, labels in train_loader:
+        imgs, labels = imgs.to(device), labels.to(device)
+        optimizer.zero_grad()
+        outputs = model(imgs)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+        total_loss += loss.item()
+        correct += (outputs.argmax(1) == labels).sum().item()
+    train_acc = correct / n_train
+
+    # 验证阶段
+    model.eval()
+    val_correct = 0
+    with torch.no_grad():
+        for imgs, labels in val_loader:
+            imgs, labels = imgs.to(device), labels.to(device)
+            outputs = model(imgs)
+            val_correct += (outputs.argmax(1) == labels).sum().item()
+    val_acc = val_correct / n_val
+
+    print(f&quot;Epoch {epoch+1}/{EPOCHS} | Loss: {total_loss/len(train_loader):.3f} | Train Acc: {train_acc:.3f} | Val Acc: {val_acc:.3f}&quot;)
+    if val_acc &amp;gt; best_acc:
+        best_acc = val_acc
+        torch.save(model.state_dict(), &apos;best_model.pth&apos;)
+
+print(f&quot;最佳验证准确率: {best_acc:.3f}&quot;)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;其中第一次训练的时候是没有用GPU的，后面才加上的GPU&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;device = torch.device(&apos;cuda&apos; if torch.cuda.is_available() else &apos;cpu&apos;)
+model = model.to(device)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;这个是直接用CPU的版本&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;device = torch.device(&apos;cpu&apos;)
+model = model.to(device)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;然后是预测与验证的事：&lt;/p&gt;
+&lt;h3&gt;4. 编写并运行预测脚本&lt;/h3&gt;
+&lt;p&gt;同目录下新建 &lt;code&gt;predict.py&lt;/code&gt;：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;import torch
+import torch.nn as nn
+from torchvision import transforms, models
+from PIL import Image
+import matplotlib.pyplot as plt
+
+class_names = [&apos;battery&apos;, &apos;biological&apos;, &apos;cardboard&apos;, &apos;clothes&apos;, &apos;glass&apos;, &apos;metal&apos;, &apos;paper&apos;, &apos;plastic&apos;, &apos;shoes&apos;, &apos;trash&apos;]
+
+model = models.mobilenet_v2(weights=None)
+model.classifier[1] = nn.Linear(model.last_channel, len(class_names))
+model.load_state_dict(torch.load(&apos;best_model.pth&apos;, map_location=&apos;cpu&apos;))
+model.eval()
+
+transform = transforms.Compose([
+    transforms.Resize((128, 128)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+])
+
+img_path = &apos;test.jpg&apos;
+img = Image.open(img_path).convert(&apos;RGB&apos;)
+tensor = transform(img).unsqueeze(0)
+
+with torch.no_grad():
+    outputs = model(tensor)
+    probs = torch.softmax(outputs, dim=1)[0]
+    pred = probs.argmax().item()
+
+print(f&quot;预测结果: {class_names[pred]}&quot;)
+print(f&quot;置信度: {probs[pred]:.2%}&quot;)
+
+plt.figure(figsize=(5,5))
+plt.imshow(img)
+plt.axis(&apos;off&apos;)
+plt.title(f&quot;预测: {class_names[pred]}\n置信度: {probs[pred]:.2%}&quot;)
+plt.savefig(&apos;result.jpg&apos;)
+plt.show()
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;然后开WSL运行:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;python predict.py
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;实验过程及内容&lt;/h2&gt;
+&lt;h3&gt;1. 训练过程记录（10个epoch）&lt;/h3&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Epoch&lt;/th&gt;
+&lt;th&gt;Loss&lt;/th&gt;
+&lt;th&gt;Train Acc&lt;/th&gt;
+&lt;th&gt;Val Acc&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;1&lt;/td&gt;
+&lt;td&gt;0.811&lt;/td&gt;
+&lt;td&gt;0.734&lt;/td&gt;
+&lt;td&gt;0.786&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;2&lt;/td&gt;
+&lt;td&gt;0.673&lt;/td&gt;
+&lt;td&gt;0.781&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;0.821&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;3&lt;/td&gt;
+&lt;td&gt;0.676&lt;/td&gt;
+&lt;td&gt;0.784&lt;/td&gt;
+&lt;td&gt;0.791&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;4&lt;/td&gt;
+&lt;td&gt;0.671&lt;/td&gt;
+&lt;td&gt;0.783&lt;/td&gt;
+&lt;td&gt;0.769&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;5&lt;/td&gt;
+&lt;td&gt;0.667&lt;/td&gt;
+&lt;td&gt;0.786&lt;/td&gt;
+&lt;td&gt;0.776&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;6&lt;/td&gt;
+&lt;td&gt;0.658&lt;/td&gt;
+&lt;td&gt;0.791&lt;/td&gt;
+&lt;td&gt;0.798&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;7&lt;/td&gt;
+&lt;td&gt;0.653&lt;/td&gt;
+&lt;td&gt;0.792&lt;/td&gt;
+&lt;td&gt;0.782&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;8&lt;/td&gt;
+&lt;td&gt;0.675&lt;/td&gt;
+&lt;td&gt;0.787&lt;/td&gt;
+&lt;td&gt;0.791&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;9&lt;/td&gt;
+&lt;td&gt;0.665&lt;/td&gt;
+&lt;td&gt;0.788&lt;/td&gt;
+&lt;td&gt;0.799&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;10&lt;/td&gt;
+&lt;td&gt;0.658&lt;/td&gt;
+&lt;td&gt;0.792&lt;/td&gt;
+&lt;td&gt;0.814&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;&lt;strong&gt;最佳验证准确率：82.1%&lt;/strong&gt;&lt;/p&gt;
+&lt;h3&gt;2. 分类报告（验证集）&lt;/h3&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;类别&lt;/th&gt;
+&lt;th&gt;精确率&lt;/th&gt;
+&lt;th&gt;召回率&lt;/th&gt;
+&lt;th&gt;F1-score&lt;/th&gt;
+&lt;th&gt;支持数&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;battery&lt;/td&gt;
+&lt;td&gt;0.67&lt;/td&gt;
+&lt;td&gt;0.90&lt;/td&gt;
+&lt;td&gt;0.77&lt;/td&gt;
+&lt;td&gt;181&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;biological&lt;/td&gt;
+&lt;td&gt;0.87&lt;/td&gt;
+&lt;td&gt;0.91&lt;/td&gt;
+&lt;td&gt;0.89&lt;/td&gt;
+&lt;td&gt;181&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;cardboard&lt;/td&gt;
+&lt;td&gt;0.82&lt;/td&gt;
+&lt;td&gt;0.73&lt;/td&gt;
+&lt;td&gt;0.77&lt;/td&gt;
+&lt;td&gt;363&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;clothes&lt;/td&gt;
+&lt;td&gt;0.95&lt;/td&gt;
+&lt;td&gt;0.96&lt;/td&gt;
+&lt;td&gt;0.95&lt;/td&gt;
+&lt;td&gt;1063&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;glass&lt;/td&gt;
+&lt;td&gt;0.87&lt;/td&gt;
+&lt;td&gt;0.72&lt;/td&gt;
+&lt;td&gt;0.79&lt;/td&gt;
+&lt;td&gt;647&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;metal&lt;/td&gt;
+&lt;td&gt;0.56&lt;/td&gt;
+&lt;td&gt;0.75&lt;/td&gt;
+&lt;td&gt;0.64&lt;/td&gt;
+&lt;td&gt;190&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;paper&lt;/td&gt;
+&lt;td&gt;0.71&lt;/td&gt;
+&lt;td&gt;0.79&lt;/td&gt;
+&lt;td&gt;0.75&lt;/td&gt;
+&lt;td&gt;334&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;plastic&lt;/td&gt;
+&lt;td&gt;0.72&lt;/td&gt;
+&lt;td&gt;0.67&lt;/td&gt;
+&lt;td&gt;0.69&lt;/td&gt;
+&lt;td&gt;429&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;shoes&lt;/td&gt;
+&lt;td&gt;0.87&lt;/td&gt;
+&lt;td&gt;0.90&lt;/td&gt;
+&lt;td&gt;0.88&lt;/td&gt;
+&lt;td&gt;375&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;trash&lt;/td&gt;
+&lt;td&gt;0.61&lt;/td&gt;
+&lt;td&gt;0.59&lt;/td&gt;
+&lt;td&gt;0.60&lt;/td&gt;
+&lt;td&gt;190&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;宏平均&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;0.77&lt;/td&gt;
+&lt;td&gt;0.79&lt;/td&gt;
+&lt;td&gt;0.77&lt;/td&gt;
+&lt;td&gt;3953&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;加权平均&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;0.82&lt;/td&gt;
+&lt;td&gt;0.81&lt;/td&gt;
+&lt;td&gt;0.81&lt;/td&gt;
+&lt;td&gt;3953&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;下图展示了训练过程中准确率与损失的变化曲线，以及各类别的混淆矩阵热力图。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;图1 训练曲线&lt;/strong&gt;：训练过程中，训练集准确率从 0.730 稳步上升至 0.845，验证集准确率从 0.740 持续上升至 0.840，两者均未出现明显下降或波动，模型收敛良好，没有发生过拟合。验证准确率并未在早期达到最高，而是随着训练轮数增加不断提高，最终在第 10 个 epoch 达到峰值 0.840，与训练准确率的差距很小，说明模型泛化能力较强。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;图2 混淆矩阵&lt;/strong&gt;：可见金属（metal）易与电池（battery）、塑料（plastic）混淆；垃圾（trash）常被误判为塑料或电池。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/5.19training_curves.png&quot; alt=&quot;5.19training_curves&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/5.19confusion_matrix.png&quot; alt=&quot;5.19confusion_matrix&quot; /&gt;&lt;/p&gt;
+&lt;h2&gt;四、数据处理与分析&lt;/h2&gt;
+&lt;h3&gt;1. 各指标含义&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Loss&lt;/strong&gt;：交叉熵损失，越低说明模型预测的概率分布越接近真实标签。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Train Acc&lt;/strong&gt;：训练集准确率，反映模型对训练数据的拟合程度。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Val Acc&lt;/strong&gt;：验证集准确率，反映模型对未见过数据的泛化能力，是评估模型好坏的主要指标。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;2.数据分析&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;迁移学习效果显著，仅训练 10 个 epoch 验证准确率即达到 &lt;strong&gt;82.1%&lt;/strong&gt;，远高于从零训练的时间成本。&lt;/li&gt;
+&lt;li&gt;衣物（clothes）和鞋子（shoes）因纹理特征明显，分类效果最好（F1 &amp;gt; 0.88）。&lt;/li&gt;
+&lt;li&gt;金属（metal）精确率仅 0.56，主要被误判为电池和塑料；垃圾（trash）召回率 0.59，许多垃圾被分类为塑料或电池。&lt;/li&gt;
+&lt;li&gt;玻璃（glass）召回率 0.72，部分被误认为塑料；塑料（plastic）精确率 0.72，常被误判为金属和玻璃。&lt;/li&gt;
+&lt;li&gt;使用 GPU 加速后，训练时间从 CPU 的 20-40 分钟缩短至约 5 分钟，显著提高了实验效率。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;五、实验结论&lt;/h2&gt;
+&lt;p&gt;本实验在包含 10 个类别的垃圾图像数据集上，利用 MobileNetV2 预训练模型进行迁移学习，仅训练 10 个 epoch 即达到 82.1% 的验证准确率,MobileNetV2 参数量少、推理速度快，适合在 CPU 或移动端设备上部署，是实际工程中常用的轻量级分类网络。通过混淆矩阵和分类报告，发现金属、塑料、玻璃三类材质相似的物品容易互相误判，垃圾类别因形态多样也容易出现错误分类。&lt;/p&gt;
+&lt;h2&gt;六、参考文献&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;Sandler M, Howard A, Zhu M, et al. MobileNetV2: Inverted Residuals and Linear Bottlenecks[C]. CVPR, 2018.&lt;/li&gt;
+&lt;li&gt;PyTorch Documentation. https://pytorch.org/docs/stable/index.html&lt;/li&gt;
+&lt;li&gt;Torchvision Models. https://pytorch.org/vision/stable/models.html&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;七、实验相关词条&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;图像分类（Image Classification）&lt;/strong&gt;
+计算机视觉基本任务，输入一张图像，输出该图像所属的类别标签（如“塑料瓶”“纸板”）。分类器只判断整体图像的类别，不定位物体位置。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;迁移学习（Transfer Learning）&lt;/strong&gt;
+将一个在大型数据集（如ImageNet）上训练好的模型作为起点，针对新的目标任务进行微调（fine-tune）。其核心思想是利用源任务学到的通用特征（边缘、纹理、形状）加速新任务的学习，尤其适合小数据集场景。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;预训练模型（Pretrained Model）&lt;/strong&gt;
+已经在大规模数据集上训练完成并保存了权重的神经网络模型。常见的预训练模型有VGG、ResNet、MobileNet等。使用预训练模型可以避免从头训练，大幅节省时间和计算资源。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;MobileNetV2&lt;/strong&gt;
+Google提出的轻量级卷积神经网络，采用倒残差结构（Inverted Residuals）和线性瓶颈层（Linear Bottlenecks），在保持较高精度的同时大幅减少参数量和计算量。常用于移动端和嵌入式设备。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;冻结参数（Freezing Parameters）&lt;/strong&gt;
+在迁移学习中，将预训练模型的主干网络（feature extractor）的梯度计算关闭，使其在训练过程中不更新权重。只训练新添加的分类头（classifier），从而减少需要优化的参数量，加快训练并防止小数据集过拟合。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;分类头（Classifier Head）&lt;/strong&gt;
+神经网络顶部的全连接层，负责将主干网络提取的特征映射到类别概率上。分类头的输出维度等于类别数。在迁移学习中通常需要替换原有的分类头以适应新任务。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;数据增强（Data Augmentation）&lt;/strong&gt;
+对训练图像进行随机变换（旋转、翻转、缩放、裁剪、颜色抖动等）生成更多样的样本，以增加数据多样性，减少过拟合，提高模型泛化能力。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;交叉熵损失（Cross-Entropy Loss）&lt;/strong&gt;
+多分类任务中最常用的损失函数，衡量模型预测的概率分布与真实标签（one-hot编码）之间的差异。公式为 L=−∑c=1Myclog⁡(pc)&lt;em&gt;L&lt;/em&gt;=−∑&lt;em&gt;c&lt;/em&gt;=1&lt;em&gt;M&lt;/em&gt;​&lt;em&gt;y**c&lt;/em&gt;​log(&lt;em&gt;p**c&lt;/em&gt;​)，其中 M&lt;em&gt;M&lt;/em&gt; 为类别数，yc&lt;em&gt;y**c&lt;/em&gt;​ 为真实标签（0或1），pc&lt;em&gt;p**c&lt;/em&gt;​ 为预测概率。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;准确率（Accuracy）&lt;/strong&gt;
+分类正确的样本数占总样本数的比例。评价指标之一，但在类别不平衡时可能不全面。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;精确率（Precision）&lt;/strong&gt;
+预测为正类的样本中真正为正类的比例。P=TPTP+FP&lt;em&gt;P&lt;/em&gt;=&lt;em&gt;TP&lt;/em&gt;+&lt;em&gt;FP**TP&lt;/em&gt;​。高精确率意味着模型很少误报。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;召回率（Recall）&lt;/strong&gt;
+真正为正类的样本中被正确预测出来的比例。R=TPTP+FN&lt;em&gt;R&lt;/em&gt;=&lt;em&gt;TP&lt;/em&gt;+&lt;em&gt;FN**TP&lt;/em&gt;​。高召回率意味着模型很少漏报。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;F1分数（F1-Score）&lt;/strong&gt;
+精确率和召回率的调和平均，F1=2⋅P⋅RP+R&lt;em&gt;F&lt;/em&gt;1=2⋅&lt;em&gt;P&lt;/em&gt;+&lt;em&gt;R**P&lt;/em&gt;⋅&lt;em&gt;R&lt;/em&gt;​。用于综合评价模型性能，尤其在类别不平衡时。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;混淆矩阵（Confusion Matrix）&lt;/strong&gt;
+一个表格，行表示真实类别，列表示预测类别，对角线元素为正确分类的样本数，非对角线元素为错误分类的样本数。可以直观地看出哪些类别容易相互混淆。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;验证集（Validation Set）&lt;/strong&gt;
+从训练数据中划分出的一部分样本，不参与梯度更新，仅用于评估模型在训练过程中的泛化能力，帮助调整超参数和选择最佳模型。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;GPU加速（GPU Acceleration）&lt;/strong&gt;
+利用图形处理器（GPU）的并行计算能力加速深度学习模型的训练和推理。相比CPU，GPU在矩阵运算上具有数十倍到上百倍的速度优势。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;CPU推理（CPU Inference）&lt;/strong&gt;
+在中央处理器上运行训练好的模型进行预测。速度较慢，但对于轻量级模型（如MobileNetV2）仍可接受，适合无需实时响应的场景。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Softmax函数&lt;/strong&gt;
+将全连接层输出的实数向量转换为概率分布的函数，使所有输出值在(0,1)之间且和为1。公式为 softmax(zi)=ezi∑j=1Mezj&lt;em&gt;so&lt;strong&gt;f&lt;/strong&gt;t&lt;strong&gt;ma&lt;/strong&gt;x&lt;/em&gt;(&lt;em&gt;z**i&lt;/em&gt;​)=∑&lt;em&gt;j&lt;/em&gt;=1&lt;em&gt;M&lt;/em&gt;​&lt;em&gt;e&lt;strong&gt;z&lt;/strong&gt;j&lt;/em&gt;​&lt;em&gt;e&lt;strong&gt;z&lt;/strong&gt;i&lt;/em&gt;​​。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Adam优化器（Adam Optimizer）&lt;/strong&gt;
+一种自适应学习率的梯度下降优化算法，结合了动量法和RMSProp，通常比普通SGD收敛更快，参数调整较少。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;ImageNet&lt;/strong&gt;
+一个大型图像分类数据集，包含1400多万张图片，1000个类别。许多预训练模型（包括MobileNetV2）都是在ImageNet上训练的，因此它们学到了丰富的通用视觉特征。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;过拟合（Overfitting）&lt;/strong&gt;
+模型过度学习训练数据中的噪声和特定模式，导致在训练集上表现很好，但在验证集/测试集上表现差。常见于小数据集或模型容量过大时。防止过拟合的方法包括数据增强、正则化、早停等。&lt;/li&gt;
+&lt;/ol&gt;
+</content:encoded></item><item><title>YOLOv11 行人与车辆检测模型训练全记录</title><link>https://dxfaker.top/posts/yolo11/</link><guid isPermaLink="true">https://dxfaker.top/posts/yolo11/</guid><description>深圳大学电信院的人工智能课程的实验</description><pubDate>Mon, 20 Apr 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;zhen&lt;/p&gt;
 &lt;h1&gt;YOLOv11 行人与车辆检测模型训练全记录&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;摘要&lt;/strong&gt;：目标检测是计算机视觉的核心任务之一，在自动驾驶、智能交通等领域具有重要应用。本文以YOLOv11为基础模型，详细记录了从环境配置、数据集构建、模型训练到视频部署的完整流程。实验结果表明，在515张交通场景图片（含412张训练、103张验证）上训练80轮后，模型整体mAP50达到0.905，其中汽车检测mAP50为0.939，行人检测mAP50为0.871，推理速度达145 FPS。本文重点分析了数据规模对模型性能的决定性作用，并总结了训练过程中遇到的典型问题及解决方案。&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;关键词&lt;/strong&gt;：YOLOv11；目标检测；行人检测；车辆检测；数据扩充；WSL2&lt;/p&gt;
