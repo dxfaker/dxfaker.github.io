@@ -1,4 +1,136 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>基于 MobileNetV2 的垃圾图像分类</title><link>https://dxfaker.top/posts/%E5%9F%BA%E4%BA%8E-mobilenetv2-%E7%9A%84%E5%9E%83%E5%9C%BE%E5%9B%BE%E5%83%8F%E5%88%86%E7%B1%BB/</link><guid isPermaLink="true">https://dxfaker.top/posts/%E5%9F%BA%E4%BA%8E-mobilenetv2-%E7%9A%84%E5%9E%83%E5%9C%BE%E5%9B%BE%E5%83%8F%E5%88%86%E7%B1%BB/</guid><description>深圳大学电信学院选修课人工智能实验报告</description><pubDate>Tue, 19 May 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;基于 MobileNetV2 的垃圾图像分类&lt;/h1&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>基于BLIP的图像自动描述生成</title><link>https://dxfaker.top/posts/2661/</link><guid isPermaLink="true">https://dxfaker.top/posts/2661/</guid><description>基于深圳大学人工智能课程项目实现</description><pubDate>Mon, 01 Jun 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;前言&lt;/h1&gt;
+&lt;p&gt;&lt;em&gt;C过送过没怂过&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;镇楼是西安队长，这两个BO5的发挥真的没话说，去年BO5战胜TES也是。WE找到了自己赢游戏的方法了啊。我也想能这样在自己的人生上硬气啊（&lt;/p&gt;
+&lt;p&gt;最近很火的是OBS+YOLO的三角洲吸附挂事件，不过yolo之前写过了，我还有黑客松等东西更新，不急，都要纳入的。&lt;/p&gt;
+&lt;h1&gt;准备&lt;/h1&gt;
+&lt;h2&gt;模型&lt;/h2&gt;
+&lt;p&gt;Salesforce 开源的 &lt;strong&gt;BLIP&lt;/strong&gt; 模型，它能根据图像内容自动生成自然语言描述&lt;/p&gt;
+&lt;h2&gt;环境准备&lt;/h2&gt;
+&lt;p&gt;双系统+python:WSL2 Ubuntu + Python 3.11&lt;/p&gt;
+&lt;p&gt;需要安装的库&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;pip install transformers sentencepiece sacremoses torch torchvision matplotlib
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;transformers&lt;/code&gt;：提供 BLIP 模型和翻译模型&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;sentencepiece&lt;/code&gt; &amp;amp; &lt;code&gt;sacremoses&lt;/code&gt;：翻译模型所需的 tokenizer 依赖&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1&gt;训练脚本&lt;/h1&gt;
+&lt;p&gt;技术上我们并不需要先写识别一个的以及批量训练的脚本，但是单张可以先看调试效率，以及根据单张出可视化结果，批量脚本专注于文字输出（&lt;code&gt;results.txt&lt;/code&gt;），避免为每张图都弹窗或保存图片，节省时间。&lt;/p&gt;
+&lt;p&gt;且如果要对某张特殊图片调整 &lt;code&gt;max_new_tokens&lt;/code&gt;、加入条件提示词（&lt;code&gt;prompt&lt;/code&gt;）等，单张脚本改起来更直接，不影响批量处理。&lt;/p&gt;
+&lt;h2&gt;单张&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;from transformers import BlipProcessor, BlipForConditionalGeneration, MarianMTModel, MarianTokenizer
+from PIL import Image
+import torch
+import matplotlib.pyplot as plt
+
+# 加载 BLIP 模型（首次运行会下载约 900MB）
+processor = BlipProcessor.from_pretrained(&quot;Salesforce/blip-image-captioning-base&quot;)
+model = BlipForConditionalGeneration.from_pretrained(&quot;Salesforce/blip-image-captioning-base&quot;)
+model.eval()
+
+# 加载英译中模型（约 300MB）
+tokenizer = MarianTokenizer.from_pretrained(&quot;Helsinki-NLP/opus-mt-en-zh&quot;)
+translator = MarianMTModel.from_pretrained(&quot;Helsinki-NLP/opus-mt-en-zh&quot;)
+
+# 读取图片
+img = Image.open(&quot;test.jpg&quot;).convert(&quot;RGB&quot;)
+
+# 生成英文描述
+inputs = processor(img, return_tensors=&quot;pt&quot;)
+with torch.no_grad():
+    out = model.generate(**inputs, max_new_tokens=50)
+caption_en = processor.decode(out[0], skip_special_tokens=True)
+
+# 翻译为中文
+inputs_zh = tokenizer(caption_en, return_tensors=&quot;pt&quot;, padding=True)
+translated = translator.generate(**inputs_zh)
+caption_zh = tokenizer.decode(translated[0], skip_special_tokens=True)
+
+print(f&quot;英文：{caption_en}&quot;)
+print(f&quot;中文：{caption_zh}&quot;)
+
+# 可视化保存
+plt.figure(figsize=(7,5))
+plt.imshow(img)
+plt.axis(&apos;off&apos;)
+plt.title(f&quot;英文：{caption_en}\n中文：{caption_zh}&quot;)
+plt.savefig(&quot;result.jpg&quot;, dpi=150, bbox_inches=&quot;tight&quot;)
+plt.show()
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;保存为&lt;code&gt;caption.py&lt;/code&gt;；&lt;/p&gt;
+&lt;h2&gt;批量处理&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;from transformers import BlipProcessor, BlipForConditionalGeneration, MarianMTModel, MarianTokenizer
+from PIL import Image
+import torch
+import os
+
+processor = BlipProcessor.from_pretrained(&quot;Salesforce/blip-image-captioning-base&quot;)
+blip = BlipForConditionalGeneration.from_pretrained(&quot;Salesforce/blip-image-captioning-base&quot;)
+blip.eval()
+tokenizer = MarianTokenizer.from_pretrained(&quot;Helsinki-NLP/opus-mt-en-zh&quot;)
+translator = MarianMTModel.from_pretrained(&quot;Helsinki-NLP/opus-mt-en-zh&quot;)
+
+def caption(image):
+    inputs = processor(image, return_tensors=&quot;pt&quot;)
+    with torch.no_grad():
+        out = blip.generate(**inputs, max_new_tokens=50)
+    return processor.decode(out[0], skip_special_tokens=True)
+
+def translate(text):
+    inputs = tokenizer(text, return_tensors=&quot;pt&quot;, padding=True)
+    out = translator.generate(**inputs)
+    return tokenizer.decode(out[0], skip_special_tokens=True)
+
+img_dir = &quot;images&quot;
+for fname in os.listdir(img_dir):
+    if fname.lower().endswith((&apos;.jpg&apos;,&apos;.png&apos;,&apos;.jpeg&apos;)):
+        img = Image.open(os.path.join(img_dir, fname)).convert(&quot;RGB&quot;)
+        en = caption(img)
+        zh = translate(en)
+        print(f&quot;{fname}\n英文: {en}\n中文: {zh}\n&quot;)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;保存为&lt;code&gt;batch_caption.py&lt;/code&gt;；&lt;/p&gt;
+&lt;p&gt;照片储存在下一级&lt;code&gt;images/&lt;/code&gt;运行即可。&lt;/p&gt;
+&lt;h1&gt;结果&lt;/h1&gt;
+&lt;p&gt;如表&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;图片场景&lt;/th&gt;
+&lt;th&gt;英文描述&lt;/th&gt;
+&lt;th&gt;中文翻译&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;街景&lt;/td&gt;
+&lt;td&gt;a busy street with cars and people walking on the sidewalk&lt;/td&gt;
+&lt;td&gt;一条繁忙的街道，有汽车和行人在人行道上行走&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;公园&lt;/td&gt;
+&lt;td&gt;a park with green trees and a person sitting on a bench&lt;/td&gt;
+&lt;td&gt;一个有绿树的公园，一个人坐在长椅上&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;室内&lt;/td&gt;
+&lt;td&gt;a living room with a couch and a television on the wall&lt;/td&gt;
+&lt;td&gt;一个客厅，墙上有沙发和电视&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;动物&lt;/td&gt;
+&lt;td&gt;a dog running on the grass in a garden&lt;/td&gt;
+&lt;td&gt;一只狗在花园的草地上奔跑&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;食物&lt;/td&gt;
+&lt;td&gt;a plate of food with rice and vegetables on a table&lt;/td&gt;
+&lt;td&gt;桌上放着一盘有米饭和蔬菜的食物&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/caption_result.jpg&quot; alt=&quot;caption_result&quot; /&gt;&lt;/p&gt;
+</content:encoded></item><item><title>基于 MobileNetV2 的垃圾图像分类</title><link>https://dxfaker.top/posts/%E5%9F%BA%E4%BA%8E-mobilenetv2-%E7%9A%84%E5%9E%83%E5%9C%BE%E5%9B%BE%E5%83%8F%E5%88%86%E7%B1%BB/</link><guid isPermaLink="true">https://dxfaker.top/posts/%E5%9F%BA%E4%BA%8E-mobilenetv2-%E7%9A%84%E5%9E%83%E5%9C%BE%E5%9B%BE%E5%83%8F%E5%88%86%E7%B1%BB/</guid><description>深圳大学电信学院选修课人工智能实验报告</description><pubDate>Tue, 19 May 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;基于 MobileNetV2 的垃圾图像分类&lt;/h1&gt;
 &lt;h2&gt;写在前面&lt;/h2&gt;
 &lt;p&gt;总算考完转专业考试了，考完也是立马补上了这个实验。&lt;/p&gt;
 &lt;h2&gt;一、实验目的与要求&lt;/h2&gt;

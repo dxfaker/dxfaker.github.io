@@ -5,8 +5,153 @@
   <link href="https://dxfaker.top/" rel="alternate" type="text/html"/>
   <link href="https://dxfaker.top/atom.xml" rel="self" type="application/atom+xml"/>
   <id>https://dxfaker.top/</id>
-  <updated>2026-05-19T11:11:22.644Z</updated>
+  <updated>2026-06-01T15:19:43.519Z</updated>
   <language>en</language>
+  <entry>
+    <title>基于BLIP的图像自动描述生成</title>
+    <link href="https://dxfaker.top/posts/2661/" rel="alternate" type="text/html"/>
+    <id>https://dxfaker.top/posts/2661/</id>
+    <published>2026-06-01T00:00:00.000Z</published>
+    <updated>2026-06-01T00:00:00.000Z</updated>
+    <summary>基于深圳大学人工智能课程项目实现</summary>
+    <content type="html"><![CDATA[<h1>前言</h1>
+<p><em>C过送过没怂过</em></p>
+<p>镇楼是西安队长，这两个BO5的发挥真的没话说，去年BO5战胜TES也是。WE找到了自己赢游戏的方法了啊。我也想能这样在自己的人生上硬气啊（</p>
+<p>最近很火的是OBS+YOLO的三角洲吸附挂事件，不过yolo之前写过了，我还有黑客松等东西更新，不急，都要纳入的。</p>
+<h1>准备</h1>
+<h2>模型</h2>
+<p>Salesforce 开源的 <strong>BLIP</strong> 模型，它能根据图像内容自动生成自然语言描述</p>
+<h2>环境准备</h2>
+<p>双系统+python:WSL2 Ubuntu + Python 3.11</p>
+<p>需要安装的库</p>
+<pre><code>pip install transformers sentencepiece sacremoses torch torchvision matplotlib
+</code></pre>
+<ul>
+<li><code>transformers</code>：提供 BLIP 模型和翻译模型</li>
+<li><code>sentencepiece</code> &amp; <code>sacremoses</code>：翻译模型所需的 tokenizer 依赖</li>
+</ul>
+<h1>训练脚本</h1>
+<p>技术上我们并不需要先写识别一个的以及批量训练的脚本，但是单张可以先看调试效率，以及根据单张出可视化结果，批量脚本专注于文字输出（<code>results.txt</code>），避免为每张图都弹窗或保存图片，节省时间。</p>
+<p>且如果要对某张特殊图片调整 <code>max_new_tokens</code>、加入条件提示词（<code>prompt</code>）等，单张脚本改起来更直接，不影响批量处理。</p>
+<h2>单张</h2>
+<pre><code>from transformers import BlipProcessor, BlipForConditionalGeneration, MarianMTModel, MarianTokenizer
+from PIL import Image
+import torch
+import matplotlib.pyplot as plt
+
+# 加载 BLIP 模型（首次运行会下载约 900MB）
+processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
+model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base")
+model.eval()
+
+# 加载英译中模型（约 300MB）
+tokenizer = MarianTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-zh")
+translator = MarianMTModel.from_pretrained("Helsinki-NLP/opus-mt-en-zh")
+
+# 读取图片
+img = Image.open("test.jpg").convert("RGB")
+
+# 生成英文描述
+inputs = processor(img, return_tensors="pt")
+with torch.no_grad():
+    out = model.generate(**inputs, max_new_tokens=50)
+caption_en = processor.decode(out[0], skip_special_tokens=True)
+
+# 翻译为中文
+inputs_zh = tokenizer(caption_en, return_tensors="pt", padding=True)
+translated = translator.generate(**inputs_zh)
+caption_zh = tokenizer.decode(translated[0], skip_special_tokens=True)
+
+print(f"英文：{caption_en}")
+print(f"中文：{caption_zh}")
+
+# 可视化保存
+plt.figure(figsize=(7,5))
+plt.imshow(img)
+plt.axis('off')
+plt.title(f"英文：{caption_en}\n中文：{caption_zh}")
+plt.savefig("result.jpg", dpi=150, bbox_inches="tight")
+plt.show()
+</code></pre>
+<p>保存为<code>caption.py</code>；</p>
+<h2>批量处理</h2>
+<pre><code>from transformers import BlipProcessor, BlipForConditionalGeneration, MarianMTModel, MarianTokenizer
+from PIL import Image
+import torch
+import os
+
+processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
+blip = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base")
+blip.eval()
+tokenizer = MarianTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-zh")
+translator = MarianMTModel.from_pretrained("Helsinki-NLP/opus-mt-en-zh")
+
+def caption(image):
+    inputs = processor(image, return_tensors="pt")
+    with torch.no_grad():
+        out = blip.generate(**inputs, max_new_tokens=50)
+    return processor.decode(out[0], skip_special_tokens=True)
+
+def translate(text):
+    inputs = tokenizer(text, return_tensors="pt", padding=True)
+    out = translator.generate(**inputs)
+    return tokenizer.decode(out[0], skip_special_tokens=True)
+
+img_dir = "images"
+for fname in os.listdir(img_dir):
+    if fname.lower().endswith(('.jpg','.png','.jpeg')):
+        img = Image.open(os.path.join(img_dir, fname)).convert("RGB")
+        en = caption(img)
+        zh = translate(en)
+        print(f"{fname}\n英文: {en}\n中文: {zh}\n")
+</code></pre>
+<p>保存为<code>batch_caption.py</code>；</p>
+<p>照片储存在下一级<code>images/</code>运行即可。</p>
+<h1>结果</h1>
+<p>如表</p>
+<table>
+<thead>
+<tr>
+<th>图片场景</th>
+<th>英文描述</th>
+<th>中文翻译</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>街景</td>
+<td>a busy street with cars and people walking on the sidewalk</td>
+<td>一条繁忙的街道，有汽车和行人在人行道上行走</td>
+</tr>
+<tr>
+<td>公园</td>
+<td>a park with green trees and a person sitting on a bench</td>
+<td>一个有绿树的公园，一个人坐在长椅上</td>
+</tr>
+<tr>
+<td>室内</td>
+<td>a living room with a couch and a television on the wall</td>
+<td>一个客厅，墙上有沙发和电视</td>
+</tr>
+<tr>
+<td>动物</td>
+<td>a dog running on the grass in a garden</td>
+<td>一只狗在花园的草地上奔跑</td>
+</tr>
+<tr>
+<td>食物</td>
+<td>a plate of food with rice and vegetables on a table</td>
+<td>桌上放着一盘有米饭和蔬菜的食物</td>
+</tr>
+</tbody>
+</table>
+<p><img src="https://dxfaker.top/images/post/caption_result.jpg" alt="caption_result" /></p>
+]]></content>
+    <author>
+      <name></name>
+    </author>
+    <category term="实验报告"></category>
+  </entry>
   <entry>
     <title>基于 MobileNetV2 的垃圾图像分类</title>
     <link href="https://dxfaker.top/posts/%E5%9F%BA%E4%BA%8E-mobilenetv2-%E7%9A%84%E5%9E%83%E5%9C%BE%E5%9B%BE%E5%83%8F%E5%88%86%E7%B1%BB/" rel="alternate" type="text/html"/>
