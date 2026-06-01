@@ -5,7 +5,7 @@
   <link href="https://dxfaker.top/" rel="alternate" type="text/html"/>
   <link href="https://dxfaker.top/atom.xml" rel="self" type="application/atom+xml"/>
   <id>https://dxfaker.top/</id>
-  <updated>2026-06-01T15:19:43.519Z</updated>
+  <updated>2026-06-01T15:29:09.058Z</updated>
   <language>en</language>
   <entry>
     <title>基于BLIP的图像自动描述生成</title>
@@ -146,6 +146,13 @@ for fname in os.listdir(img_dir):
 </tbody>
 </table>
 <p><img src="https://dxfaker.top/images/post/caption_result.jpg" alt="caption_result" /></p>
+<p>图片的"[]"是老问题了，后面处理一下。</p>
+<p>可以看出，BLIP 对常见场景的描述相当准确，甚至能识别出物体间的空间关系（“沙发和电视在墙上”）。翻译模型整体流畅，偶尔长句语序会有点怪，但作为免费开源的模型已经非常良心了。</p>
+<h1>优缺点</h1>
+<p>无需训练，支持中英文，能理解复杂场景；缺点则是吃GPU，CPU速度明显比5070慢，倾向于描述主体而失去细节。</p>
+<h1>现实应用</h1>
+<p>BLIP 的架构（ViT + 语言解码器）是目前主流多模态大模型（如 GPT-4V、LLaVA、Gemini）的基础范式。也可以和yolo结合先识别再描述。</p>
+<p>&lt;embed src="/other/image_caption.pdf" width="100%" height="800px" type="application/pdf"&gt;</p>
 ]]></content>
     <author>
       <name></name>

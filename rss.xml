@@ -130,6 +130,13 @@ for fname in os.listdir(img_dir):
 &lt;/tbody&gt;
 &lt;/table&gt;
 &lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/caption_result.jpg&quot; alt=&quot;caption_result&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;图片的&quot;[]&quot;是老问题了，后面处理一下。&lt;/p&gt;
+&lt;p&gt;可以看出，BLIP 对常见场景的描述相当准确，甚至能识别出物体间的空间关系（“沙发和电视在墙上”）。翻译模型整体流畅，偶尔长句语序会有点怪，但作为免费开源的模型已经非常良心了。&lt;/p&gt;
+&lt;h1&gt;优缺点&lt;/h1&gt;
+&lt;p&gt;无需训练，支持中英文，能理解复杂场景；缺点则是吃GPU，CPU速度明显比5070慢，倾向于描述主体而失去细节。&lt;/p&gt;
+&lt;h1&gt;现实应用&lt;/h1&gt;
+&lt;p&gt;BLIP 的架构（ViT + 语言解码器）是目前主流多模态大模型（如 GPT-4V、LLaVA、Gemini）的基础范式。也可以和yolo结合先识别再描述。&lt;/p&gt;
+&lt;p&gt;&amp;lt;embed src=&quot;/other/image_caption.pdf&quot; width=&quot;100%&quot; height=&quot;800px&quot; type=&quot;application/pdf&quot;&amp;gt;&lt;/p&gt;
 </content:encoded></item><item><title>基于 MobileNetV2 的垃圾图像分类</title><link>https://dxfaker.top/posts/%E5%9F%BA%E4%BA%8E-mobilenetv2-%E7%9A%84%E5%9E%83%E5%9C%BE%E5%9B%BE%E5%83%8F%E5%88%86%E7%B1%BB/</link><guid isPermaLink="true">https://dxfaker.top/posts/%E5%9F%BA%E4%BA%8E-mobilenetv2-%E7%9A%84%E5%9E%83%E5%9C%BE%E5%9B%BE%E5%83%8F%E5%88%86%E7%B1%BB/</guid><description>深圳大学电信学院选修课人工智能实验报告</description><pubDate>Tue, 19 May 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;基于 MobileNetV2 的垃圾图像分类&lt;/h1&gt;
 &lt;h2&gt;写在前面&lt;/h2&gt;
 &lt;p&gt;总算考完转专业考试了，考完也是立马补上了这个实验。&lt;/p&gt;
