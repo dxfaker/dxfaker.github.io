@@ -107,7 +107,7 @@ export default defineConfig({
 				},
 			},
 			frames: {
-				showCopyToClipboardButton: false,
+				showCopyToClipboardButton: true,
 			},
 		}),
 		svelte(),
