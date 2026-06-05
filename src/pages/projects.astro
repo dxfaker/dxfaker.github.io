@@ -1,16 +1,16 @@
 ---
 import { getCollection } from "astro:content";
-import MainGridLayout from "../layouts/MainGridLayout.astro";
+import { UNCATEGORIZED } from "../constants/constants";
 import {
-	projectsData,
+	getAllTechStack,
+	getFeaturedProjects,
 	getProjectStats,
 	getProjectsByCategory,
-	getFeaturedProjects,
-	getAllTechStack,
+	projectsData,
 } from "../data/projects";
-import { i18n } from "../i18n/translation";
 import I18nKey from "../i18n/i18nKey";
-import { UNCATEGORIZED } from "../constants/constants";
+import { i18n } from "../i18n/translation";
+import MainGridLayout from "../layouts/MainGridLayout.astro";
 
 const { lang } = Astro.props;
 

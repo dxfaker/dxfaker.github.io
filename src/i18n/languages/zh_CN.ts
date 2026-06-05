@@ -149,7 +149,8 @@ export const zh_CN: Translation = {
 	[Key.atomBenefit2]: "在一个地方管理多个网站的订阅",
 	[Key.atomBenefit3]: "避免错过重要更新和文章",
 	[Key.atomBenefit4]: "享受无广告的纯净阅读体验",
-	[Key.atomHowToUse]: "推荐使用 Feedly、Inoreader 或其他 Atom 阅读器来订阅本站。",
+	[Key.atomHowToUse]:
+		"推荐使用 Feedly、Inoreader 或其他 Atom 阅读器来订阅本站。",
 	[Key.atomCopied]: "Atom 链接已复制到剪贴板！",
 	[Key.atomCopyFailed]: "复制失败，请手动复制链接",
 

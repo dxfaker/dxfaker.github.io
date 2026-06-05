@@ -149,22 +149,16 @@ function getRandom(option: string, config: SakuraConfig): any {
 				config.speed.horizontal.min +
 				Math.random() *
 					(config.speed.horizontal.max - config.speed.horizontal.min);
-			ret = function (x: number, y: number) {
-				return x + random;
-			};
+			ret = (x: number, y: number) => x + random;
 			break;
 		case "fny":
 			random =
 				config.speed.vertical.min +
 				Math.random() * (config.speed.vertical.max - config.speed.vertical.min);
-			ret = function (x: number, y: number) {
-				return y + random;
-			};
+			ret = (x: number, y: number) => y + random;
 			break;
 		case "fnr":
-			ret = function (r: number) {
-				return r + config.speed.rotation;
-			};
+			ret = (r: number) => r + config.speed.rotation;
 			break;
 	}
 	return ret;
