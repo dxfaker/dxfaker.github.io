@@ -65,10 +65,10 @@ function safeClean(html) {
 
 const ROOT = path.resolve(__dirname, '..');
 const dirs = [
-  path.join(ROOT, 'public', 'classic'),
-  path.join(ROOT, 'classic'),
+  path.join(ROOT, 'classic', 'public'),   // CI: Hexo 构建输出
+  path.join(ROOT, 'public', 'classic'),   // 本地: Astro dev 用
 ];
-const exclude = ['themes', 'node_modules', 'css', 'js', 'images', 'img', 'assets', 'public'];
+const exclude = ['themes', 'node_modules', 'css', 'js', 'images', 'img', 'assets'];
 
 let total = 0;
 for (const dir of dirs) {
