@@ -33,10 +33,6 @@ export default defineConfig({
 
 	base: "/",
 	trailingSlash: "always",
-	redirects: {
-		"/classic": "/classic/",
-		"/classic/index.html": "/classic/",
-	},
 	integrations: [
 		tailwind({
 			nesting: true,
@@ -175,38 +171,53 @@ export default defineConfig({
 	vite: {
 		plugins: [
 			{
-				name: 'serve-classic',
-				enforce: 'pre',
+				name: "serve-classic",
+				enforce: "pre",
 				configureServer(server) {
 					// Insert at the BEGINNING of middleware stack to beat Astro's router
 					const handler = (req, res, next) => {
-						const url = req.originalUrl || req.url || '';
-						const urlPart = url.split('?')[0];
-						if (!urlPart.startsWith('/classic')) return next();
-						
-						const decoded = decodeURIComponent(urlPart === '/classic' ? '/classic/' : urlPart);
-						const filePath = decoded.endsWith('/')
-							? path.join(process.cwd(), 'public', decoded, 'index.html')
-							: path.join(process.cwd(), 'public', decoded);
-						
+						const url = req.originalUrl || req.url || "";
+						const urlPart = url.split("?")[0];
+						if (!urlPart.startsWith("/classic")) return next();
+
+						const decoded = decodeURIComponent(
+							urlPart === "/classic" ? "/classic/" : urlPart,
+						);
+						const filePath = decoded.endsWith("/")
+							? path.join(process.cwd(), "public", decoded, "index.html")
+							: path.join(process.cwd(), "public", decoded);
+
 						try {
 							if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
 								const ext = path.extname(filePath).toLowerCase();
 								const mime = {
-									'.html': 'text/html','.css': 'text/css','.js': 'application/javascript',
-									'.png': 'image/png','.jpg': 'image/jpeg','.jpeg': 'image/jpeg',
-									'.webp': 'image/webp','.avif': 'image/avif','.gif': 'image/gif',
-									'.svg': 'image/svg+xml','.ico': 'image/x-icon','.json': 'application/json',
-									'.woff2': 'font/woff2','.woff': 'font/woff','.ttf': 'font/ttf',
+									".html": "text/html",
+									".css": "text/css",
+									".js": "application/javascript",
+									".png": "image/png",
+									".jpg": "image/jpeg",
+									".jpeg": "image/jpeg",
+									".webp": "image/webp",
+									".avif": "image/avif",
+									".gif": "image/gif",
+									".svg": "image/svg+xml",
+									".ico": "image/x-icon",
+									".json": "application/json",
+									".woff2": "font/woff2",
+									".woff": "font/woff",
+									".ttf": "font/ttf",
 								};
-								res.setHeader('Content-Type', mime[ext] || 'application/octet-stream');
+								res.setHeader(
+									"Content-Type",
+									mime[ext] || "application/octet-stream",
+								);
 								res.end(fs.readFileSync(filePath));
 								return;
 							}
 						} catch {}
 						next();
 					};
-					server.middlewares.stack.unshift({ route: '', handle: handler });
+					server.middlewares.stack.unshift({ route: "", handle: handler });
 				},
 			},
 		],
