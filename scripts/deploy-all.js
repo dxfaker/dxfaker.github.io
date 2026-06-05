@@ -132,8 +132,22 @@ async function main() {
 		exec("npx hexo generate --debug", PATHS.butterfly);
 
 		// 增强 Classic HTML：全屏封面、炫彩边框、粒子特效
+		// enhance 修改 classic/ 根下的 HTML，所以从经典根复制而非 public/
 		log.info("注入 Classic 增强效果...");
 		exec("node scripts/enhance-classic.cjs", PATHS.mizuki);
+
+		// 把增强后的 HTML 同步回 classic/public/（部署从这里读取）
+		const CLASSIC_DIRS = ['2026','about','archives','categories','diary','friends','page','projects','skills','tags','timeline'];
+		for (const d of CLASSIC_DIRS) {
+			const src = path.join(PATHS.butterfly, d);
+			const dst = path.join(PATHS.butterflyPublic, d);
+			if (fs.existsSync(src)) { ensureDir(dst); copyDir(src, dst); }
+		}
+		for (const f of ['index.html','404.html']) {
+			const src = path.join(PATHS.butterfly, f);
+			const dst = path.join(PATHS.butterflyPublic, f);
+			if (fs.existsSync(src) && fs.existsSync(path.dirname(dst))) fs.copyFileSync(src, dst);
+		}
 
 		log.info("检查生成的 index.html 内容（前50行）：");
 		exec("cat public/index.html | head -50", PATHS.butterfly);
