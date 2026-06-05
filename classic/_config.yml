@@ -37,21 +37,17 @@ theme_config:
     首页: / || fas fa-home
     归档: /archives/ || fas fa-archive
     Links:
-      default: /links/ || fas fa-link
       GitHub: https://github.com/dxfaker || fab fa-github
       Bilibili: https://space.bilibili.com/479112329 || fab fa-bilibili
       X: https://x.com/B0699914076454 || fab fa-twitter
       贴吧: https://tieba.baidu.com/home/main?id=tb.1.ed372b7b.6us6IlRvKC4N61tXujNKEQ || fas fa-comments
     My:
-      default: / || fas fa-user
       Diary: /diary/ || fas fa-book
       追番（先这样，后面改）: https://space.bilibili.com/479112329/bangumi || fab fa-bilibili
     About:
-      default: /about/ || fas fa-info-circle
       About: /about/ || fas fa-user
       Friends: /friends/ || fas fa-heart
     Others:
-      default: / || fas fa-ellipsis-h
       Projects: /projects/ || fas fa-briefcase
       Skills: /skills/ || fas fa-brain
       Timeline: /timeline/ || fas fa-chart-line
