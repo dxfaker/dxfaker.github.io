@@ -31,4 +31,28 @@ yarn.lock
 *.iml
 
 cache/
-fuwari/temp_backup/
+# temp_backup
+temp_backup/
+
+# Classic 构建泄露
+classic/2026/
+classic/about/
+classic/archives/
+classic/categories/
+classic/diary/
+classic/friends/
+classic/page/
+classic/projects/
+classic/skills/
+classic/tags/
+classic/timeline/
+classic/404.html
+classic/index.html
+classic/assets/
+classic/css/
+classic/js/
+classic/images/
+classic/img/
+classic/js/
+classic/css/
+

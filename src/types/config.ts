@@ -114,6 +114,7 @@ export type NavBarLink = {
 	name: string;
 	url: string;
 	external?: boolean;
+	noSwup?: boolean; // 防止 Swup 拦截此链接的导航
 	icon?: string; // 菜单项图标
 	children?: (NavBarLink | LinkPreset)[]; // 支持子菜单，可以是NavBarLink或LinkPreset
 };

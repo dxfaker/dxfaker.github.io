@@ -227,15 +227,20 @@ const umamiScripts = umamiConfig.scripts || ""; // 获取Umami scripts配置
 
 		<!-- Umami Analytics -->
 		{umamiEnabled && umamiScripts && <Fragment set:html={umamiScripts} />}
-        <script is:inline>
-          document.addEventListener('DOMContentLoaded', () => {
-            document.querySelectorAll('a[href="/classic"], a[href="/classic/"]').forEach(link => {
-              link.setAttribute('target', '_blank');
-              link.setAttribute('rel', 'noopener noreferrer');
-            });
-          });
-        </script>
-</head>
+		<!-- Framework Switch: Mizuki ↔ Classic -->
+		<script src="/js/framework-switch.js" defer></script>
+		<script is:inline>
+			// Intercept /classic/ links before Swup can capture them (runs immediately)
+			document.addEventListener('click', function(e) {
+				var link = e.target.closest('a[href="/classic"], a[href="/classic/"]');
+				if (link && !window.location.pathname.startsWith('/classic')) {
+					e.preventDefault();
+					e.stopImmediatePropagation();
+					window.location.href = '/classic/';
+				}
+			}, true);
+		</script>
+	</head>
 	<body class=" min-h-screen " class:list={[{"lg:is-home": isHomePage, "enable-banner": enableBanner, "zen-maru-gothic-enabled": siteConfig.font.zenMaruGothic.enable, "hanalei-enabled": siteConfig.font.hanalei.enable}]}
 		  data-overlayscrollbars-initialize
 	>

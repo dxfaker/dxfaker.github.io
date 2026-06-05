@@ -25,6 +25,9 @@ theme_config:
   apple_touch_icon: /images/favicon_io/apple-touch-icon.png
   index_img: /images/back.jpg
 
+  avatar:
+    img: /images/avatar.png
+    effect: true
   nav:
     logo: /images/avatar.png
     fixed: false
@@ -75,16 +78,23 @@ theme_config:
       - /img/wechat.jpg
       - /img/alipay.jpg
 
-  # ------------------- 评论系统（以 Twikoo 为例）-------------------
+  # ------------------- 公告 -------------------
+  card_announcement:
+    enable: true
+    content: 随缘更新不定内容，敬请期待！！！
+
+  # ------------------- 评论系统（暂时关闭）-------------------
   comments:
-    use: twikoo
-    twikoo:
-      envId: your-env-id
-      region: ap-guangzhou
+    use: false
 
   # ------------------- 背景与页脚 -------------------
-  background: /images/bg-pattern.png
-  footer_img: /images/footer-bg.jpg
+  background: false
+  footer_img: false
+
+  # ------------------- 注入自定义代码（改用 enhance-classic.cjs 脚本管理）-------------------
+  inject:
+    head:
+    bottom:
 
   # ------------------- 404页面 -------------------
   error_404:
