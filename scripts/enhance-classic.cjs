@@ -43,6 +43,8 @@ body::before{content:"";position:fixed;top:0;left:0;width:100vw;height:100vh;z-i
 [data-theme=dark] #content-inner,[data-theme=dark] #recent-posts,[data-theme=dark] .aside-content{background:rgba(30,30,30,.85)!important}
 [data-theme=dark] .card-widget,[data-theme=dark] .recent-post-item{background:rgba(45,45,45,.9)!important}
 canvas#fw-particles{z-index:0!important}
+/* === 页脚透明 === */
+#footer{background:transparent!important}#footer-wrap{background:transparent!important}
 /* === 标题居中 === */
 #page-header #site-info{padding:2.5rem 4rem!important;position:relative!important;background:transparent!important}
 @media(max-width:768px){#page-header #site-info{padding:1.5rem 1.5rem!important}}
