@@ -63,11 +63,19 @@ function safeClean(html) {
     .replace(/<script\s+src="\/js\/framework-switch\.js"[^<]*><\/script>/gi, '');
 }
 
-const dirs = ['d:/mywebsite/mizukii/public/classic', 'd:/mywebsite/mizukii/classic'];
+const ROOT = path.resolve(__dirname, '..');
+const dirs = [
+  path.join(ROOT, 'public', 'classic'),
+  path.join(ROOT, 'classic'),
+];
 const exclude = ['themes', 'node_modules', 'css', 'js', 'images', 'img', 'assets', 'public'];
 
 let total = 0;
 for (const dir of dirs) {
+  if (!fs.existsSync(dir)) {
+    console.log('SKIP (not found): ' + dir);
+    continue;
+  }
   for (const f of walk(dir, exclude)) {
     let c = safeClean(fs.readFileSync(f, 'utf-8'));
     if (!c.includes('</head>') || !c.includes('</body>')) {
