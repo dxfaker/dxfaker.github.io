@@ -131,6 +131,10 @@ async function main() {
 		log.info("执行 Hexo 生成（调试模式）");
 		exec("npx hexo generate --debug", PATHS.butterfly);
 
+		// 增强 Classic HTML：全屏封面、炫彩边框、粒子特效
+		log.info("注入 Classic 增强效果...");
+		exec("node scripts/enhance-classic.cjs", PATHS.mizuki);
+
 		log.info("检查生成的 index.html 内容（前50行）：");
 		exec("cat public/index.html | head -50", PATHS.butterfly);
 
