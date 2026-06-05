@@ -34,6 +34,9 @@ cache/
 # temp_backup
 temp_backup/
 
+# Classic 构建产物目录（本地运行 pnpm sync-all 生成）
+public/classic/
+
 # Classic 构建泄露
 classic/2026/
 classic/about/
