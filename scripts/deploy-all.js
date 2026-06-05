@@ -121,6 +121,17 @@ async function main() {
 			log.info("Butterfly 主题已存在，跳过克隆。");
 		}
 
+		// 给主题配置打补丁（submodule 导致本地修改无法提交）
+		const themeCfgPath = path.join(themePath, '_config.yml');
+		if (fs.existsSync(themeCfgPath)) {
+			let tcfg = fs.readFileSync(themeCfgPath, 'utf-8');
+			tcfg = tcfg.replace(/link: https:\/\/github\.com\/xxxxxx/, 'link: https://github.com/dxfaker');
+			tcfg = tcfg.replace(/content: This is my Blog/, 'content: 随缘更新不定内容，敬请期待！！！');
+			tcfg = tcfg.replace(/footer: true/, 'footer: false');
+			fs.writeFileSync(themeCfgPath, tcfg, 'utf-8');
+			log.success('主题配置补丁已应用');
+		}
+
 		log.info("列出 classic 目录内容：");
 		exec("ls -la", PATHS.butterfly);
 		log.info("列出 butterfly 主题目录内容：");

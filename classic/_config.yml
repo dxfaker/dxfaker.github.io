@@ -91,14 +91,6 @@ theme_config:
   mask:
     footer: false
 
-  # ------------------- 个人信息卡片按钮 -------------------
-  aside:
-    card_author:
-      button:
-        icon: fab fa-github
-        text: Follow Me
-        link: https://github.com/dxfaker
-
   # ------------------- 注入自定义代码（改用 enhance-classic.cjs 脚本管理）-------------------
   inject:
     head:
