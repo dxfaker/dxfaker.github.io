@@ -292,7 +292,7 @@ export const navBarConfig: NavBarConfig = {
 			],
 		},
 		{
-			name: "📜 经典版",
+			name: "经典版",
 			url: "/classic/",
 			icon: "material-symbols:auto-awesome",
 			noSwup: true,
