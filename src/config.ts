@@ -289,13 +289,13 @@ export const navBarConfig: NavBarConfig = {
 					url: "/timeline/",
 					icon: "material-symbols:timeline",
 				},
-				{
-					name: "📜 经典版",
-					url: "/classic/",
-					icon: "material-symbols:auto-awesome",
-					noSwup: true,
-				},
 			],
+		},
+		{
+			name: "📜 经典版",
+			url: "/classic/",
+			icon: "material-symbols:auto-awesome",
+			noSwup: true,
 		},
 	],
 };
