@@ -6,6 +6,9 @@ author: 'dxfaker'
 tags: ['转专业']
 category: 'wp'
 toc: true
+encrypted: true
+password: 'make_aurora_great_again'
+unlockDate: 2026-06-15
 ---
 
 # 写在前面
