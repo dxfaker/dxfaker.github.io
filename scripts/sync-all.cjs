@@ -3,8 +3,8 @@
  * 用法: node scripts/sync-all.cjs [选项]
  * 
  * 选项:
- *   --skip-astro    跳过 Astro 构建 (默认会构建)
- *   --skip-hexo     跳过 Hexo 构建 (默认会构建)
+ *   --skip-astro    跳过 Astro 构建
+ *   --skip-hexo     跳过 Hexo 构建  
  *   --skip-enhance  跳过 Classic HTML 增强注入
  */
 const { execSync } = require('child_process');
@@ -30,47 +30,51 @@ console.log('══════════════════════�
 
 // 1. Astro 构建
 if (!skipAstro) {
-  console.log('\n▶ 步骤 1/4: Astro (Mizuki) 构建...');
+  console.log('\n▶ 步骤 1/5: Astro (Mizuki) 构建...');
   run('pnpm build', ROOT, 'Astro');
 } else {
   console.log('\n⊘ 跳过 Astro 构建');
 }
 
-// 2. Classic 构建
+// 2. 同步文章到 Classic
 if (!skipHexo) {
-  console.log('\n▶ 步骤 2/4: Classic (Hexo) 构建...');
+  console.log('\n▶ 步骤 2/5: 同步文章...');
+  run('node scripts/sync-posts.cjs', ROOT, 'Posts');
+
+  // 3. 同步图片到 Classic
+  console.log('\n▶ 步骤 3/5: 同步图片...');
+  const srcImages = path.join(ROOT, 'public', 'images');
+  const dstImages = path.join(CLASSIC, 'source', 'images');
+  if (fs.existsSync(srcImages)) {
+    run(`xcopy "${srcImages}\\*" "${dstImages}\\" /E /I /Y /Q`, ROOT, 'Images');
+    console.log('  图片同步完成');
+  }
+}
+
+// 4. Classic 构建
+if (!skipHexo) {
+  console.log('\n▶ 步骤 4/5: Classic (Hexo) 构建...');
   if (fs.existsSync(path.join(CLASSIC, 'node_modules', '.bin', 'hexo'))) {
     run('npx hexo generate', CLASSIC, 'Hexo');
   } else {
     console.log('  ⚠ Classic 未安装依赖，跳过 (运行 cd classic && pnpm install)');
   }
-} else {
-  console.log('\n⊘ 跳过 Hexo 构建');
 }
 
 if (!skipHexo) {
-  // 3. 部署 Classic 构建产物
-  console.log('\n▶ 步骤 3/4: 部署 Classic 静态文件...');
   const classicPublic = path.join(CLASSIC, 'public');
   if (fs.existsSync(classicPublic)) {
-    // 复制到 public/classic/（Astro dev 服务器用）
     run(`xcopy "${classicPublic}\\*" "public\\classic\\" /E /I /Y /Q`, ROOT, 'Copy→public');
-    // 复制到 classic/ 根（直接访问用）
-    run(`xcopy "${classicPublic}\\*" "${CLASSIC}\\" /E /I /Y /Q`, ROOT, 'Copy→classic');
   }
 }
 
-// 4. 增强 Classic HTML
+// 5. 增强 Classic HTML
 if (!skipEnhance && !skipHexo) {
-  console.log('\n▶ 步骤 4/4: 注入 Classic 增强效果...');
+  console.log('\n▶ 步骤 5/5: 注入 Classic 增强效果...');
   run('node scripts/enhance-classic.cjs', ROOT, 'Enhance');
-} else {
-  console.log('\n⊘ 跳过增强注入');
 }
 
 console.log('\n═══════════════════════════════════════');
 console.log('  ✅ 全站同步完成!');
-console.log('  Astro  Dev:  pnpm dev');
-console.log('  Astro  Preview: pnpm preview');
-console.log('  Classic:  http://localhost:4321/classic/');
+console.log('  pnpm dev → http://localhost:4321/classic/');
 console.log('═══════════════════════════════════════');
