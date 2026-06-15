@@ -83,7 +83,7 @@ comments: true
 
 哦对了,顺便安利一下深大合作的未来简历:https://futurecv.cn/nddiW/group-login
 
-![屏幕截图 2026-06-12 091459](/images/post/屏幕截图 2026-06-12 091459.png)
+<img src="/images/post/屏幕截图 2026-06-12 091459.png" alt="屏幕截图 2026-06-12 091459" />
 
 6月8下午面试，要求带成绩证明还有可以带相关奖项的复印件，也可以带简历.
 
@@ -145,4 +145,4 @@ comments: true
 
 **加入深大信安，拥抱美好人生**
 
-![fa040b9936d1ddb9d8655066f4b965e6](/images/post/fa040b9936d1ddb9d8655066f4b965e6.jpg)
+<img src="/images/post/fa040b9936d1ddb9d8655066f4b965e6.jpg" alt="fa040b9936d1ddb9d8655066f4b965e6" />

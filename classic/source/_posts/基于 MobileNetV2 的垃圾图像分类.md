@@ -269,9 +269,9 @@ python predict.py
 - **图1 训练曲线**：训练过程中，训练集准确率从 0.730 稳步上升至 0.845，验证集准确率从 0.740 持续上升至 0.840，两者均未出现明显下降或波动，模型收敛良好，没有发生过拟合。验证准确率并未在早期达到最高，而是随着训练轮数增加不断提高，最终在第 10 个 epoch 达到峰值 0.840，与训练准确率的差距很小，说明模型泛化能力较强。
 - **图2 混淆矩阵**：可见金属（metal）易与电池（battery）、塑料（plastic）混淆；垃圾（trash）常被误判为塑料或电池。
 
-![5.19training_curves](/images/post/5.19training_curves.png)
+<img src="/images/post/5.19training_curves.png" alt="5.19training_curves" />
 
-![5.19confusion_matrix](/images/post/5.19confusion_matrix.png)
+<img src="/images/post/5.19confusion_matrix.png" alt="5.19confusion_matrix" />
 
 ## 四、数据处理与分析
 

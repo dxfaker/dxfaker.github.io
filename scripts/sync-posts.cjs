@@ -26,7 +26,17 @@ for (const file of files) {
   if (!fm.includes('comments:')) fm += '\ncomments: true';
 
   const body = raw.slice(m[0].length).trim();
-  fs.writeFileSync(path.join(HEXO_POSTS_DIR, file), `---\n${fm}\n---\n\n${body}\n`, 'utf-8');
+
+  // 把正文里的相对图片引用转成 <img> 标签
+  //（Classic 站点的 hexo-renderer-marked 对含中文/空格的 markdown 图片语法不稳定，
+  //   用 <img> 标签 100% 可靠）
+  const bodyFixed = body.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (m, alt, src) => {
+    // 如果已经是绝对路径 /images/post/ 开头，保留
+    const finalSrc = src.startsWith('/') ? src : `/images/post/${src}`;
+    return `<img src="${finalSrc}" alt="${alt}" />`;
+  });
+
+  fs.writeFileSync(path.join(HEXO_POSTS_DIR, file), `---\n${fm}\n---\n\n${bodyFixed}\n`, 'utf-8');
   console.log('SYNCED: ' + file);
   synced++;
 }

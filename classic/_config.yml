@@ -19,6 +19,9 @@ public_dir: public
 # 主题
 theme: butterfly
 
+# 资源文件夹：开启后 [img](xxx.png) 自动解析为同目录资源
+post_asset_folder: true
+
 # Butterfly 主题配置（所有缩进使用两个空格）
 theme_config:
   favicon: /images/favicon_io/favicon.ico
