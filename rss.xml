@@ -21,9 +21,9 @@
 &lt;h1&gt;题目内容&lt;/h1&gt;
 &lt;p&gt;西电的&lt;a href=&quot;https://ctf.xidian.edu.cn/training/2?challenge=522&quot;&gt;强壮逆向人 - 西电 CTF 终端&lt;/a&gt;这个题&lt;/p&gt;
 &lt;p&gt;查壳发现没有什么问题，然后就可以拖进IDA里面看代码了&lt;/p&gt;
-&lt;p&gt;![屏幕截图 2026-07-25 143104](/images/post/屏幕截图 2026-07-25 143104.png)&lt;/p&gt;
+&lt;p&gt;&amp;lt;img src=&quot;/images/post/屏幕截图 2026-07-25 143104.png&quot; alt=&quot;屏幕截图 2026-07-25 143104&quot; /&amp;gt;&lt;/p&gt;
 &lt;p&gt;乍一看，并没有什么难的，然后就去打开byte_140005010、dword_140005000、unk_140005110、sub_140001020看一下内容。然后我就直接去搓解密脚本了。&lt;/p&gt;
-&lt;p&gt;![屏幕截图 2026-07-25 143827](/images/post/屏幕截图 2026-07-25 143827.png)&lt;/p&gt;
+&lt;p&gt;&amp;lt;img src=&quot;/images/post/屏幕截图 2026-07-25 143827.png&quot; alt=&quot;屏幕截图 2026-07-25 143827&quot; /&amp;gt;&lt;/p&gt;
 &lt;p&gt;剩下部分数据处理好就可以输出解密脚本了。&lt;/p&gt;
 &lt;p&gt;但能解出来吗，很显然不行&lt;/p&gt;
 &lt;p&gt;那问题出在哪呢&lt;/p&gt;
@@ -32,9 +32,9 @@
 &lt;blockquote&gt;
 &lt;p&gt;云之君在track神的电脑里找到了他珍藏的flag，于是急匆匆拿出了文件想要逆出flag。 可是按照IDA反编译的伪C代码解密出来的全是乱码，这是怎么回事呢？ 幸好万能的track神告诉云之君，IDA也会骗人，这个伪C代码是假的，想要拿到flag只能分析汇编代码！ 悲剧的是，云之君是一个只会F5的家伙，一点汇编也看不懂呜呜呜，这可怎么办呢&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;p&gt;然后就需要我们去看汇编![屏幕截图 2026-07-25 144520](/images/post/屏幕截图 2026-07-25 144520.png)&lt;/p&gt;
+&lt;p&gt;然后就需要我们去看汇编&amp;lt;img src=&quot;/images/post/屏幕截图 2026-07-25 144520.png&quot; alt=&quot;屏幕截图 2026-07-25 144520&quot; /&amp;gt;&lt;/p&gt;
 &lt;p&gt;可以直接看到有SEH的字样，拉到&lt;code&gt;v5 = (127 * v5 + 102) % 255;&lt;/code&gt;这句话的汇编代码时，发现里面大有文章。&lt;/p&gt;
-&lt;p&gt;![屏幕截图 2026-07-25 144743](/images/post/屏幕截图 2026-07-25 144743.png)&lt;/p&gt;
+&lt;p&gt;&amp;lt;img src=&quot;/images/post/屏幕截图 2026-07-25 144743.png&quot; alt=&quot;屏幕截图 2026-07-25 144743&quot; /&amp;gt;&lt;/p&gt;
 &lt;p&gt;这里快速复习一下汇编代码&lt;/p&gt;
 &lt;table&gt;
 &lt;thead&gt;

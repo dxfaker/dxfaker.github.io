@@ -5,7 +5,7 @@
   <link href="https://dxfaker.top/" rel="alternate" type="text/html"/>
   <link href="https://dxfaker.top/atom.xml" rel="self" type="application/atom+xml"/>
   <id>https://dxfaker.top/</id>
-  <updated>2026-07-25T07:34:12.236Z</updated>
+  <updated>2026-07-25T07:45:05.458Z</updated>
   <language>en</language>
   <entry>
     <title>SEH问题处理</title>
@@ -37,9 +37,9 @@
 <h1>题目内容</h1>
 <p>西电的<a href="https://ctf.xidian.edu.cn/training/2?challenge=522">强壮逆向人 - 西电 CTF 终端</a>这个题</p>
 <p>查壳发现没有什么问题，然后就可以拖进IDA里面看代码了</p>
-<p>![屏幕截图 2026-07-25 143104](/images/post/屏幕截图 2026-07-25 143104.png)</p>
+<p>&lt;img src="/images/post/屏幕截图 2026-07-25 143104.png" alt="屏幕截图 2026-07-25 143104" /&gt;</p>
 <p>乍一看，并没有什么难的，然后就去打开byte_140005010、dword_140005000、unk_140005110、sub_140001020看一下内容。然后我就直接去搓解密脚本了。</p>
-<p>![屏幕截图 2026-07-25 143827](/images/post/屏幕截图 2026-07-25 143827.png)</p>
+<p>&lt;img src="/images/post/屏幕截图 2026-07-25 143827.png" alt="屏幕截图 2026-07-25 143827" /&gt;</p>
 <p>剩下部分数据处理好就可以输出解密脚本了。</p>
 <p>但能解出来吗，很显然不行</p>
 <p>那问题出在哪呢</p>
@@ -48,9 +48,9 @@
 <blockquote>
 <p>云之君在track神的电脑里找到了他珍藏的flag，于是急匆匆拿出了文件想要逆出flag。 可是按照IDA反编译的伪C代码解密出来的全是乱码，这是怎么回事呢？ 幸好万能的track神告诉云之君，IDA也会骗人，这个伪C代码是假的，想要拿到flag只能分析汇编代码！ 悲剧的是，云之君是一个只会F5的家伙，一点汇编也看不懂呜呜呜，这可怎么办呢</p>
 </blockquote>
-<p>然后就需要我们去看汇编![屏幕截图 2026-07-25 144520](/images/post/屏幕截图 2026-07-25 144520.png)</p>
+<p>然后就需要我们去看汇编&lt;img src="/images/post/屏幕截图 2026-07-25 144520.png" alt="屏幕截图 2026-07-25 144520" /&gt;</p>
 <p>可以直接看到有SEH的字样，拉到<code>v5 = (127 * v5 + 102) % 255;</code>这句话的汇编代码时，发现里面大有文章。</p>
-<p>![屏幕截图 2026-07-25 144743](/images/post/屏幕截图 2026-07-25 144743.png)</p>
+<p>&lt;img src="/images/post/屏幕截图 2026-07-25 144743.png" alt="屏幕截图 2026-07-25 144743" /&gt;</p>
 <p>这里快速复习一下汇编代码</p>
 <table>
 <thead>
