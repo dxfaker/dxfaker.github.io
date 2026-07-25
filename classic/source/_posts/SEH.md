@@ -1,19 +1,20 @@
 ---
 title: 'SEH问题处理'
 
-published: 2026-07-25
+date: 2026-07-25 00:00:00
 
 description: '属于WP吧，讲讲处理思路'
 
 author: 'dxfaker'
 
-image: '/images/post/1bf95a7d88367cf98b58f9feac1c8ffd.jpg'
+cover: '/images/post/1bf95a7d88367cf98b58f9feac1c8ffd.jpg'
 
 tags: ['reverse','c','SEH']
 
-category: 'wp'
+categories: ['wp']
 
 toc: true
+comments: true
 ---
 
 # 前言
@@ -172,8 +173,3 @@ int main() {
 ```
 
 也就是说，不要过于依赖F5出来的东西了，去跟踪汇编代码看看哪里隐藏起来了。
-
-
-
-
-
