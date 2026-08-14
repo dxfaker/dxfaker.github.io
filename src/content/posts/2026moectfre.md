@@ -1,6 +1,6 @@
 ---
 title: '2026moectf第一周wp'
-published: 2026-08-14
+published: 2026-10-01
 description: '新生杯第一周倒是非常简单,这个时候有人就要问了，你不是老登吗，写个蛋的新生杯，那我问你，我后面是不是要打26Aurora ctf'
 author: 'dxfaker'
 image: '/images/post/c4a6ab6283cd9d80f5f5b235cb1ab97b.jpg'
