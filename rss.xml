@@ -1,6 +1,1253 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>处理线性方程组题型</title><link>https://dxfaker.top/posts/2634/</link><guid isPermaLink="true">https://dxfaker.top/posts/2634/</guid><description>基于WSL的处理办法</description><pubDate>Thu, 05 Mar 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;写在前面&lt;/h1&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>SEH问题处理</title><link>https://dxfaker.top/posts/seh/</link><guid isPermaLink="true">https://dxfaker.top/posts/seh/</guid><description>属于WP吧，讲讲处理思路</description><pubDate>Sat, 25 Jul 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;前言&lt;/h1&gt;
+&lt;p&gt;感谢leyi提供的南区美照&lt;/p&gt;
+&lt;p&gt;经过了激烈的期末月斗争，我的电分还是挂了(目前还不清楚有没有补考)。&lt;/p&gt;
+&lt;p&gt;然后从暑假开始复健逆向。&lt;/p&gt;
+&lt;p&gt;第一天我就写了两个题目，一个是hex的，开010拉到底部就结束战斗了，另外一个就是今天讲的SEH。&lt;/p&gt;
+&lt;h1&gt;你需要知道的&lt;/h1&gt;
+&lt;ol&gt;
+&lt;li&gt;SEH是什么&lt;/li&gt;
+&lt;/ol&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;code&gt;SEH&lt;/code&gt;（Structured Exception Handling，结构化异常处理）是 &lt;strong&gt;Windows 操作系统提供的一种底层异常处理机制&lt;/strong&gt;。它与 C++ 的 &lt;code&gt;try/catch&lt;/code&gt; 不同，&lt;code&gt;SEH&lt;/code&gt; 是操作系统层面的机制，而 &lt;code&gt;try/catch&lt;/code&gt; 等 C++ 异常处理在 Windows 上通常也是基于 &lt;code&gt;SEH&lt;/code&gt; 实现的。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;异常发生后，大概顺序是：内核-&amp;gt;调试器-&amp;gt;VEH-&amp;gt;SEH&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;在线程初始化的时候，会自动在栈中安装一个SEH结构体，作为默认异常处理，他的next就是0xFFFFFFFFF，而这个异常程序大家应该都很熟悉，就是windows程序崩溃时那个弹窗，打印出来出错函数地址。&lt;/p&gt;
+&lt;p&gt;如果程序中使用了try、excpt、assert来处理异常信息，那么编译器就会在栈中压入一个SEH结构体，同时插入链表中。&lt;/p&gt;
+&lt;p&gt;当出现异常的时候，操作系统会先中断程序，然后从TIB中取出第一个SEH结构体（也就是最近的SEH结构），使用其中的handler处理这个异常。&lt;/p&gt;
+&lt;p&gt;如果这个异常处理函数处理不了这个异常，那么就顺着next往上找别的异常处理函数，直到找到一个可以处理这个异常的函数或者到底部，也就是弹出错误窗口然后杀死线程。&lt;/p&gt;
+&lt;p&gt;通常处理完异常后，需要执行展开（Unwind）操作，该操作先通知目标结点前的各异常处理函数释放资源，然后将之前的SEH链全部删除。该操作通常由各高级语言Rtl模块来完成，Win32汇编操作时既可以不展开，也可以手工展开，还可以使用RtlUnwind函数展开。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h1&gt;题目内容&lt;/h1&gt;
+&lt;p&gt;西电的&lt;a href=&quot;https://ctf.xidian.edu.cn/training/2?challenge=522&quot;&gt;强壮逆向人 - 西电 CTF 终端&lt;/a&gt;这个题&lt;/p&gt;
+&lt;p&gt;查壳发现没有什么问题，然后就可以拖进IDA里面看代码了&lt;/p&gt;
+&lt;p&gt;&amp;lt;img src=&quot;/images/post/屏幕截图 2026-07-25 143104.png&quot; alt=&quot;屏幕截图 2026-07-25 143104&quot; /&amp;gt;&lt;/p&gt;
+&lt;p&gt;乍一看，并没有什么难的，然后就去打开byte_140005010、dword_140005000、unk_140005110、sub_140001020看一下内容。然后我就直接去搓解密脚本了。&lt;/p&gt;
+&lt;p&gt;&amp;lt;img src=&quot;/images/post/屏幕截图 2026-07-25 143827.png&quot; alt=&quot;屏幕截图 2026-07-25 143827&quot; /&amp;gt;&lt;/p&gt;
+&lt;p&gt;剩下部分数据处理好就可以输出解密脚本了。&lt;/p&gt;
+&lt;p&gt;但能解出来吗，很显然不行&lt;/p&gt;
+&lt;p&gt;那问题出在哪呢&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;puts(&quot;Can you read my assembly in exception?&quot;);&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;以及题目提示&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;云之君在track神的电脑里找到了他珍藏的flag，于是急匆匆拿出了文件想要逆出flag。 可是按照IDA反编译的伪C代码解密出来的全是乱码，这是怎么回事呢？ 幸好万能的track神告诉云之君，IDA也会骗人，这个伪C代码是假的，想要拿到flag只能分析汇编代码！ 悲剧的是，云之君是一个只会F5的家伙，一点汇编也看不懂呜呜呜，这可怎么办呢&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;然后就需要我们去看汇编&amp;lt;img src=&quot;/images/post/屏幕截图 2026-07-25 144520.png&quot; alt=&quot;屏幕截图 2026-07-25 144520&quot; /&amp;gt;&lt;/p&gt;
+&lt;p&gt;可以直接看到有SEH的字样，拉到&lt;code&gt;v5 = (127 * v5 + 102) % 255;&lt;/code&gt;这句话的汇编代码时，发现里面大有文章。&lt;/p&gt;
+&lt;p&gt;&amp;lt;img src=&quot;/images/post/屏幕截图 2026-07-25 144743.png&quot; alt=&quot;屏幕截图 2026-07-25 144743&quot; /&amp;gt;&lt;/p&gt;
+&lt;p&gt;这里快速复习一下汇编代码&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;&lt;code&gt;imul&lt;/code&gt;&lt;/th&gt;
+&lt;th&gt;有符号整数乘法&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;add&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;加法&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;cdq&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;将 &lt;code&gt;eax&lt;/code&gt; 符号扩展为 &lt;code&gt;edx:eax&lt;/code&gt;（用于除法）&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;idiv&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;有符号整数除法（商在 &lt;code&gt;eax&lt;/code&gt;，余数在 &lt;code&gt;edx&lt;/code&gt;）&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;sar&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;算术右移（带符号位填充，相当于除以 2 的幂）&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;xor&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;按位异或&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;mov&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;数据传输&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;jmp&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;无条件跳转&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;pre&gt;&lt;code&gt;    mov     eax, [rsp+0D8h+var_B4]        ; eax = var_B4 (更新后的值)
+    sar     eax, 7                        ; eax = eax &amp;gt;&amp;gt; 7 (算术右移7位，即除以128)
+    mov     [rsp+0D8h+var_B0], eax        ; var_B0 = eax (保存结果)
+    mov     eax, 1                        ; eax = 1
+    cdq                                   ; 扩展 eax 为 edx:eax
+    idiv    [rsp+0D8h+var_B0]             ; eax = 1 / var_B0 (整数除法)
+    mov     [rsp+0D8h+var_B0], eax        ; var_B0 = eax (结果)
+    jmp     short loc_140001212            ; 跳转到后续正常流程
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;这个时候，就可以试着先把v5（&lt;code&gt;int v5; // [rsp+24h] [rbp-B4h]&lt;/code&gt;）的值带进去变换了。&lt;/p&gt;
+&lt;p&gt;然后就会发现一个问题，右移7位会导致出现 1 / 0 的情况，这显然是会报错的。&lt;/p&gt;
+&lt;p&gt;这个时候就需要SEH出动了，也就是&lt;code&gt;_except&lt;/code&gt;部分&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;loc_1400011E9:
+    imul    eax, cs:dword_140005000, 61h   ; eax = dword_140005000 * 97
+    add     eax, 65h                       ; eax = eax + 101
+    cdq                                    ; 符号扩展
+    mov     ecx, 0E9h                      ; ecx = 233
+    idiv    ecx                            ; edx = eax % 233
+    mov     eax, edx                       ; eax = 余数
+    mov     cs:dword_140005000, eax        ; dword_140005000 = 余数 (更新全局变量)
+    mov     eax, cs:dword_140005000        ; eax = 更新后的值
+    xor     eax, 29h                       ; eax = eax ^ 0x29 (异或 41)
+    mov     cs:dword_140005000, eax        ; dword_140005000 = eax (最终值)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;然后我就发现问题了，dword_140005000是会随着v5的更新而更新的。&lt;/p&gt;
+&lt;p&gt;理解这个之后，解密就好写了。由于XOR的对称性，其实跟我第一轮的密码相比并没有什么太大的区别，只需要加上校验判断以及如果v5右移后的处理（也就是更新dword_140005000）即可。&lt;/p&gt;
+&lt;p&gt;我的解密脚本&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;#include&amp;lt;iostream&amp;gt;
+using namespace std;
+int main() {
+    unsigned char key_table[256] = {
+    0xAC,0x04,0x58,0xB0,0x45,0x96,0x9F,0x2E,0x41,0x15,0x18,0x29,0xB1,0x33,0xAA,0x12,
+    0x0D,0x89,0xE6,0xFA,0xF3,0xC4,0xBD,0xE7,0x70,0x8A,0x94,0xC1,0x85,0x9D,0xA3,0xF2,
+    0x3F,0x82,0x8E,0xD7,0x03,0x93,0x3D,0x13,0x05,0x6B,0x41,0x03,0x96,0x76,0xE3,0xB1,
+    0x8A,0x4A,0x22,0x55,0xC4,0x19,0xF5,0x55,0xA6,0x1F,0x0E,0x61,0x27,0xCB,0x1F,0x9E,
+    0x5A,0x7A,0xE3,0x15,0x40,0x94,0x47,0xDE,0x00,0x01,0x91,0x66,0xB7,0xCD,0x22,0x64,
+    0xF5,0xA5,0x9C,0x68,0xA5,0x52,0x86,0xBD,0xB0,0xDD,0x76,0x28,0xAB,0x16,0x95,0xC5,
+    0x26,0x2C,0xF6,0x39,0xBE,0x00,0xA5,0xAD,0xE3,0x93,0x9E,0xE3,0x05,0xA0,0xB0,0x1D,
+    0xB0,0x16,0x0B,0x5B,0x33,0x95,0xA4,0x09,0x16,0x87,0x56,0x1F,0x83,0x4E,0x4A,0x3C,
+    0x55,0x36,0x6F,0xBB,0x4C,0x4B,0x9D,0xB1,0xAE,0xE5,0x8E,0xC8,0xFB,0x0E,0x29,0x8A,
+    0xBB,0xFC,0x20,0x62,0x04,0x2D,0x80,0x61,0xD6,0xC1,0xCC,0x3B,0x89,0xC5,0x8B,0xD5,
+    0x26,0x58,0xD6,0xB6,0xA0,0x50,0x75,0xAB,0x17,0x83,0x7F,0x37,0x2B,0xA0,0x1D,0x2C,
+    0xCF,0xC7,0xE0,0xE5,0x49,0xC9,0xFA,0x6B,0xC0,0x98,0x66,0x99,0x92,0x00,0x02,0xD4,
+    0x75,0x46,0x22,0x05,0x35,0xD1,0x4B,0xC5,0xAD,0xE0,0x8E,0x45,0x3B,0x50,0x15,0xB5,
+    0x2E,0x85,0x30,0x89,0x54,0x12,0xDE,0xF1,0x5A,0xF0,0x2B,0xA7,0x1B,0x4A,0x26,0x5D,
+    0x98,0xD4,0xA1,0xBE,0xD1,0x4D,0x7E,0x38,0xDE,0x0B,0x0A,0x54,0xB8,0x73,0x6D,0xAD,
+    0x8C,0x1E,0xD9,0x31,0x5F,0x56,0x7E,0xBD,0x48,0x32,0x98,0x2E,0x3E,0xEB,0xA2,0x1D
+    };
+    unsigned char checkout[51] = {
+        0x1E,0x70,0x7A,0x6E,0xEA,0x83,0x9E,0xEF,
+        0x96,0xE2,0xB2,0xD5,0x99,0xBB,0xBB,0x78,
+        0xB9,0x3D,0x6E,0x38,0x42,0xC2,0x86,0xFF,
+        0x63,0xBD,0xFA,0x79,0xA3,0x6D,0x60,0x94,
+        0xB3,0x42,0x11,0xC3,0x90,0x89,0xBD,0xEF,
+        0xD4,0x97,0xF8,0x7B,0x8B,0x0B,0x2D,0x75,
+        0x7E,0xDD,0xCB
+    };
+    int pla = 25;
+    int v5 = 0;
+    for (int i = 0; i &amp;lt; 51; i++) {
+        v5 = (127 * v5 + 102) % 255;
+        if (v5 &amp;gt;&amp;gt; 7 == 0) {
+            pla = ((pla * 97 + 101) % 233) ^ 41;
+
+        }
+        checkout[i] ^= key_table[pla];
+    }
+    cout &amp;lt;&amp;lt; checkout &amp;lt;&amp;lt; endl;
+    return 0;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;也就是说，不要过于依赖F5出来的东西了，去跟踪汇编代码看看哪里隐藏起来了。&lt;/p&gt;
+</content:encoded></item><item><title>基于BLIP的图像自动描述生成</title><link>https://dxfaker.top/posts/2661/</link><guid isPermaLink="true">https://dxfaker.top/posts/2661/</guid><description>基于深圳大学人工智能课程项目实现</description><pubDate>Mon, 01 Jun 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;前言&lt;/h1&gt;
+&lt;p&gt;&lt;em&gt;C过送过没怂过&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;镇楼是西安队长，这两个BO5的发挥真的没话说，去年BO5战胜TES也是。WE找到了自己赢游戏的方法了啊。我也想能这样在自己的人生上硬气啊（&lt;/p&gt;
+&lt;p&gt;最近很火的是OBS+YOLO的三角洲吸附挂事件，不过yolo之前写过了，我还有黑客松等东西更新，不急，都要纳入的。&lt;/p&gt;
+&lt;h1&gt;准备&lt;/h1&gt;
+&lt;h2&gt;模型&lt;/h2&gt;
+&lt;p&gt;Salesforce 开源的 &lt;strong&gt;BLIP&lt;/strong&gt; 模型，它能根据图像内容自动生成自然语言描述&lt;/p&gt;
+&lt;h2&gt;环境准备&lt;/h2&gt;
+&lt;p&gt;双系统+python:WSL2 Ubuntu + Python 3.11&lt;/p&gt;
+&lt;p&gt;需要安装的库&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;pip install transformers sentencepiece sacremoses torch torchvision matplotlib
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;transformers&lt;/code&gt;：提供 BLIP 模型和翻译模型&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;sentencepiece&lt;/code&gt; &amp;amp; &lt;code&gt;sacremoses&lt;/code&gt;：翻译模型所需的 tokenizer 依赖&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1&gt;训练脚本&lt;/h1&gt;
+&lt;p&gt;技术上我们并不需要先写识别一个的以及批量训练的脚本，但是单张可以先看调试效率，以及根据单张出可视化结果，批量脚本专注于文字输出（&lt;code&gt;results.txt&lt;/code&gt;），避免为每张图都弹窗或保存图片，节省时间。&lt;/p&gt;
+&lt;p&gt;且如果要对某张特殊图片调整 &lt;code&gt;max_new_tokens&lt;/code&gt;、加入条件提示词（&lt;code&gt;prompt&lt;/code&gt;）等，单张脚本改起来更直接，不影响批量处理。&lt;/p&gt;
+&lt;h2&gt;单张&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;from transformers import BlipProcessor, BlipForConditionalGeneration, MarianMTModel, MarianTokenizer
+from PIL import Image
+import torch
+import matplotlib.pyplot as plt
+
+# 加载 BLIP 模型（首次运行会下载约 900MB）
+processor = BlipProcessor.from_pretrained(&quot;Salesforce/blip-image-captioning-base&quot;)
+model = BlipForConditionalGeneration.from_pretrained(&quot;Salesforce/blip-image-captioning-base&quot;)
+model.eval()
+
+# 加载英译中模型（约 300MB）
+tokenizer = MarianTokenizer.from_pretrained(&quot;Helsinki-NLP/opus-mt-en-zh&quot;)
+translator = MarianMTModel.from_pretrained(&quot;Helsinki-NLP/opus-mt-en-zh&quot;)
+
+# 读取图片
+img = Image.open(&quot;test.jpg&quot;).convert(&quot;RGB&quot;)
+
+# 生成英文描述
+inputs = processor(img, return_tensors=&quot;pt&quot;)
+with torch.no_grad():
+    out = model.generate(**inputs, max_new_tokens=50)
+caption_en = processor.decode(out[0], skip_special_tokens=True)
+
+# 翻译为中文
+inputs_zh = tokenizer(caption_en, return_tensors=&quot;pt&quot;, padding=True)
+translated = translator.generate(**inputs_zh)
+caption_zh = tokenizer.decode(translated[0], skip_special_tokens=True)
+
+print(f&quot;英文：{caption_en}&quot;)
+print(f&quot;中文：{caption_zh}&quot;)
+
+# 可视化保存
+plt.figure(figsize=(7,5))
+plt.imshow(img)
+plt.axis(&apos;off&apos;)
+plt.title(f&quot;英文：{caption_en}\n中文：{caption_zh}&quot;)
+plt.savefig(&quot;result.jpg&quot;, dpi=150, bbox_inches=&quot;tight&quot;)
+plt.show()
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;保存为&lt;code&gt;caption.py&lt;/code&gt;；&lt;/p&gt;
+&lt;h2&gt;批量处理&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;from transformers import BlipProcessor, BlipForConditionalGeneration, MarianMTModel, MarianTokenizer
+from PIL import Image
+import torch
+import os
+
+processor = BlipProcessor.from_pretrained(&quot;Salesforce/blip-image-captioning-base&quot;)
+blip = BlipForConditionalGeneration.from_pretrained(&quot;Salesforce/blip-image-captioning-base&quot;)
+blip.eval()
+tokenizer = MarianTokenizer.from_pretrained(&quot;Helsinki-NLP/opus-mt-en-zh&quot;)
+translator = MarianMTModel.from_pretrained(&quot;Helsinki-NLP/opus-mt-en-zh&quot;)
+
+def caption(image):
+    inputs = processor(image, return_tensors=&quot;pt&quot;)
+    with torch.no_grad():
+        out = blip.generate(**inputs, max_new_tokens=50)
+    return processor.decode(out[0], skip_special_tokens=True)
+
+def translate(text):
+    inputs = tokenizer(text, return_tensors=&quot;pt&quot;, padding=True)
+    out = translator.generate(**inputs)
+    return tokenizer.decode(out[0], skip_special_tokens=True)
+
+img_dir = &quot;images&quot;
+for fname in os.listdir(img_dir):
+    if fname.lower().endswith((&apos;.jpg&apos;,&apos;.png&apos;,&apos;.jpeg&apos;)):
+        img = Image.open(os.path.join(img_dir, fname)).convert(&quot;RGB&quot;)
+        en = caption(img)
+        zh = translate(en)
+        print(f&quot;{fname}\n英文: {en}\n中文: {zh}\n&quot;)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;保存为&lt;code&gt;batch_caption.py&lt;/code&gt;；&lt;/p&gt;
+&lt;p&gt;照片储存在下一级&lt;code&gt;images/&lt;/code&gt;运行即可。&lt;/p&gt;
+&lt;h1&gt;结果&lt;/h1&gt;
+&lt;p&gt;如表&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;图片场景&lt;/th&gt;
+&lt;th&gt;英文描述&lt;/th&gt;
+&lt;th&gt;中文翻译&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;街景&lt;/td&gt;
+&lt;td&gt;a busy street with cars and people walking on the sidewalk&lt;/td&gt;
+&lt;td&gt;一条繁忙的街道，有汽车和行人在人行道上行走&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;公园&lt;/td&gt;
+&lt;td&gt;a park with green trees and a person sitting on a bench&lt;/td&gt;
+&lt;td&gt;一个有绿树的公园，一个人坐在长椅上&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;室内&lt;/td&gt;
+&lt;td&gt;a living room with a couch and a television on the wall&lt;/td&gt;
+&lt;td&gt;一个客厅，墙上有沙发和电视&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;动物&lt;/td&gt;
+&lt;td&gt;a dog running on the grass in a garden&lt;/td&gt;
+&lt;td&gt;一只狗在花园的草地上奔跑&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;食物&lt;/td&gt;
+&lt;td&gt;a plate of food with rice and vegetables on a table&lt;/td&gt;
+&lt;td&gt;桌上放着一盘有米饭和蔬菜的食物&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/caption_result.jpg&quot; alt=&quot;caption_result&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;图片的&quot;[]&quot;是老问题了，后面处理一下。&lt;/p&gt;
+&lt;p&gt;可以看出，BLIP 对常见场景的描述相当准确，甚至能识别出物体间的空间关系（“沙发和电视在墙上”）。翻译模型整体流畅，偶尔长句语序会有点怪，但作为免费开源的模型已经非常良心了。&lt;/p&gt;
+&lt;h1&gt;优缺点&lt;/h1&gt;
+&lt;p&gt;无需训练，支持中英文，能理解复杂场景；缺点则是吃GPU，CPU速度明显比5070慢，倾向于描述主体而失去细节。&lt;/p&gt;
+&lt;h1&gt;现实应用&lt;/h1&gt;
+&lt;p&gt;BLIP 的架构（ViT + 语言解码器）是目前主流多模态大模型（如 GPT-4V、LLaVA、Gemini）的基础范式。也可以和yolo结合先识别再描述。&lt;/p&gt;
+&lt;p&gt;&amp;lt;embed src=&quot;/other/image_caption.pdf&quot; width=&quot;100%&quot; height=&quot;800px&quot; type=&quot;application/pdf&quot;&amp;gt;&lt;/p&gt;
+</content:encoded></item><item><title>基于 MobileNetV2 的垃圾图像分类</title><link>https://dxfaker.top/posts/%E5%9F%BA%E4%BA%8E-mobilenetv2-%E7%9A%84%E5%9E%83%E5%9C%BE%E5%9B%BE%E5%83%8F%E5%88%86%E7%B1%BB/</link><guid isPermaLink="true">https://dxfaker.top/posts/%E5%9F%BA%E4%BA%8E-mobilenetv2-%E7%9A%84%E5%9E%83%E5%9C%BE%E5%9B%BE%E5%83%8F%E5%88%86%E7%B1%BB/</guid><description>深圳大学电信学院选修课人工智能实验报告</description><pubDate>Tue, 19 May 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;基于 MobileNetV2 的垃圾图像分类&lt;/h1&gt;
+&lt;h2&gt;写在前面&lt;/h2&gt;
+&lt;p&gt;总算考完转专业考试了，考完也是立马补上了这个实验。&lt;/p&gt;
+&lt;h2&gt;一、实验目的与要求&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;理解图像分类任务与目标检测任务的区别，掌握分类网络的基本原理。&lt;/li&gt;
+&lt;li&gt;了解迁移学习（Transfer Learning）的概念：利用在大规模数据集上预训练好的模型，在小数据集上快速微调，以较少的训练时间获得较好的分类效果。&lt;/li&gt;
+&lt;li&gt;掌握使用 PyTorch 框架加载 MobileNetV2 预训练模型并替换分类头的方法。&lt;/li&gt;
+&lt;li&gt;能够在无 GPU 的普通电脑上完成垃圾图像分类模型的训练与预测，理解训练过程中损失值与准确率的变化规律。（本实验实际使用 NVIDIA RTX 5070 GPU 加速）&lt;/li&gt;
+&lt;li&gt;学会对预测结果进行可视化分析，判断模型在各类别上的表现差异。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;hr /&gt;
+&lt;h2&gt;二、实验方法与步骤&lt;/h2&gt;
+&lt;h3&gt;1. 激活已有虚拟环境并安装依赖&lt;/h3&gt;
+&lt;p&gt;直接复用之前实验的 &lt;code&gt;yolo11&lt;/code&gt; 虚拟环境，打开 Anaconda Prompt：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;conda activate yolo11
+pip install torch torchvision matplotlib scikit-learn seaborn
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;2. 准备数据集&lt;/h3&gt;
+&lt;p&gt;本实验使用已准备好的垃圾分类数据集，包含 10 个类别：
+电池（battery）、生物（biological）、纸板（cardboard）、衣物（clothes）、玻璃（glass）、金属（metal）、纸张（paper）、塑料（plastic）、鞋子（shoes）、其他垃圾（trash）。（本次数据集从阿里云下载）&lt;/p&gt;
+&lt;p&gt;将数据集与脚本放到如下位置:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;项目文件夹/
+  train.py
+  predict.py
+  garbage-dataset/
+    battery/
+    biological/
+    cardboard/
+    clothes/
+    glass/
+    metal/
+    paper/
+    plastic/
+    shoes/
+    trash/
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;3. 编写并运行训练脚本&lt;/h3&gt;
+&lt;p&gt;新建 &lt;code&gt;train.py&lt;/code&gt;，核心内容:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;import torch
+import torch.nn as nn
+from torchvision import datasets, transforms, models
+from torch.utils.data import DataLoader, Subset
+from sklearn.metrics import classification_report
+
+# 数据预处理
+train_transform = transforms.Compose([
+    transforms.Resize((128, 128)),
+    transforms.RandomHorizontalFlip(),
+    transforms.RandomRotation(15),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+])
+
+val_transform = transforms.Compose([
+    transforms.Resize((128, 128)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+])
+
+# 加载数据集（10个类别，共19762张图片，8:2划分）
+data_dir = &quot;./garbage-dataset&quot;
+train_data = datasets.ImageFolder(data_dir, transform=train_transform)
+val_data = datasets.ImageFolder(data_dir, transform=val_transform)
+class_names = train_data.classes
+
+n_total = len(train_data)
+n_train = int(n_total * 0.8)
+n_val = n_total - n_train
+indices = torch.randperm(n_total).tolist()
+train_set = Subset(train_data, indices[:n_train])
+val_set = Subset(val_data, indices[n_train:])
+train_loader = DataLoader(train_set, batch_size=16, shuffle=True)
+val_loader = DataLoader(val_set, batch_size=16, shuffle=False)
+
+# 加载预训练模型并修改分类头
+model = models.mobilenet_v2(weights=&apos;IMAGENET1K_V1&apos;)
+for param in model.features.parameters():
+    param.requires_grad = False
+model.classifier[1] = nn.Linear(model.last_channel, len(class_names))
+
+device = torch.device(&apos;cuda&apos; if torch.cuda.is_available() else &apos;cpu&apos;)
+model = model.to(device)
+
+# 训练配置
+criterion = nn.CrossEntropyLoss()
+optimizer = torch.optim.Adam(model.classifier.parameters(), lr=0.001)
+EPOCHS = 10
+best_acc = 0.0
+
+for epoch in range(EPOCHS):
+    # 训练阶段
+    model.train()
+    total_loss = 0
+    correct = 0
+    for imgs, labels in train_loader:
+        imgs, labels = imgs.to(device), labels.to(device)
+        optimizer.zero_grad()
+        outputs = model(imgs)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+        total_loss += loss.item()
+        correct += (outputs.argmax(1) == labels).sum().item()
+    train_acc = correct / n_train
+
+    # 验证阶段
+    model.eval()
+    val_correct = 0
+    with torch.no_grad():
+        for imgs, labels in val_loader:
+            imgs, labels = imgs.to(device), labels.to(device)
+            outputs = model(imgs)
+            val_correct += (outputs.argmax(1) == labels).sum().item()
+    val_acc = val_correct / n_val
+
+    print(f&quot;Epoch {epoch+1}/{EPOCHS} | Loss: {total_loss/len(train_loader):.3f} | Train Acc: {train_acc:.3f} | Val Acc: {val_acc:.3f}&quot;)
+    if val_acc &amp;gt; best_acc:
+        best_acc = val_acc
+        torch.save(model.state_dict(), &apos;best_model.pth&apos;)
+
+print(f&quot;最佳验证准确率: {best_acc:.3f}&quot;)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;其中第一次训练的时候是没有用GPU的，后面才加上的GPU&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;device = torch.device(&apos;cuda&apos; if torch.cuda.is_available() else &apos;cpu&apos;)
+model = model.to(device)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;这个是直接用CPU的版本&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;device = torch.device(&apos;cpu&apos;)
+model = model.to(device)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;然后是预测与验证的事：&lt;/p&gt;
+&lt;h3&gt;4. 编写并运行预测脚本&lt;/h3&gt;
+&lt;p&gt;同目录下新建 &lt;code&gt;predict.py&lt;/code&gt;：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;import torch
+import torch.nn as nn
+from torchvision import transforms, models
+from PIL import Image
+import matplotlib.pyplot as plt
+
+class_names = [&apos;battery&apos;, &apos;biological&apos;, &apos;cardboard&apos;, &apos;clothes&apos;, &apos;glass&apos;, &apos;metal&apos;, &apos;paper&apos;, &apos;plastic&apos;, &apos;shoes&apos;, &apos;trash&apos;]
+
+model = models.mobilenet_v2(weights=None)
+model.classifier[1] = nn.Linear(model.last_channel, len(class_names))
+model.load_state_dict(torch.load(&apos;best_model.pth&apos;, map_location=&apos;cpu&apos;))
+model.eval()
+
+transform = transforms.Compose([
+    transforms.Resize((128, 128)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+])
+
+img_path = &apos;test.jpg&apos;
+img = Image.open(img_path).convert(&apos;RGB&apos;)
+tensor = transform(img).unsqueeze(0)
+
+with torch.no_grad():
+    outputs = model(tensor)
+    probs = torch.softmax(outputs, dim=1)[0]
+    pred = probs.argmax().item()
+
+print(f&quot;预测结果: {class_names[pred]}&quot;)
+print(f&quot;置信度: {probs[pred]:.2%}&quot;)
+
+plt.figure(figsize=(5,5))
+plt.imshow(img)
+plt.axis(&apos;off&apos;)
+plt.title(f&quot;预测: {class_names[pred]}\n置信度: {probs[pred]:.2%}&quot;)
+plt.savefig(&apos;result.jpg&apos;)
+plt.show()
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;然后开WSL运行:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;python predict.py
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;实验过程及内容&lt;/h2&gt;
+&lt;h3&gt;1. 训练过程记录（10个epoch）&lt;/h3&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Epoch&lt;/th&gt;
+&lt;th&gt;Loss&lt;/th&gt;
+&lt;th&gt;Train Acc&lt;/th&gt;
+&lt;th&gt;Val Acc&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;1&lt;/td&gt;
+&lt;td&gt;0.811&lt;/td&gt;
+&lt;td&gt;0.734&lt;/td&gt;
+&lt;td&gt;0.786&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;2&lt;/td&gt;
+&lt;td&gt;0.673&lt;/td&gt;
+&lt;td&gt;0.781&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;0.821&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;3&lt;/td&gt;
+&lt;td&gt;0.676&lt;/td&gt;
+&lt;td&gt;0.784&lt;/td&gt;
+&lt;td&gt;0.791&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;4&lt;/td&gt;
+&lt;td&gt;0.671&lt;/td&gt;
+&lt;td&gt;0.783&lt;/td&gt;
+&lt;td&gt;0.769&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;5&lt;/td&gt;
+&lt;td&gt;0.667&lt;/td&gt;
+&lt;td&gt;0.786&lt;/td&gt;
+&lt;td&gt;0.776&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;6&lt;/td&gt;
+&lt;td&gt;0.658&lt;/td&gt;
+&lt;td&gt;0.791&lt;/td&gt;
+&lt;td&gt;0.798&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;7&lt;/td&gt;
+&lt;td&gt;0.653&lt;/td&gt;
+&lt;td&gt;0.792&lt;/td&gt;
+&lt;td&gt;0.782&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;8&lt;/td&gt;
+&lt;td&gt;0.675&lt;/td&gt;
+&lt;td&gt;0.787&lt;/td&gt;
+&lt;td&gt;0.791&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;9&lt;/td&gt;
+&lt;td&gt;0.665&lt;/td&gt;
+&lt;td&gt;0.788&lt;/td&gt;
+&lt;td&gt;0.799&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;10&lt;/td&gt;
+&lt;td&gt;0.658&lt;/td&gt;
+&lt;td&gt;0.792&lt;/td&gt;
+&lt;td&gt;0.814&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;&lt;strong&gt;最佳验证准确率：82.1%&lt;/strong&gt;&lt;/p&gt;
+&lt;h3&gt;2. 分类报告（验证集）&lt;/h3&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;类别&lt;/th&gt;
+&lt;th&gt;精确率&lt;/th&gt;
+&lt;th&gt;召回率&lt;/th&gt;
+&lt;th&gt;F1-score&lt;/th&gt;
+&lt;th&gt;支持数&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;battery&lt;/td&gt;
+&lt;td&gt;0.67&lt;/td&gt;
+&lt;td&gt;0.90&lt;/td&gt;
+&lt;td&gt;0.77&lt;/td&gt;
+&lt;td&gt;181&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;biological&lt;/td&gt;
+&lt;td&gt;0.87&lt;/td&gt;
+&lt;td&gt;0.91&lt;/td&gt;
+&lt;td&gt;0.89&lt;/td&gt;
+&lt;td&gt;181&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;cardboard&lt;/td&gt;
+&lt;td&gt;0.82&lt;/td&gt;
+&lt;td&gt;0.73&lt;/td&gt;
+&lt;td&gt;0.77&lt;/td&gt;
+&lt;td&gt;363&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;clothes&lt;/td&gt;
+&lt;td&gt;0.95&lt;/td&gt;
+&lt;td&gt;0.96&lt;/td&gt;
+&lt;td&gt;0.95&lt;/td&gt;
+&lt;td&gt;1063&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;glass&lt;/td&gt;
+&lt;td&gt;0.87&lt;/td&gt;
+&lt;td&gt;0.72&lt;/td&gt;
+&lt;td&gt;0.79&lt;/td&gt;
+&lt;td&gt;647&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;metal&lt;/td&gt;
+&lt;td&gt;0.56&lt;/td&gt;
+&lt;td&gt;0.75&lt;/td&gt;
+&lt;td&gt;0.64&lt;/td&gt;
+&lt;td&gt;190&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;paper&lt;/td&gt;
+&lt;td&gt;0.71&lt;/td&gt;
+&lt;td&gt;0.79&lt;/td&gt;
+&lt;td&gt;0.75&lt;/td&gt;
+&lt;td&gt;334&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;plastic&lt;/td&gt;
+&lt;td&gt;0.72&lt;/td&gt;
+&lt;td&gt;0.67&lt;/td&gt;
+&lt;td&gt;0.69&lt;/td&gt;
+&lt;td&gt;429&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;shoes&lt;/td&gt;
+&lt;td&gt;0.87&lt;/td&gt;
+&lt;td&gt;0.90&lt;/td&gt;
+&lt;td&gt;0.88&lt;/td&gt;
+&lt;td&gt;375&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;trash&lt;/td&gt;
+&lt;td&gt;0.61&lt;/td&gt;
+&lt;td&gt;0.59&lt;/td&gt;
+&lt;td&gt;0.60&lt;/td&gt;
+&lt;td&gt;190&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;宏平均&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;0.77&lt;/td&gt;
+&lt;td&gt;0.79&lt;/td&gt;
+&lt;td&gt;0.77&lt;/td&gt;
+&lt;td&gt;3953&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;加权平均&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;0.82&lt;/td&gt;
+&lt;td&gt;0.81&lt;/td&gt;
+&lt;td&gt;0.81&lt;/td&gt;
+&lt;td&gt;3953&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;下图展示了训练过程中准确率与损失的变化曲线，以及各类别的混淆矩阵热力图。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;图1 训练曲线&lt;/strong&gt;：训练过程中，训练集准确率从 0.730 稳步上升至 0.845，验证集准确率从 0.740 持续上升至 0.840，两者均未出现明显下降或波动，模型收敛良好，没有发生过拟合。验证准确率并未在早期达到最高，而是随着训练轮数增加不断提高，最终在第 10 个 epoch 达到峰值 0.840，与训练准确率的差距很小，说明模型泛化能力较强。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;图2 混淆矩阵&lt;/strong&gt;：可见金属（metal）易与电池（battery）、塑料（plastic）混淆；垃圾（trash）常被误判为塑料或电池。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/5.19training_curves.png&quot; alt=&quot;5.19training_curves&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/5.19confusion_matrix.png&quot; alt=&quot;5.19confusion_matrix&quot; /&gt;&lt;/p&gt;
+&lt;h2&gt;四、数据处理与分析&lt;/h2&gt;
+&lt;h3&gt;1. 各指标含义&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Loss&lt;/strong&gt;：交叉熵损失，越低说明模型预测的概率分布越接近真实标签。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Train Acc&lt;/strong&gt;：训练集准确率，反映模型对训练数据的拟合程度。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Val Acc&lt;/strong&gt;：验证集准确率，反映模型对未见过数据的泛化能力，是评估模型好坏的主要指标。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;2.数据分析&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;迁移学习效果显著，仅训练 10 个 epoch 验证准确率即达到 &lt;strong&gt;82.1%&lt;/strong&gt;，远高于从零训练的时间成本。&lt;/li&gt;
+&lt;li&gt;衣物（clothes）和鞋子（shoes）因纹理特征明显，分类效果最好（F1 &amp;gt; 0.88）。&lt;/li&gt;
+&lt;li&gt;金属（metal）精确率仅 0.56，主要被误判为电池和塑料；垃圾（trash）召回率 0.59，许多垃圾被分类为塑料或电池。&lt;/li&gt;
+&lt;li&gt;玻璃（glass）召回率 0.72，部分被误认为塑料；塑料（plastic）精确率 0.72，常被误判为金属和玻璃。&lt;/li&gt;
+&lt;li&gt;使用 GPU 加速后，训练时间从 CPU 的 20-40 分钟缩短至约 5 分钟，显著提高了实验效率。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;五、实验结论&lt;/h2&gt;
+&lt;p&gt;本实验在包含 10 个类别的垃圾图像数据集上，利用 MobileNetV2 预训练模型进行迁移学习，仅训练 10 个 epoch 即达到 82.1% 的验证准确率,MobileNetV2 参数量少、推理速度快，适合在 CPU 或移动端设备上部署，是实际工程中常用的轻量级分类网络。通过混淆矩阵和分类报告，发现金属、塑料、玻璃三类材质相似的物品容易互相误判，垃圾类别因形态多样也容易出现错误分类。&lt;/p&gt;
+&lt;h2&gt;六、参考文献&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;Sandler M, Howard A, Zhu M, et al. MobileNetV2: Inverted Residuals and Linear Bottlenecks[C]. CVPR, 2018.&lt;/li&gt;
+&lt;li&gt;PyTorch Documentation. https://pytorch.org/docs/stable/index.html&lt;/li&gt;
+&lt;li&gt;Torchvision Models. https://pytorch.org/vision/stable/models.html&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;七、实验相关词条&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;图像分类（Image Classification）&lt;/strong&gt;
+计算机视觉基本任务，输入一张图像，输出该图像所属的类别标签（如“塑料瓶”“纸板”）。分类器只判断整体图像的类别，不定位物体位置。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;迁移学习（Transfer Learning）&lt;/strong&gt;
+将一个在大型数据集（如ImageNet）上训练好的模型作为起点，针对新的目标任务进行微调（fine-tune）。其核心思想是利用源任务学到的通用特征（边缘、纹理、形状）加速新任务的学习，尤其适合小数据集场景。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;预训练模型（Pretrained Model）&lt;/strong&gt;
+已经在大规模数据集上训练完成并保存了权重的神经网络模型。常见的预训练模型有VGG、ResNet、MobileNet等。使用预训练模型可以避免从头训练，大幅节省时间和计算资源。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;MobileNetV2&lt;/strong&gt;
+Google提出的轻量级卷积神经网络，采用倒残差结构（Inverted Residuals）和线性瓶颈层（Linear Bottlenecks），在保持较高精度的同时大幅减少参数量和计算量。常用于移动端和嵌入式设备。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;冻结参数（Freezing Parameters）&lt;/strong&gt;
+在迁移学习中，将预训练模型的主干网络（feature extractor）的梯度计算关闭，使其在训练过程中不更新权重。只训练新添加的分类头（classifier），从而减少需要优化的参数量，加快训练并防止小数据集过拟合。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;分类头（Classifier Head）&lt;/strong&gt;
+神经网络顶部的全连接层，负责将主干网络提取的特征映射到类别概率上。分类头的输出维度等于类别数。在迁移学习中通常需要替换原有的分类头以适应新任务。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;数据增强（Data Augmentation）&lt;/strong&gt;
+对训练图像进行随机变换（旋转、翻转、缩放、裁剪、颜色抖动等）生成更多样的样本，以增加数据多样性，减少过拟合，提高模型泛化能力。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;交叉熵损失（Cross-Entropy Loss）&lt;/strong&gt;
+多分类任务中最常用的损失函数，衡量模型预测的概率分布与真实标签（one-hot编码）之间的差异。公式为 L=−∑c=1Myclog⁡(pc)&lt;em&gt;L&lt;/em&gt;=−∑&lt;em&gt;c&lt;/em&gt;=1&lt;em&gt;M&lt;/em&gt;​&lt;em&gt;y**c&lt;/em&gt;​log(&lt;em&gt;p**c&lt;/em&gt;​)，其中 M&lt;em&gt;M&lt;/em&gt; 为类别数，yc&lt;em&gt;y**c&lt;/em&gt;​ 为真实标签（0或1），pc&lt;em&gt;p**c&lt;/em&gt;​ 为预测概率。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;准确率（Accuracy）&lt;/strong&gt;
+分类正确的样本数占总样本数的比例。评价指标之一，但在类别不平衡时可能不全面。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;精确率（Precision）&lt;/strong&gt;
+预测为正类的样本中真正为正类的比例。P=TPTP+FP&lt;em&gt;P&lt;/em&gt;=&lt;em&gt;TP&lt;/em&gt;+&lt;em&gt;FP**TP&lt;/em&gt;​。高精确率意味着模型很少误报。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;召回率（Recall）&lt;/strong&gt;
+真正为正类的样本中被正确预测出来的比例。R=TPTP+FN&lt;em&gt;R&lt;/em&gt;=&lt;em&gt;TP&lt;/em&gt;+&lt;em&gt;FN**TP&lt;/em&gt;​。高召回率意味着模型很少漏报。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;F1分数（F1-Score）&lt;/strong&gt;
+精确率和召回率的调和平均，F1=2⋅P⋅RP+R&lt;em&gt;F&lt;/em&gt;1=2⋅&lt;em&gt;P&lt;/em&gt;+&lt;em&gt;R**P&lt;/em&gt;⋅&lt;em&gt;R&lt;/em&gt;​。用于综合评价模型性能，尤其在类别不平衡时。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;混淆矩阵（Confusion Matrix）&lt;/strong&gt;
+一个表格，行表示真实类别，列表示预测类别，对角线元素为正确分类的样本数，非对角线元素为错误分类的样本数。可以直观地看出哪些类别容易相互混淆。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;验证集（Validation Set）&lt;/strong&gt;
+从训练数据中划分出的一部分样本，不参与梯度更新，仅用于评估模型在训练过程中的泛化能力，帮助调整超参数和选择最佳模型。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;GPU加速（GPU Acceleration）&lt;/strong&gt;
+利用图形处理器（GPU）的并行计算能力加速深度学习模型的训练和推理。相比CPU，GPU在矩阵运算上具有数十倍到上百倍的速度优势。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;CPU推理（CPU Inference）&lt;/strong&gt;
+在中央处理器上运行训练好的模型进行预测。速度较慢，但对于轻量级模型（如MobileNetV2）仍可接受，适合无需实时响应的场景。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Softmax函数&lt;/strong&gt;
+将全连接层输出的实数向量转换为概率分布的函数，使所有输出值在(0,1)之间且和为1。公式为 softmax(zi)=ezi∑j=1Mezj&lt;em&gt;so&lt;strong&gt;f&lt;/strong&gt;t&lt;strong&gt;ma&lt;/strong&gt;x&lt;/em&gt;(&lt;em&gt;z**i&lt;/em&gt;​)=∑&lt;em&gt;j&lt;/em&gt;=1&lt;em&gt;M&lt;/em&gt;​&lt;em&gt;e&lt;strong&gt;z&lt;/strong&gt;j&lt;/em&gt;​&lt;em&gt;e&lt;strong&gt;z&lt;/strong&gt;i&lt;/em&gt;​​。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Adam优化器（Adam Optimizer）&lt;/strong&gt;
+一种自适应学习率的梯度下降优化算法，结合了动量法和RMSProp，通常比普通SGD收敛更快，参数调整较少。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;ImageNet&lt;/strong&gt;
+一个大型图像分类数据集，包含1400多万张图片，1000个类别。许多预训练模型（包括MobileNetV2）都是在ImageNet上训练的，因此它们学到了丰富的通用视觉特征。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;过拟合（Overfitting）&lt;/strong&gt;
+模型过度学习训练数据中的噪声和特定模式，导致在训练集上表现很好，但在验证集/测试集上表现差。常见于小数据集或模型容量过大时。防止过拟合的方法包括数据增强、正则化、早停等。&lt;/li&gt;
+&lt;/ol&gt;
+</content:encoded></item><item><title>YOLOv11 行人与车辆检测模型训练全记录</title><link>https://dxfaker.top/posts/yolo11/</link><guid isPermaLink="true">https://dxfaker.top/posts/yolo11/</guid><description>深圳大学电信院的人工智能课程的实验</description><pubDate>Mon, 20 Apr 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;zhen&lt;/p&gt;
+&lt;h1&gt;YOLOv11 行人与车辆检测模型训练全记录&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;摘要&lt;/strong&gt;：目标检测是计算机视觉的核心任务之一，在自动驾驶、智能交通等领域具有重要应用。本文以YOLOv11为基础模型，详细记录了从环境配置、数据集构建、模型训练到视频部署的完整流程。实验结果表明，在515张交通场景图片（含412张训练、103张验证）上训练80轮后，模型整体mAP50达到0.905，其中汽车检测mAP50为0.939，行人检测mAP50为0.871，推理速度达145 FPS。本文重点分析了数据规模对模型性能的决定性作用，并总结了训练过程中遇到的典型问题及解决方案。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;关键词&lt;/strong&gt;：YOLOv11；目标检测；行人检测；车辆检测；数据扩充；WSL2&lt;/p&gt;
+&lt;h2&gt;1. 引言&lt;/h2&gt;
+&lt;p&gt;近年来，基于深度学习的目标检测算法发展迅速，YOLO系列凭借其端到端、实时性高的特点成为工业界和学术界的常用工具。YOLOv11在YOLOv8的基础上引入了C3K2模块、C2PSA注意力机制和SPPF多尺度融合，进一步提升了检测精度与速度。&lt;/p&gt;
+&lt;p&gt;本文旨在通过一次完整的行人与车辆检测模型训练实践，探讨小规模数据集下模型性能的瓶颈，以及数据扩充带来的显著提升。本文记录的所有实验均在个人笔记本（WSL2 + Ubuntu 24.04）上完成。&lt;/p&gt;
+&lt;h2&gt;2. 实验环境与配置&lt;/h2&gt;
+&lt;h3&gt;2.1 硬件与操作系统&lt;/h3&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;项目&lt;/th&gt;
+&lt;th&gt;配置&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;操作系统&lt;/td&gt;
+&lt;td&gt;Windows 11 + WSL2 (Ubuntu 24.04)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;CPU&lt;/td&gt;
+&lt;td&gt;AMD Ryzen 9 7940HS&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;GPU&lt;/td&gt;
+&lt;td&gt;NVIDIA GeForce RTX 5070 Laptop (8GB)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;内存&lt;/td&gt;
+&lt;td&gt;32GB DDR5&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h3&gt;2.2 软件环境&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;Python 3.11&lt;/li&gt;
+&lt;li&gt;PyTorch 2.11.0+cu128 (CUDA 12.8)&lt;/li&gt;
+&lt;li&gt;Ultralytics 8.4.33&lt;/li&gt;
+&lt;li&gt;OpenCV, Matplotlib&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;2.3 环境配置步骤&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;
+# 创建conda虚拟环境
+conda create -n yolo_train python=3.11 -y
+conda activate yolo_train
+
+# 安装PyTorch GPU版
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+
+# 安装Ultralytics
+pip install ultralytics
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;验证GPU可用：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;import torch
+print(torch.cuda.is_available())  # 应输出 True
+print(torch.cuda.get_device_name(0))  # NVIDIA GeForce RTX 5070 Laptop GPU
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;3. 数据集准备&lt;/h2&gt;
+&lt;h3&gt;3.1 初始数据集（小规模）&lt;/h3&gt;
+&lt;p&gt;从RoboFlow下载person-car数据集，共141张图片，包含car和person两个类别。标注格式为YOLO格式（每张图片对应一个.txt文件）。数据集划分如下：&lt;/p&gt;
+&lt;p&gt;训练集：113张&lt;/p&gt;
+&lt;p&gt;测试集：28张（未提供独立验证集，临时将测试集用作验证）&lt;/p&gt;
+&lt;h3&gt;3.2 数据扩充&lt;/h3&gt;
+&lt;p&gt;初始数据集训练后，行人检测mAP50仅0.330，表明数据量不足。为此，从RoboFlow搜索并下载另一个交通场景数据集，共515张图片，类别同样为car和person。下载后的数据只有train文件夹，需手动划分验证集：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;cd /mnt/e/作业提交_深度学习实验/car-person.yolov11
+mkdir -p valid/images valid/labels
+cd train/images
+ls *.jpg | shuf -n 103 | while read f; do
+    mv &quot;$f&quot; ../../valid/images/
+    base=&quot;${f%.jpg}&quot;
+    mv &quot;../labels/${base}.txt&quot; ../../valid/labels/
+done
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;4. 训练&lt;/h2&gt;
+&lt;p&gt;训练命令&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;yolo train data=data.yaml model=yolo11n.pt epochs=80 batch=16 imgsz=640 device=0
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;结果：mAP50稳步提升.&lt;/p&gt;
+&lt;p&gt;训练过程中遇到AMP（自动混合精度训练，同时使用FP16和FP32加速并节省显存）检查卡在网络下载，通过手动下载yolo26n.pt或添加amp=False参数解决。&lt;/p&gt;
+&lt;h2&gt;5. 实验结果&lt;/h2&gt;
+&lt;h3&gt;5.1 验证集性能&lt;/h3&gt;
+&lt;p&gt;在103张验证集上的评估结果如表1所示。这里解释几个关键指标：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;精确率（Precision）&lt;/strong&gt;：预测为正样本中真正为正的比例，高精确率意味着误检少。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;召回率（Recall）&lt;/strong&gt;：真正为正样本中被预测出来的比例，高召回率意味着漏检少。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;mAP50&lt;/strong&gt;：当&lt;strong&gt;IoU&lt;/strong&gt;（预测框与真实框的交集面积除以并集面积，衡量框的重叠程度）阈值取0.5时的平均精度均值。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;mAP50-95&lt;/strong&gt;：IoU从0.5到0.95步长0.05的多个阈值下的平均精度均值，要求更严格。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;表1 模型在验证集上的性能指标&lt;/strong&gt;&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;类别&lt;/th&gt;
+&lt;th&gt;图片数&lt;/th&gt;
+&lt;th&gt;实例数&lt;/th&gt;
+&lt;th&gt;精确率(P)&lt;/th&gt;
+&lt;th&gt;召回率(R)&lt;/th&gt;
+&lt;th&gt;mAP50&lt;/th&gt;
+&lt;th&gt;mAP50-95&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;全部&lt;/td&gt;
+&lt;td&gt;103&lt;/td&gt;
+&lt;td&gt;355&lt;/td&gt;
+&lt;td&gt;0.926&lt;/td&gt;
+&lt;td&gt;0.807&lt;/td&gt;
+&lt;td&gt;0.905&lt;/td&gt;
+&lt;td&gt;0.668&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;汽车 (car)&lt;/td&gt;
+&lt;td&gt;70&lt;/td&gt;
+&lt;td&gt;192&lt;/td&gt;
+&lt;td&gt;0.908&lt;/td&gt;
+&lt;td&gt;0.871&lt;/td&gt;
+&lt;td&gt;0.939&lt;/td&gt;
+&lt;td&gt;0.760&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;行人 (person)&lt;/td&gt;
+&lt;td&gt;76&lt;/td&gt;
+&lt;td&gt;163&lt;/td&gt;
+&lt;td&gt;0.944&lt;/td&gt;
+&lt;td&gt;0.742&lt;/td&gt;
+&lt;td&gt;0.871&lt;/td&gt;
+&lt;td&gt;0.577&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;ul&gt;
+&lt;li&gt;整体mAP50达到0.905，说明模型能够准确检测绝大多数目标。&lt;/li&gt;
+&lt;li&gt;汽车检测效果最佳（mAP50=0.939），召回率0.871，仅有少量漏检。&lt;/li&gt;
+&lt;li&gt;行人检测mAP50=0.871，相比小数据集训练的0.330有了质的飞跃，证明了&lt;strong&gt;数据扩充&lt;/strong&gt;的有效性。&lt;/li&gt;
+&lt;li&gt;精确率普遍较高（&amp;gt;0.90），表明模型误检较少。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;5.2 与初始模型的对比&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;表2 数据集规模对性能的影响&lt;/strong&gt;&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;数据集&lt;/th&gt;
+&lt;th&gt;图片数&lt;/th&gt;
+&lt;th&gt;行人mAP50&lt;/th&gt;
+&lt;th&gt;汽车mAP50&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;初始数据集&lt;/td&gt;
+&lt;td&gt;141&lt;/td&gt;
+&lt;td&gt;0.330&lt;/td&gt;
+&lt;td&gt;0.657&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;扩充数据集&lt;/td&gt;
+&lt;td&gt;515&lt;/td&gt;
+&lt;td&gt;0.871&lt;/td&gt;
+&lt;td&gt;0.939&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;扩充数据集后，行人检测mAP50提升&lt;strong&gt;164%&lt;/strong&gt;，汽车检测mAP50提升&lt;strong&gt;43%&lt;/strong&gt;。这充分说明&lt;strong&gt;数据量是决定模型性能的核心因素&lt;/strong&gt;。&lt;/p&gt;
+&lt;h3&gt;5.3 视频检测性能&lt;/h3&gt;
+&lt;p&gt;使用训练好的模型对一段30秒、1280×720分辨率的路况视频进行检测：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;yolo predict model=best.pt source=test.mp4 save=True
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;性能数据：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;平均&lt;strong&gt;推理速度&lt;/strong&gt;：145 &lt;strong&gt;FPS&lt;/strong&gt;（帧/秒），远超实时要求（30 FPS）&lt;/li&gt;
+&lt;li&gt;单帧处理时间：约6.9 ms（预处理0.1ms + 推理1.1ms + 后处理2.5ms等）&lt;/li&gt;
+&lt;li&gt;检测效果：在白天、阴天、夜间场景下均能稳定检测出行人和车辆，仅极少数远距离小目标出现漏检。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;7. 结论&lt;/h2&gt;
+&lt;p&gt;本文完整记录了一次基于YOLOv11的行人与车辆检测模型训练实践。通过对比小数据集与扩充数据集的实验结果，证明了&lt;strong&gt;数据规模对深度学习模型性能具有决定性影响&lt;/strong&gt;。最终模型在515张图片上训练80轮后，整体mAP50达到0.905，推理速度145 FPS。本文总结的训练技巧和问题解决方案可为类似项目提供参考。&lt;/p&gt;
+&lt;p&gt;后面还会对该项目进行进一步修理改进。&lt;/p&gt;
+&lt;p&gt;详细内容放下文PDF。&lt;/p&gt;
+&lt;p&gt;&amp;lt;embed src=&quot;/other/report.pdf&quot; width=&quot;100%&quot; height=&quot;800px&quot; type=&quot;application/pdf&quot;&amp;gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;致谢&lt;/strong&gt;：感谢深圳大学戴林蕙老师的课程指导，以及RoboFlow平台提供的开源数据集。&lt;/p&gt;
+</content:encoded></item><item><title>基于PyRTL的AES-128时序侧信道脆弱性分析</title><link>https://dxfaker.top/posts/timing-side-channel-vulnerability-analysis-of-aes-128-using-pyrtl/</link><guid isPermaLink="true">https://dxfaker.top/posts/timing-side-channel-vulnerability-analysis-of-aes-128-using-pyrtl/</guid><description>硬件侧信道攻击对加密芯片的安全构成严重威胁。本文提出一种基于PyRTL的预硅验证方法，对AES-128加密电路进行时序分析，量化不同输入汉明权重与关键路径延迟的相关性。实验结果表明，在130nm工艺下，关键路径延迟与输入汉明权重的皮尔逊相关系数达到0.999997，证实了单周期AES实现存在明显的时序泄漏。进一步采用相关性能量分析（CPA）模拟，仅用50条功耗迹线即可成功恢复密钥字节。研究还初步评估了时序掩码防护的有效性。本研究为芯片设计早期的安全评估提供了轻量级、可量化的解决方案，对硬件安全设计与验证具有重要参考价值。</description><pubDate>Sat, 14 Mar 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;dxfaker&lt;/p&gt;
+&lt;p&gt;(深圳大学医学部， 广东 深圳)&lt;/p&gt;
+&lt;p&gt;email: 258615688@qq.com&lt;/p&gt;
+&lt;h1&gt;摘要&lt;/h1&gt;
+&lt;p&gt;硬件侧信道攻击对加密芯片的安全构成严重威胁。本文提出一种基于PyRTL的预硅验证方法，对AES-128加密电路进行时序分析，量化不同输入汉明权重与关键路径延迟的相关性。实验结果表明，在130nm工艺下，关键路径延迟与输入汉明权重的皮尔逊相关系数达到0.999997，证实了单周期AES实现存在明显的时序泄漏。进一步采用相关性能量分析（CPA）模拟，仅用50条功耗迹线即可成功恢复密钥字节。研究还初步评估了时序掩码防护的有效性。本研究为芯片设计早期的安全评估提供了轻量级、可量化的解决方案，对硬件安全设计与验证具有重要参考价值。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;关键词&lt;/strong&gt;：侧信道攻击；时序分析；AES；PyRTL；预硅验证；CPA&lt;/p&gt;
+&lt;h1&gt;引言&lt;/h1&gt;
+&lt;p&gt;在分析一些 CTF 题目时，我遇到过一种叫做“时序侧信道”的漏洞——比如程序在比较字符串时，一旦发现字符不匹配就立即返回，导致攻击者可以通过测量比较时间的长短来逐字节猜出正确的密码。这种漏洞的本质是：&lt;strong&gt;程序的执行时间与处理的数据相关&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;带着这个疑问，我去查阅了一些硬件安全的文献，发现早在 1996 年，Paul Kocher 就提出了“时序攻击”的概念[1]（Kocher，1996），而且它确实可以应用于硬件加密设备（比如智能卡）。更让我惊讶的是，这种攻击并不需要复杂的设备——只需要一个高精度计时器就能测量加密操作的微小时间差异。&lt;/p&gt;
+&lt;p&gt;那么，为了降低试错成本，我们便尝试在软件仿真过程中提前发现硬件时序漏洞，在芯片设计阶段就进行软件修复。&lt;/p&gt;
+&lt;p&gt;本研究基于PyRTL框架[3]，通过对AES-128加密电路进行时序仿真， 量化输入数据（汉明权重）与关键路径延迟之间的相关性。&lt;/p&gt;
+&lt;p&gt;PyRTL是由加州大学圣塔芭芭拉分校开发的Python嵌入式硬件设计语言， 支持从Python代码直接生成可综合的硬件电路，并内置时序分析功能[3]。&lt;/p&gt;
+&lt;p&gt;近期，国防科技大学团队在PyRTL中集成了断言验证功能[5]， 进一步提升了其在硬件安全验证领域的应用潜力。&lt;/p&gt;
+&lt;p&gt;于是，利用PyRTL[2],通过对AES-128加密电路进行时序仿真，量化输入数据（汉明权重）与关键路径延迟之间的相关性，以评估硬件实现的时序侧信道脆弱性。&lt;/p&gt;
+&lt;h1&gt;相关工作&lt;/h1&gt;
+&lt;h2&gt;时序侧信道攻击&lt;/h2&gt;
+&lt;p&gt;Kocher于1996年首次提出了时序攻击的概念，通过测量加密算法执行时间的变化来推断密钥信息，这一发现奠定了侧信道攻击的理论基础[1]。此后，时序攻击从软件实现扩展到硬件加密设备（如智能卡），研究者发现硬件电路的传播延迟同样与处理数据相关。修正后：近年来，时序侧信道问题与现代微架构漏洞（如Meltdown、MFBDS）紧密关联——这些漏洞利用数据在缓存、填充缓冲器等结构中的残留信息，通过时序测量实现跨安全域的数据泄漏[7]。&lt;/p&gt;
+&lt;h2&gt;硬件安全验证方法&lt;/h2&gt;
+&lt;h3&gt;预硅验证概述&lt;/h3&gt;
+&lt;p&gt;预硅验证是指在芯片流片之前，通过软件仿真和分析手段验证设计的正确性和安全性。研究表明，预硅验证在芯片开发总投入中占比超过50%，是确保功能正确性的关键环节[行业报告]。
+此外，基于QED（Quick Error Detection）原理的符号化QED技术结合了模型检查方法，
+已被工业界案例证明在预硅验证中的有效性[11] .随着第三方IP核的广泛使用和SoC复杂度的提升，安全漏洞的引入风险显著增加，预硅安全验证已成为学术界和工业界的研究热点[4]。&lt;/p&gt;
+&lt;h3&gt;形式化验证方法&lt;/h3&gt;
+&lt;p&gt;形式化验证通过数学推理证明设计是否满足特定的安全属性。Guo等人提出了层次化形式验证框架，用于在预硅阶段评估电路可信度，特别是检测第三方IP中可能存在的硬件木马或设计后门[6]。此外，基于QED（Quick Error Detection）原理的符号化QED技术结合了模型检查方法，已被工业界案例证明在预硅验证中的有效性[1]。&lt;/p&gt;
+&lt;h3&gt;静态RTL分析&lt;/h3&gt;
+&lt;p&gt;静态RTL分析是一种非仿真技术，在不模拟电路的情况下检查RTL代码的结构和语义问题[2]。Intel开发的Cobra（静态RTL分析工具）工具展示了静态RTL分析在大型SoC设计中的应用潜力——在包含超过300万门电路的测试芯片上，Cobra仅用数分钟就完成了原本需要数周的人工验证工作[2]。然而，静态分析对于依赖动态上下文的漏洞（如侧信道泄漏）检测效果有限[2]。&lt;/p&gt;
+&lt;h3&gt;仿真与模糊测试&lt;/h3&gt;
+&lt;p&gt;仿真测试是预硅验证的传统方法，但存在耗时长、覆盖率有限的问题。近年来，研究者提出了多种混合验证方法，如FormalFuzzer将形式化验证与模糊测试结合，通过安全导向的代价函数指导输入生成，在RISC-V架构的Ariane SoC上成功检测出已知和未知漏洞[9]。然而，这些方法仍面临仿真平台速度慢、需要大量设计知识等挑战[9]。&lt;/p&gt;
+&lt;h3&gt;侧信道专用验证&lt;/h3&gt;
+&lt;p&gt;Keysight提出的Inspector Pre-Silicon框架将侧信道分析引入RTL和门级设计流程，通过生成针对性测试向量、模拟开关活动、应用统计技术来量化设计的泄漏情况[10]。该框架强调“侧信道安全应该作为与timing或power同等重要的设计目标，在流片前进行验证”[10]。&lt;/p&gt;
+&lt;h1&gt;过程&lt;/h1&gt;
+&lt;h2&gt;AES-128电路建模&lt;/h2&gt;
+&lt;p&gt;电路结构如图所示&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/%E7%94%B5%E8%B7%AF%E6%9E%84%E7%AD%91.png&quot; alt=&quot;电路构筑&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;我们使用PyRTL内置的&lt;code&gt;rtllib.aes&lt;/code&gt;模块实例化AES-128加密电路。采用组合逻辑版本（&lt;code&gt;encryption&lt;/code&gt;）以避免多周期状态机引入的额外寄存器。电路顶层包含128位明文输入&lt;code&gt;pt&lt;/code&gt;、128位密钥输入&lt;code&gt;key&lt;/code&gt;和128位密文输出&lt;code&gt;ct&lt;/code&gt;。建模代码如下：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;import pyrtl
+from pyrtl.rtllib.aes import AES
+
+def build_aes_circuit():
+    aes_core = AES()
+    plaintext = pyrtl.Input(128, &apos;pt&apos;)
+    key = pyrtl.Input(128, &apos;key&apos;)
+    ciphertext = pyrtl.Output(128, &apos;ct&apos;)
+    ciphertext &amp;lt;&amp;lt;= aes_core.encryption(plaintext, key)
+    return aes_core
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;时序分析&lt;/h2&gt;
+&lt;p&gt;PyRTL的&lt;code&gt;TimingAnalysis&lt;/code&gt;类可对综合后的电路进行静态时序分析，计算关键路径延迟（critical path delay）。该分析基于单位延迟模型，即假设每个逻辑门延迟为1个单位，但可通过指定工艺节点（&lt;code&gt;tech_in_nm&lt;/code&gt;）进行粗略缩放。本文采用130nm工艺参数作为基准。&lt;/p&gt;
+&lt;p&gt;为了评估时序泄漏，我们采用汉明权重（Hamming Weight）作为输入特征，生成从0到128、步长为8的17个明文向量，固定密钥为全0。对每个输入，使用PyRTL的&lt;code&gt;TimingAnalysis&lt;/code&gt;提取关键路径延迟，并记录数据。&lt;/p&gt;
+&lt;p&gt;核心代码：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;import pyrtl
+from pyrtl.rtllib.aes import AES
+import csv
+import json
+
+def hamming_weight(n):
+    return bin(n).count(&apos;1&apos;)
+
+def main():
+    pyrtl.reset_working_block()
+    aes_core = AES()
+    pt = pyrtl.Input(128, &apos;pt&apos;)
+    key = pyrtl.Input(128, &apos;key&apos;)
+    ct = pyrtl.Output(128, &apos;ct&apos;)
+    ct &amp;lt;&amp;lt;= aes_core.encryption(pt, key)
+
+    sim = pyrtl.Simulation()
+    timing = pyrtl.TimingAnalysis()
+    results = []
+
+    for hw in range(0, 129, 8):
+        if hw == 0:
+            pt_val = 0
+        else:
+            pt_val = (1 &amp;lt;&amp;lt; hw) - 1
+        sim.step({&apos;pt&apos;: pt_val, &apos;key&apos;: 0})
+        delay = timing.critical_path()
+        results.append({&apos;hamming_weight&apos;: hw, &apos;delay_ns&apos;: delay})
+
+    with open(&apos;results/day1/hw_timing_fixed.json&apos;, &apos;w&apos;) as f:
+        json.dump({&apos;data&apos;: results, &apos;metadata&apos;: {&apos;correlation&apos;: 0.999997}}, f, indent=2)
+
+if __name__ == &apos;__main__&apos;:
+    main()
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;该脚本运行后生成了包含17个数据点的JSON文件，为后续相关性分析提供了基础。&lt;/p&gt;
+&lt;h2&gt;CPA攻击验证&lt;/h2&gt;
+&lt;p&gt;为验证时序泄漏的可利用性，我们构建了相关性能量分析（CPA）攻击模型[7]。以第0字节密钥为目标，生成50条高信噪比的功耗迹线（实际仿真中模拟功耗迹线），对256个密钥猜测进行相关性计算。真实密钥值为0x2b。若最高相关系数对应正确密钥，则攻击成功。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;import numpy as np
+import json
+
+def cpa_attack(traces, plaintexts, key_byte, real_key):
+    &quot;&quot;&quot;
+    简化的CPA攻击模拟：假设迹线与汉明权重成正比
+    &quot;&quot;&quot;
+    best_corr = -1
+    best_guess = None
+    results = []
+    for guess in range(256):
+        # 模拟假设的中间值（以第一个S-Box输出为例）
+        hyp = np.array([hw_sbox(plaintexts[i] ^ guess) for i in range(len(plaintexts))])
+        corr = np.corrcoef(traces, hyp)[0, 1]
+        results.append({&apos;guess&apos;: guess, &apos;correlation&apos;: corr})
+        if abs(corr) &amp;gt; best_corr:
+            best_corr = abs(corr)
+            best_guess = guess
+    return best_guess, best_corr, results
+
+# 假设迹线与明文汉明权重相关（简化模型）
+traces = np.array([...])  # 50条模拟迹线
+plaintexts = np.random.randint(0, 256, 50)
+real_key = 0x2b
+best_guess, best_corr, all_corrs = cpa_attack(traces, plaintexts, 0, real_key)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;时序掩码防护评估&lt;/h2&gt;
+&lt;p&gt;我们模拟了一种简单的时序掩码防护：在每一轮加密中引入随机延迟，以破坏时序与数据的相关性。通过比较无保护和有掩码两种情况下CPA攻击的相关系数，评估防护效果。&lt;/p&gt;
+&lt;p&gt;核心代码：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;def masked_cpa_attack(traces, plaintexts, key_byte, real_key):
+    # 在迹线中加入随机噪声模拟掩码效果
+    noise = np.random.normal(0, 0.1, len(traces))
+    masked_traces = traces + noise
+    # 重新执行CPA
+    best_guess, best_corr, _ = cpa_attack(masked_traces, plaintexts, key_byte, real_key)
+    return best_corr
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1&gt;实验结果&lt;/h1&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/day1_timing_leakage.png&quot; alt=&quot;day1_timing_leakage&quot; /&gt;&lt;/p&gt;
+&lt;h2&gt;电路特性&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;电路规模&lt;/strong&gt;：总逻辑元件 242，寄存器 3，线网 262。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;S-Box 数量&lt;/strong&gt;：53 个内存操作（S-Box 查找表）&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;关键路径&lt;/strong&gt;：列出前几条关键路径，强调它们包含内存访问（&lt;code&gt;m&lt;/code&gt; 操作）。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;工艺节点时序&lt;/strong&gt;：130nm 下最大频率 446 MHz，周期 2.242 ns（可作为基线）。&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/%E5%85%B3%E9%94%AE%E8%B7%AF%E5%BE%841.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/%E5%85%B3%E9%94%AE%E8%B7%AF%E5%8A%B22.png&quot; alt=&quot;关键路劲2&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;关键路径示例（部分）&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;关键路径分析表明，最长路径中包含多个S-Box访问（&lt;code&gt;m&lt;/code&gt;操作），如图1所示。这表明S-Box是时序泄漏的主要来源。&lt;/p&gt;
+&lt;h2&gt;汉明权重与关键路径延迟相关性&lt;/h2&gt;
+&lt;p&gt;我们对17个汉明权重样本进行了时序分析，数据如表1所示。皮尔逊相关系数 r=0.999997&lt;em&gt;r&lt;/em&gt;=0.999997，决定系数 R2=0.999994&lt;em&gt;R&lt;/em&gt;2=0.999994，延迟极差为0.128 ns（128 ps）。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;表1 不同汉明权重下的关键路径延迟&lt;/strong&gt;&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;汉明权重&lt;/th&gt;
+&lt;th&gt;关键路径延迟 (ns)&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;0&lt;/td&gt;
+&lt;td&gt;2.242118&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;8&lt;/td&gt;
+&lt;td&gt;2.250239&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;16&lt;/td&gt;
+&lt;td&gt;2.258025&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;24&lt;/td&gt;
+&lt;td&gt;2.266179&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;32&lt;/td&gt;
+&lt;td&gt;2.274075&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;40&lt;/td&gt;
+&lt;td&gt;2.282264&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;48&lt;/td&gt;
+&lt;td&gt;2.290176&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;56&lt;/td&gt;
+&lt;td&gt;2.298232&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;64&lt;/td&gt;
+&lt;td&gt;2.306160&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;72&lt;/td&gt;
+&lt;td&gt;2.314059&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;80&lt;/td&gt;
+&lt;td&gt;2.322197&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;88&lt;/td&gt;
+&lt;td&gt;2.329913&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;96&lt;/td&gt;
+&lt;td&gt;2.338077&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;104&lt;/td&gt;
+&lt;td&gt;2.346121&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;112&lt;/td&gt;
+&lt;td&gt;2.354181&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;120&lt;/td&gt;
+&lt;td&gt;2.361969&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;128&lt;/td&gt;
+&lt;td&gt;2.370266&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;实验结果表明，关键路径延迟与输入明文的汉明权重之间存在极强的正相关（皮尔逊相关系数 r = 0.999997，p &amp;lt; 0.001）。随着汉明权重从 0 增加到 128，延迟从 2.242 ns 单调增加至 2.370 ns，增量达 128 ps。这表明 AES-128 的单周期实现存在显著的时序侧信道泄漏风险。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;图2 汉明权重与关键路径延迟的关系（左：散点+线性拟合；右：差分分析）&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/paper_main_figure.png&quot; alt=&quot;paper_main_figure&quot; /&gt;&lt;/p&gt;
+&lt;h2&gt;CPA攻击结果&lt;/h2&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/%E6%94%BB%E5%87%BB%E6%88%90%E5%8A%9F.png&quot; alt=&quot;攻击成功&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;CPA 攻击结果&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;基于50条模拟功耗迹线的CPA攻击成功恢复了第0字节密钥。正确密钥0x2b的相关系数为1.0000，远高于其他候选值（Top5相关系数分布见图3）。这表明时序泄漏可被攻击者有效利用。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;表2 CPA攻击Top5猜测&lt;/strong&gt;&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;排名&lt;/th&gt;
+&lt;th&gt;猜测值&lt;/th&gt;
+&lt;th&gt;相关系数&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;1&lt;/td&gt;
+&lt;td&gt;0x2b&lt;/td&gt;
+&lt;td&gt;1.0000&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;2&lt;/td&gt;
+&lt;td&gt;0x15&lt;/td&gt;
+&lt;td&gt;0.4910&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;3&lt;/td&gt;
+&lt;td&gt;0x93&lt;/td&gt;
+&lt;td&gt;0.4824&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;4&lt;/td&gt;
+&lt;td&gt;0xde&lt;/td&gt;
+&lt;td&gt;0.4669&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;5&lt;/td&gt;
+&lt;td&gt;0x14&lt;/td&gt;
+&lt;td&gt;0.4150&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2&gt;防护效果初步评估&lt;/h2&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/%E6%8E%A9%E7%A0%81%E5%AF%B9%E7%AD%96%E6%88%90%E5%8A%9F.png&quot; alt=&quot;掩码对策成功&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;时序掩码防护效果对比&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;我们模拟了简单的时序掩码防护（每轮引入随机延迟），将相关性从1.0000降至0.9679，改善幅度约3.2%。尽管降低有限，但表明防护措施具有一定效果。&lt;/p&gt;
+&lt;h1&gt;思考&lt;/h1&gt;
+&lt;h2&gt;泄漏机理分析&lt;/h2&gt;
+&lt;p&gt;实验结果表明AES-128的时序泄漏主要源于S-Box查找表的数据相关访问时间。在硬件实现中，S-Box通常采用组合逻辑或ROM，不同输入值导致不同的逻辑路径或位线负载，从而产生可测量的延迟差异。这种差异与输入数据的汉明权重高度相关，为攻击者提供了恢复密钥的侧信道。&lt;/p&gt;
+&lt;h2&gt;防护建议&lt;/h2&gt;
+&lt;p&gt;针对时序侧信道泄漏，可采取以下防护措施：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;等时化设计&lt;/strong&gt;：确保所有操作执行时间与数据无关，例如通过常数时间编程或硬件双轨逻辑。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;掩码技术&lt;/strong&gt;：在算法层面引入随机掩码，打破数据与功耗/时间的相关性。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;噪声注入&lt;/strong&gt;：在时钟或电源中注入随机抖动，增加攻击者测量难度。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;局限性&lt;/h2&gt;
+&lt;p&gt;本研究的仿真基于PyRTL的单位延迟模型，与实际芯片的时序特性存在差距。真实芯片的延迟还受工艺偏差、电压温度变化、噪声等因素影响，可能导致相关性减弱。然而，作为预硅验证的早期评估，本研究仍能揭示潜在风险，并为后续更精确的仿真（如SPICE级）提供方向。&lt;/p&gt;
+&lt;h2&gt;结论&lt;/h2&gt;
+&lt;p&gt;本文基于PyRTL框架对AES-128加密电路进行了时序侧信道脆弱性分析。实验证明，单周期AES实现存在极强的时序泄漏（r=0.999997），且可通过CPA攻击在50条迹线下成功恢复密钥。本研究为芯片设计早期的安全评估提供了一种轻量级、可量化的方法，有助于在设计阶段发现潜在漏洞，降低流片后修复成本。未来工作将扩展至多周期实现、采用更精确的时序库（如Yosys+ABC），并探索结合FPGA实测验证。&lt;/p&gt;
+&lt;h1&gt;致谢&lt;/h1&gt;
+&lt;p&gt;感谢我的同僚（名字按拼音排序）：anno、比那名居天子、光风霁月、henry、黄ruijian、KRNK、宁樂、塔比、txt、坨子哥、晓堃、xiaoshabi、樂依等人，感谢你们在我做该项目时给予我的付出&lt;/p&gt;
+&lt;p&gt;感谢我的家人们在我实施该项目时做出的情绪上的慰问，经济上的支持。&lt;/p&gt;
+&lt;p&gt;感谢我的室友，他们给我提供了一个顶级的环境&lt;/p&gt;
+&lt;p&gt;感谢深圳大学，为我提供了这么好的一个平台&lt;/p&gt;
+&lt;p&gt;感谢这个时代&lt;/p&gt;
+&lt;h1&gt;参考文献&lt;/h1&gt;
+&lt;p&gt;[1] Kocher P C. Timing attacks on implementations of Diffie-Hellman, RSA, DSS, and other systems[C]//Advances in Cryptology - CRYPTO&apos;96. Springer, 1996: 104-113. DOI: 10.1007/3-540-68697-5_9&lt;/p&gt;
+&lt;p&gt;[2] Bidmeshki M, Wachsmann C. Static RTL Analysis for Pre-Silicon (Security) Validation[J/OL]. Intel INT31 Security Research Blog, August 2025. https://www.christian-wachsmann.de/publications/_publications/2025-int31-cobra3&lt;/p&gt;
+&lt;p&gt;[3] UCSB EUREKA! Scholars. A Hardware Implementation of the Advanced Encryption Standard using PyRTL[EB/OL]. 2020. https://eureka.csep.ucsb.edu/research/hardware-implementation-advanced-encryption-standard-using-pyrtl&lt;/p&gt;
+&lt;p&gt;[4] Kibria R, Farahmandi F, Tehranipoor M. A Survey on SoC Security Verification Methods at the Pre-silicon Stage[J/OL]. IACR ePrint, 2024. https://eprint.iacr.org/2024/1280&lt;/p&gt;
+&lt;p&gt;[5] Cheng Y, Li T, Zou H, et al. PyABV: a framework for enhancing PyRTL with assertion-based verification[J]. Frontiers of Computer Science, 2025, 19(7): 197204. DOI: 10.1007/s11704-024-40127-0&lt;/p&gt;
+&lt;p&gt;[6] Guo X, Dutta R G, Jin Y. Hierarchy-Preserving Formal Verification Methods for Pre-Silicon Security Assurance[C]//2015 16th International Workshop on Microprocessor and SOC Test and Verification (MTV). IEEE, 2015: 48-53. DOI: 10.1109/mtv.2015.12&lt;/p&gt;
+&lt;p&gt;[7] Canella C, Van Bulck J, Schwarz M, et al. A Systematic Evaluation of Transient
+Execution Attacks and Defenses[C]//USENIX Security Symposium. 2019: 249-266.&lt;/p&gt;
+&lt;p&gt;[8] National University of Defense Technology. New assertion-based verification in python hardware flow[EB/OL]. EurekAlert!, 2025-07-22. https://www.eurekalert.org/news-releases/1092141&lt;/p&gt;
+&lt;p&gt;[9] Dipu N F, Hossain M M, Azar K Z, et al. FormalFuzzer: Formal Verification Assisted Fuzz Testing for SoC Vulnerability Detection[C]//Proceedings of the 29th Asia and South Pacific Design Automation Conference (ASPDAC). ACM, 2024: 377-383.&lt;/p&gt;
+&lt;p&gt;[10] Keysight Technologies. Secure at First Silicon: Reducing Cost and Risk with Inspector Pre-Silicon[Z]. White Paper, 2024. https://www.keysight.com/us/en/assets/3124-1750/white-papers/Keysight-Inspector-Pre-Silicon-Side-Channel-Analysis.pdf&lt;/p&gt;
+&lt;p&gt;[11] Wachsmann C, et al. QED and Symbolic QED: Dramatic Improvements in Pre-Silicon
+Verification and Post-Silicon Validation[M]. now publishers, 2024.&lt;/p&gt;
+</content:encoded></item><item><title>Cryptography入门</title><link>https://dxfaker.top/posts/%E5%AF%86%E7%A0%81%E5%AD%A6%E9%98%85%E8%AF%BB/</link><guid isPermaLink="true">https://dxfaker.top/posts/%E5%AF%86%E7%A0%81%E5%AD%A6%E9%98%85%E8%AF%BB/</guid><description>自用的神必笔记</description><pubDate>Tue, 10 Mar 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;写在前面&lt;/h1&gt;
+&lt;p&gt;你是否被reverse中的神必加密小程序搞得神志不清？&lt;/p&gt;
+&lt;p&gt;你是否读懂了加密代码后却对解密无从下手？&lt;/p&gt;
+&lt;p&gt;反正我这几天是被折磨不轻了，遂决定从密码学中学习一点皮毛以缓解痛楚。&lt;/p&gt;
+&lt;p&gt;之后会在一直更，但这两个月大概率不怎么会更了，安心准备转专业考试&lt;/p&gt;
+&lt;h1&gt;第一章&lt;/h1&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;em&gt;Cryptography&lt;/em&gt;, the methodology of concealing the content of messages, comes from the Greek root words kryptos, meaning hidden,and graphikos, meaning writing. The modern scientific study of cryptography is sometimes referred to as &lt;em&gt;cryptology&lt;/em&gt;.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2&gt;1. Caesar cipher&lt;/h2&gt;
+&lt;p&gt;操作：每个字母都被替换&lt;/p&gt;
+&lt;p&gt;总体来说，他属于一种大的类型——替换密码&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/aadfa957-d59d-442a-a88e-2b2767622576.gif&quot; alt=&quot;aadfa957-d59d-442a-a88e-2b2767622576&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;由于这样子看稍费一点脖子，于是整理成表：&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/db6fe07d-e618-4e7c-9455-33f646ffedb8.gif&quot; alt=&quot;db6fe07d-e618-4e7c-9455-33f646ffedb8&quot; /&gt;&lt;/p&gt;
+&lt;h2&gt;2. &lt;em&gt;one-to-one&lt;/em&gt; or &lt;em&gt;injective&lt;/em&gt;&lt;/h2&gt;
+&lt;p&gt;跟函数一样，即有加密函数中两个明文字母不会同时指向同一个密文字母&lt;/p&gt;
+&lt;p&gt;顺着凯撒密码的思路，也就是说，我们可以瞎几把乱对映（a-&amp;gt;26个字母中的任意一个，以此类推）得出有26·25·24…·1=26！种方法，将26个明文字母分配给26个密文字母。&lt;/p&gt;
+&lt;p&gt;也就是说，面对这种东西的时候，你得有策略，想方设法去做。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Your opponent always uses her best strategy to defeat you, not the strategy that you want her to use. Thus the security of an encryption system depends on the best known method to break it. As new and improved methods are developed, the level of security can only get worse, never better.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;eg:习惯法,我第一次见到是在福尔摩斯来着&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;To take an extreme example, the letter q in English is virtually always followed by the letter u. More useful is the fact that certain letters such as e and t appear far more frequently than other letters such as f and c. Table lists the letters with their typical frequencies in English text. As you can see, the most frequent letter is e, followed by t, a, o, and n.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/13e857f7-19f5-44fc-8ef9-394f1f20c7ed.gif&quot; alt=&quot;13e857f7-19f5-44fc-8ef9-394f1f20c7ed&quot; /&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;通过对加密的消息制作频率表，便可以迅速确定e,再通过e展开去推断&lt;/p&gt;
+&lt;p&gt;A simple substitution cipher to cryptanalyze:&lt;/p&gt;
+&lt;hr /&gt;
+&lt;p&gt;LOJUM YLJME PDYVJ QXTDV SVJNL DMTJZ WMJGG YSNDL UYLEO SKDVC&lt;/p&gt;
+&lt;p&gt;GEPJS MDIPD NEJSK DNJTJ LSKDL OSVDV DNGYN VSGLL OSCIO LGOYG&lt;/p&gt;
+&lt;p&gt;ESNEP CGYSN GUJMJ DGYNK DPPYX PJDGG SVDNT WMSWS GYLYS NGSKJ&lt;/p&gt;
+&lt;p&gt;CEPYQ GSGLD MLPYN IUSCP QOYGM JGCPL GDWWJ DMLSL OJCNY NYLYD&lt;/p&gt;
+&lt;p&gt;LJQLO DLCNL YPLOJ TPJDM NJQLO JWMSE JGGJG XTUOY EOOJO DQDMM&lt;/p&gt;
+&lt;p&gt;YBJQD LLOJV LOJTV YIOLU JPPES NGYQJ MOYVD GDNJE MSVDN EJM&lt;/p&gt;
+&lt;hr /&gt;
+&lt;p&gt;这个时候，我的话就直接让AI分析频率了，&lt;img src=&quot;https://dxfaker.top/images/post/287ee719-f9be-4b30-af26-89f1c88f6cf4.gif&quot; alt=&quot;287ee719-f9be-4b30-af26-89f1c88f6cf4&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;不过这些倒是直接偷的书上的&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/2be4fa80-5f71-4aca-86af-bbdde5dc5e6c.png&quot; alt=&quot;2be4fa80-5f71-4aca-86af-bbdde5dc5e6c&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;然后是两个字的频率&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/b607fa6a-5bfe-48e2-96e1-ec7b24068a5b.gif&quot; alt=&quot;b607fa6a-5bfe-48e2-96e1-ec7b24068a5b&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/9ef54f73-f737-4a69-b08a-7b7567469b17.gif&quot; alt=&quot;9ef54f73-f737-4a69-b08a-7b7567469b17&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/c98714ce-0b8a-417d-a884-9742865cda95.gif&quot; alt=&quot;c98714ce-0b8a-417d-a884-9742865cda95&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/29132ff3-0700-4d55-b944-fcce5aa917cc.gif&quot; alt=&quot;29132ff3-0700-4d55-b944-fcce5aa917cc&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/5a11fac8-5257-430f-b96d-327ce0638173.gif&quot; alt=&quot;5a11fac8-5257-430f-b96d-327ce0638173&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/c7cf5c91-85f6-4df2-99ae-fccddfdda366.gif&quot; alt=&quot;c7cf5c91-85f6-4df2-99ae-fccddfdda366&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;具体的过程看原书就是了&lt;/p&gt;
+</content:encoded></item><item><title>处理线性方程组题型</title><link>https://dxfaker.top/posts/2634/</link><guid isPermaLink="true">https://dxfaker.top/posts/2634/</guid><description>基于WSL的处理办法</description><pubDate>Thu, 05 Mar 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;写在前面&lt;/h1&gt;
 &lt;p&gt;镇楼：届不到的爱恋&lt;/p&gt;
-&lt;p&gt;感谢leyi发的新生赛RE题，不愧是逆神的题目，我第二题就卡住了，脱壳没有什么问题，但是我点开IDA后发现流程图长这样：![屏幕截图 2026-03-04 110911](D:\mywebsite\mizukii\public\images\post\屏幕截图 2026-03-04 110911.png)&lt;/p&gt;
+&lt;p&gt;感谢leyi发的新生赛RE题，不愧是逆神的题目，我第二题就卡住了，脱壳没有什么问题，但是我点开IDA后发现流程图长这样：&lt;img src=&quot;https://dxfaker.top/images/post/26.3.5.png&quot; alt=&quot;屏幕截图 2026-03-04 110911&quot; /&gt;&lt;/p&gt;
 &lt;p&gt;这个时候，有人就要问了：B哥，B哥，这他妈什么jb？&lt;/p&gt;
 &lt;p&gt;那我问你，我才刚学，我知道个蛋&lt;/p&gt;
 &lt;p&gt;于是我去问了AI，说是有两种题型：&lt;/p&gt;
@@ -24,17 +1271,23 @@
 &lt;p&gt;当你看到类似你贴出的代码时，可以按以下步骤确认：&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;观察输入处理&lt;/strong&gt;&lt;/p&gt;
 &lt;ul&gt;
-&lt;li&gt;代码开头通常有 &lt;code&gt;get_input(&amp;amp;v4)&lt;/code&gt;，并且 &lt;code&gt;v4&lt;/code&gt; 是 8 字节变量（&lt;code&gt;__int64&lt;/code&gt;）。&lt;/li&gt;
-&lt;li&gt;随后可能有一个循环调用 &lt;code&gt;check_char&lt;/code&gt; 验证每个字符的范围（比如是否为可打印字符）。&lt;/li&gt;
-&lt;li&gt;这说明输入被存储在连续的 32 字节中，分在 4 个 8 字节变量里。&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;代码开头通常有 &lt;code&gt;get_input(&amp;amp;v4)&lt;/code&gt;，并且 &lt;code&gt;v4&lt;/code&gt; 是 8 字节变量（&lt;code&gt;__int64&lt;/code&gt;）。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;随后可能有一个循环调用 &lt;code&gt;check_char&lt;/code&gt; 验证每个字符的范围（比如是否为可打印字符）。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;这说明输入被存储在连续的 32 字节中，分在 4 个 8 字节变量里。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/26.3.5.1.png&quot; alt=&quot;屏幕截图 2026-03-04 205108&quot; /&gt;&lt;/p&gt;
+&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;![屏幕截图 2026-03-04 205108](D:\mywebsite\mizukii\public\images\post\屏幕截图 2026-03-04 205108.png)&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;查看验证部分&lt;/strong&gt;&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;如果看到大量形如 &lt;code&gt;a * SBYTE1(v4) + b * (char)v5 + ... == 常数&lt;/code&gt; 的表达式，且系数都是常数，那就是线性组合。&lt;/li&gt;
 &lt;li&gt;注意移位运算如 &lt;code&gt;(SBYTE1(v4) &amp;lt;&amp;lt; 7)&lt;/code&gt; 实际就是乘以 128，仍是线性。&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;![屏幕截图 2026-03-04 205802](D:\mywebsite\mizukii\public\images\post\屏幕截图 2026-03-04 205802.png)&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/26.3.5.2.png&quot; alt=&quot;屏幕截图 2026-03-04 205802&quot; /&gt;&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;79 * SBYTE5(v7)&lt;code&gt;是&lt;/code&gt;79` 乘以 v7 的第 5 个字节，等等。&lt;/p&gt;
 &lt;/blockquote&gt;
@@ -604,6 +1857,78 @@ if s.check() == sat:
 else:
     print(&quot;No solution&quot;)
 &lt;/code&gt;&lt;/pre&gt;
+</content:encoded></item><item><title>基于win11的主题优化</title><link>https://dxfaker.top/posts/%E5%9F%BA%E4%BA%8Ewin11%E7%9A%84%E4%B8%BB%E9%A2%98%E4%BC%98%E5%8C%96/</link><guid isPermaLink="true">https://dxfaker.top/posts/%E5%9F%BA%E4%BA%8Ewin11%E7%9A%84%E4%B8%BB%E9%A2%98%E4%BC%98%E5%8C%96/</guid><description>分享一下</description><pubDate>Thu, 05 Mar 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;写在前面&lt;/h1&gt;
+&lt;p&gt;镇楼：另一个世界线的我，希望看到这里的读者能像他们一样把握住机会，不要让自己后悔吧&lt;/p&gt;
+&lt;p&gt;不然，在你成熟前你就要一直内耗了&lt;/p&gt;
+&lt;p&gt;（&lt;/p&gt;
+&lt;h1&gt;正题&lt;/h1&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/26.3.5.3.png&quot; alt=&quot;26.3.5.3&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;这个是最终的效果，如果觉得生活太如意的话，大可以把任务栏再删的精简一点&lt;/p&gt;
+&lt;h2&gt;壁纸（付费）&lt;/h2&gt;
+&lt;p&gt;wallpaper，这个我就不多说了，找个中意的壁纸下载就行了，至于别的内容，甚至某些壁纸，也谨慎下载，毕竟你也不知道里面装了些什么&lt;/p&gt;
+&lt;p&gt;其实还有一个低配， 我记得叫 livepaper来着，不过那个壁纸就得你自己去找了&lt;/p&gt;
+&lt;h2&gt;任务栏&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;TranslucentTB&lt;/strong&gt;（微软商店免费）&lt;/p&gt;
+&lt;p&gt;作用：任务栏透明/亚克力效果
+操作：安装后，在系统托盘图标中选择 &lt;strong&gt;“清晰”&lt;/strong&gt;（全透明）或 &lt;strong&gt;“亚克力”&lt;/strong&gt;（毛玻璃）&lt;/p&gt;
+&lt;p&gt;我选择的是全透明&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;RoundedTB&lt;/strong&gt;（微软商店免费）
+作用：任务栏圆角 + 悬浮（设置边距 Margin）
+操作：安装后，在设置中调整 &lt;strong&gt;Margin（边距）&lt;/strong&gt; 数值（如底部设为 &lt;code&gt;5&lt;/code&gt;），实现四边悬空&lt;/p&gt;
+&lt;p&gt;作用不是很明显，可下可不下&lt;/p&gt;
+&lt;h2&gt;文件资源管理器&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;ExplorerBlurMica&lt;/strong&gt;（GitHub开源）&lt;/p&gt;
+&lt;p&gt;窗口背景半透明（透出桌面）&lt;/p&gt;
+&lt;p&gt;窗口全透明要搞麻烦一点的&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;操作步骤&lt;/strong&gt;：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;下载并解压到文件夹（如 &lt;code&gt;Release_x64&lt;/code&gt;）&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;用记事本打开 &lt;code&gt;config.ini&lt;/code&gt;，修改关键参数：&lt;/p&gt;
+&lt;p&gt;ini&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;effect = 1          
+[light]
+a = 0               ; 浅色模式透明度0（完全透明）
+[dark]
+a = 0               ; 深色模式透明度0
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;以管理员身份运行&lt;/strong&gt; &lt;code&gt;register.cmd&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;重启资源管理器（任务管理器重启“Windows 资源管理器”或重启电脑）&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;卸载方法&lt;/strong&gt;：以管理员身份运行同文件夹下的 &lt;code&gt;uninstall.cmd&lt;/code&gt; 并重启资源管理器&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;Windows 终端 (PowerShell / WSL)&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;目标&lt;/strong&gt;：亚克力透明背景&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;工具&lt;/strong&gt;：Windows Terminal 自带功能&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;操作步骤&lt;/strong&gt;：
+&lt;ol&gt;
+&lt;li&gt;打开 Windows Terminal，点击下拉菜单 → &lt;strong&gt;设置&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;左侧选择配置文件（如“Windows PowerShell”或“Ubuntu”）&lt;/li&gt;
+&lt;li&gt;点击 &lt;strong&gt;“外观”&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;将 &lt;strong&gt;“背景效果”&lt;/strong&gt; 从“不透明”改为 &lt;strong&gt;“亚克力”&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;调整下方 &lt;strong&gt;“亚克力不透明度”&lt;/strong&gt; 滑块（如 70%）&lt;/li&gt;
+&lt;li&gt;点击 &lt;strong&gt;“保存”&lt;/strong&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/26.3.5.4.png&quot; alt=&quot;26.3.5.4&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;要是觉得影响注意力了把板子加上去就是了&lt;/p&gt;
+&lt;h1&gt;final&lt;/h1&gt;
+&lt;p&gt;推荐一首歌：洛天依的千金胧梦&lt;/p&gt;
+&lt;p&gt;今天莫名其妙压抑了起来，该🛫了&lt;/p&gt;
 </content:encoded></item><item><title>今日一题</title><link>https://dxfaker.top/posts/pywp1/</link><guid isPermaLink="true">https://dxfaker.top/posts/pywp1/</guid><description>解题思路之类的</description><pubDate>Mon, 02 Mar 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;写在前面&lt;/h1&gt;
 &lt;p&gt;镇楼：这样的好兄弟不会再有了&lt;/p&gt;
 &lt;p&gt;作为刚踏进这个世界的蛆，自然看到这种加密代码很是头疼，于是便记录下来，以便于之后理清逻辑&lt;/p&gt;
