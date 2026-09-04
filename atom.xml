@@ -5,8 +5,509 @@
   <link href="https://dxfaker.top/" rel="alternate" type="text/html"/>
   <link href="https://dxfaker.top/atom.xml" rel="self" type="application/atom+xml"/>
   <id>https://dxfaker.top/</id>
-  <updated>2026-08-14T04:22:36.097Z</updated>
+  <updated>2026-09-04T01:17:05.810Z</updated>
   <language>en</language>
+  <entry>
+    <title>一点点汇编笔记</title>
+    <link href="https://dxfaker.top/posts/sbassm/" rel="alternate" type="text/html"/>
+    <id>https://dxfaker.top/posts/sbassm/</id>
+    <published>2026-09-04T00:00:00.000Z</published>
+    <updated>2026-09-04T00:00:00.000Z</updated>
+    <summary>纯水</summary>
+    <content type="html"><![CDATA[<p><img src="https://dxfaker.top/images/post/26.9.4.2.png" alt="26.9.4.2" /></p>
+<h1>写在前面</h1>
+<p>封面是辟浪。26拜年纪单品</p>
+<p>还有个pwnlearn后面再写吧，一上大二事情真几把多，我去你大坝的。</p>
+<p>今晚写汇编逆向又被整不会了，原来是又把调用给忘记了，故出一个复习一下</p>
+<h1>32位linux系统调用</h1>
+<p><strong>EAX</strong>指定要调用的函数（系统调用号）</p>
+<p><strong>EBX</strong>传递函数的第一个参数</p>
+<p><strong>ECX</strong>传递函数的第二个参数</p>
+<p><strong>EDX</strong>传递函数的第三个参数</p>
+<p>返回值<strong>EAX</strong></p>
+<p>还有两个滚木esi和edi分别传第四第五个参数</p>
+<p>系统调用还有一个超大的表，这里仅列举5个常见的</p>
+<table>
+<thead>
+<tr>
+<th>系统调用</th>
+<th>编号 (eax)</th>
+<th>参数 1 (ebx)</th>
+<th>参数 2 (ecx)</th>
+<th>参数 3 (edx)</th>
+<th>使用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>exit</code></strong></td>
+<td><strong>1</strong></td>
+<td>返回码 (0)</td>
+<td>-</td>
+<td>-</td>
+<td>让程序正常结束，避免 crash</td>
+</tr>
+<tr>
+<td><strong><code>read</code></strong></td>
+<td><strong>3</strong></td>
+<td>fd (0=stdin)</td>
+<td>缓冲区地址</td>
+<td>读取长度</td>
+<td>读取输入</td>
+</tr>
+<tr>
+<td><strong><code>write</code></strong></td>
+<td><strong>4</strong></td>
+<td>fd (1=stdout)</td>
+<td>缓冲区地址</td>
+<td>写入长度</td>
+<td>输出信息或泄露地址</td>
+</tr>
+<tr>
+<td><strong><code>open</code></strong></td>
+<td><strong>5</strong></td>
+<td>文件名地址</td>
+<td>flags (0=只读)</td>
+<td>mode (0)</td>
+<td><strong>ORW（Open-Read-Write）</strong> 中打开 <code>flag</code> 文件</td>
+</tr>
+<tr>
+<td><strong><code>execve</code></strong></td>
+<td><strong>11</strong></td>
+<td>程序路径 (<code>/bin/sh</code>)</td>
+<td>argv 地址 (0)</td>
+<td>envp 地址 (0)</td>
+<td><strong>拿 Shell 的核心</strong>（最常用）</td>
+</tr>
+</tbody>
+</table>
+<p>以及64位的纵向对比</p>
+<table>
+<thead>
+<tr>
+<th>系统调用</th>
+<th>32位 (int 0x80)</th>
+<th>64位 (syscall)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>read</code></td>
+<td>3</td>
+<td><strong>0</strong></td>
+</tr>
+<tr>
+<td><code>write</code></td>
+<td>4</td>
+<td><strong>1</strong></td>
+</tr>
+<tr>
+<td><code>open</code></td>
+<td>5</td>
+<td><strong>2</strong></td>
+</tr>
+<tr>
+<td><code>execve</code></td>
+<td>11</td>
+<td><strong>59</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Linux 系统调用 <code>read</code> 的返回值（存入 <code>eax</code>）是“实际读取的字节数”，而不是读取到的数据本身。</strong></p>
+<p>64位</p>
+<table>
+<thead>
+<tr>
+<th>寄存器</th>
+<th><code>read</code> 调用前</th>
+<th><code>write</code> 调用前</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>rax</code></strong></td>
+<td><strong>0</strong>（系统调用号）</td>
+<td><strong>1</strong>（系统调用号）</td>
+</tr>
+<tr>
+<td><strong><code>rdi</code></strong></td>
+<td>文件描述符（<code>0</code>=stdin）</td>
+<td>文件描述符（<code>1</code>=stdout）</td>
+</tr>
+<tr>
+<td><strong><code>rsi</code></strong></td>
+<td>缓冲区地址（<code>buf</code>）</td>
+<td>缓冲区地址（<code>buf</code>）</td>
+</tr>
+<tr>
+<td><strong><code>rdx</code></strong></td>
+<td>读取长度（<code>count</code>）</td>
+<td>写入长度（<code>count</code>）</td>
+</tr>
+<tr>
+<td><strong><code>r10</code></strong></td>
+<td>未使用</td>
+<td>未使用（注意：第4个参数用 <code>r10</code>，但 read/write 只需3个）</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong><code>rax</code></strong>：变为返回值（<strong>成功</strong>时返回实际读/写的字节数；<strong>失败</strong>时返回负数错误码，如 <code>-EFAULT</code>）。</li>
+<li><strong><code>rcx</code> 和 <code>r11</code></strong>：<strong>被破坏</strong>（这是关键！<code>syscall</code> 指令内部会使用 <code>rcx</code> 保存返回地址，用 <code>r11</code> 保存 <code>rflags</code>）。<strong>调用后这两个寄存器的值是不可预测的</strong>。</li>
+<li><strong>参数寄存器（<code>rdi</code>、<code>rsi</code>、<code>rdx</code>）</strong>：<strong>保持不变</strong>（内核会保存它们的值）。</li>
+</ul>
+<p>32位</p>
+<table>
+<thead>
+<tr>
+<th>寄存器</th>
+<th><code>read</code> 调用前</th>
+<th><code>write</code> 调用前</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>eax</code></strong></td>
+<td><strong>3</strong>（系统调用号）</td>
+<td><strong>4</strong>（系统调用号）</td>
+</tr>
+<tr>
+<td><strong><code>ebx</code></strong></td>
+<td>文件描述符（<code>0</code>）</td>
+<td>文件描述符（<code>1</code>）</td>
+</tr>
+<tr>
+<td><strong><code>ecx</code></strong></td>
+<td>缓冲区地址</td>
+<td>缓冲区地址</td>
+</tr>
+<tr>
+<td><strong><code>edx</code></strong></td>
+<td>读取长度</td>
+<td>写入长度</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong><code>eax</code></strong>：变为返回值（成功时返回实际字节数，失败时返回负错误码）。</li>
+<li><strong>所有参数寄存器（<code>ebx</code>、<code>ecx</code>、<code>edx</code>）</strong>：<strong>保持不变</strong>（<code>int 0x80</code> 会保存恢复寄存器上下文）。</li>
+</ul>
+<h1>NASM汇编器伪指令</h1>
+<p>数据传输相关</p>
+<table>
+<thead>
+<tr>
+<th><code>mov a, b</code></th>
+<th>将 b 的值赋给 a</th>
+<th>基础搬运</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>movzx a, b</code></td>
+<td>零扩展后搬运（小→大）</td>
+<td>处理 char 转 int</td>
+</tr>
+<tr>
+<td><code>movsx a, b</code></td>
+<td>符号扩展后搬运</td>
+<td>处理有符号数扩展</td>
+</tr>
+<tr>
+<td><code>lea a, [b + c*n]</code></td>
+<td>计算地址（不访存）</td>
+<td>常用于快速计算（如 <code>lea rax, [rax+rax*4]</code> 实现乘5）</td>
+</tr>
+</tbody>
+</table>
+<p>逻辑运算</p>
+<table>
+<thead>
+<tr>
+<th><code>add a, b</code></th>
+<th>a = a + b</th>
+<th>OF/SF/ZF/AF/CF/PF</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sub a, b</code></td>
+<td>a = a - b</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>imul a</code></td>
+<td>有符号乘法（<code>rax *= a</code>，结果在 <code>rdx:rax</code>）</td>
+<td>OF/CF</td>
+</tr>
+<tr>
+<td><code>mul a</code></td>
+<td>无符号乘法</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>idiv a</code></td>
+<td>有符号除法（<code>rdx:rax / a</code>，商→rax，余数→rdx）</td>
+<td>无</td>
+</tr>
+<tr>
+<td><code>div a</code></td>
+<td>无符号除法</td>
+<td>无</td>
+</tr>
+<tr>
+<td><code>inc a</code></td>
+<td>a++</td>
+<td>OF/SF/ZF/AF/PF（CF不变）</td>
+</tr>
+<tr>
+<td><code>dec a</code></td>
+<td>a--</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>and a, b</code></td>
+<td>a &amp;= b</td>
+<td>OF=0, CF=0, 影响SF/ZF/PF</td>
+</tr>
+<tr>
+<td><code>or a, b</code></td>
+<td>a |= b</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>xor a, b</code></td>
+<td>a ^= b</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>not a</code></td>
+<td>a = ~a</td>
+<td>不影响标志</td>
+</tr>
+<tr>
+<td><code>shl a, cl</code></td>
+<td>逻辑左移</td>
+<td>影响CF/OF/SF/ZF/PF</td>
+</tr>
+<tr>
+<td><code>shr a, cl</code></td>
+<td>逻辑右移（补0）</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>sar a, cl</code></td>
+<td>算术右移（补符号位）</td>
+<td>同上</td>
+</tr>
+</tbody>
+</table>
+<p>栈</p>
+<table>
+<thead>
+<tr>
+<th><code>push a</code></th>
+<th><code>rsp -= 8; [rsp] = a</code></th>
+<th>栈向下增长</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pop a</code></td>
+<td><code>a = [rsp]; rsp += 8</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>pushf</code></td>
+<td>压入 rflags</td>
+<td>少用</td>
+</tr>
+<tr>
+<td><code>popf</code></td>
+<td>弹出 rflags</td>
+<td>少用</td>
+</tr>
+</tbody>
+</table>
+<p>跳转</p>
+<table>
+<thead>
+<tr>
+<th><code>jmp</code></th>
+<th>无条件跳转</th>
+<th>-</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>call func</code></td>
+<td>压入返回地址，跳转至 func</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>ret</code></td>
+<td>弹出返回地址，跳转</td>
+<td>-</td>
+</tr>
+</tbody>
+</table>
+<p>条件跳转</p>
+<table>
+<thead>
+<tr>
+<th><code>je / jz</code></th>
+<th>同左</th>
+<th>相等 (ZF=1)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>jne / jnz</code></td>
+<td>同左</td>
+<td>不等 (ZF=0)</td>
+</tr>
+<tr>
+<td><code>jg / jnle</code></td>
+<td><code>ja / jnbe</code></td>
+<td>大于 (&gt;)，无符号用 <code>a</code> 表示 above</td>
+</tr>
+<tr>
+<td><code>jge / jnl</code></td>
+<td><code>jae / jnb</code></td>
+<td>大于等于 (&gt;=)</td>
+</tr>
+<tr>
+<td><code>jl / jnge</code></td>
+<td><code>jb / jnae</code></td>
+<td>小于 (&lt;)</td>
+</tr>
+<tr>
+<td><code>jle / jng</code></td>
+<td><code>jbe / jna</code></td>
+<td>小于等于 (&lt;=)</td>
+</tr>
+</tbody>
+</table>
+<p>比较与测试</p>
+<table>
+<thead>
+<tr>
+<th><code>cmp a, b</code></th>
+<th>计算 <code>a - b</code>，不写结果</th>
+<th>影响 ZF/OF/SF/CF/AF/PF</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>test a, b</code></td>
+<td>计算 <code>a &amp; b</code>，不写结果</td>
+<td>影响 ZF/SF/PF（OF=0, CF=0）</td>
+</tr>
+</tbody>
+</table>
+<p>系统调用</p>
+<table>
+<thead>
+<tr>
+<th><code>syscall</code></th>
+<th>发起系统调用</th>
+<th>Linux x86-64 中，系统调用号放在 <code>rax</code>，参数依次放入 <code>rdi, rsi, rdx, r10, r8, r9</code>。</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>int 0x80</code></td>
+<td>32位系统调用</td>
+<td>较少见，通常在32位兼容模式或 shellcode 中。</td>
+</tr>
+</tbody>
+</table>
+<h2>标志位</h2>
+<ol>
+<li>OF 溢出标志位</li>
+</ol>
+<p>OF = 1 表示带符号整数运算时结果发生溢出。对无符号整数运算无意义</p>
+<ol>
+<li>
+<p>ZF 零标志位</p>
+<p>ZF = 1 表示结果为0，无论是有符号数还是无符号数，ZF都有意义</p>
+</li>
+<li>
+<p>CF 进/借位标志</p>
+</li>
+</ol>
+<blockquote>
+<p>表示无符号整数数加/减运算时的进位/借位。</p>
+<ul>
+<li>加法时，CF = 1表示无符号数加法溢出，CF=最高进位输出</li>
+<li>减法时，CF = 1表示有借位，即不够减，CF=最高位进位输出取反</li>
+</ul>
+<p>对于有有符号数的整数运算没有意义</p>
+<ul>
+<li>但是真要看的话，CF=最高位进位输出</li>
+</ul>
+</blockquote>
+<ol>
+<li>SF 符号标志</li>
+</ol>
+<p>结果为负，即符号位为1时SF为1，否则为0</p>
+<ol>
+<li>AF 辅助进位标志</li>
+</ol>
+<blockquote>
+<ul>
+<li><strong>触发条件</strong>：运算时，低 <strong>4 位（即 BCD 码的个位）</strong> 发生进位或借位。</li>
+<li><strong>用途</strong>：专用于 BCD（二进制编码的十进制）运算（如 <code>DAA</code>、<code>AAA</code> 指令）。在常规的字符串、整数逆向中基本用不到，只有遇到特殊加密或古老反调试技巧时才可能涉及。</li>
+</ul>
+</blockquote>
+<ol>
+<li>PF 奇偶标志</li>
+</ol>
+<blockquote>
+<p>运算结果的<strong>低 8 位（最末字节）</strong> 中，含有偶数个 1 时，<code>PF = 1</code>。</p>
+</blockquote>
+<ul>
+<li><strong><code>db</code></strong>：定义字节串（<code>Define Byte</code>），末尾的 <code>0</code> 是 C 风格字符串的结束符。</li>
+<li><strong><code>equ</code></strong>：相当于 <code>#define</code>，不占内存，只在汇编时做文本替换。</li>
+</ul>
+<h1>然后是不知道哪的内容</h1>
+<p>(反正我又不用学)</p>
+<ol>
+<li>数据段</li>
+</ol>
+<p>存放赋了初始值的全局变量以及静态变量</p>
+<p>权限为rw-</p>
+<ol>
+<li>BSS</li>
+</ol>
+<p>未初始化的全局变量区</p>
+<p>存放<strong>未初始化</strong>或初始化为 0 的全局变量和静态变量（如 C 语言中的 <code>char buf[100];</code>）</p>
+<p>权限一般为rw-</p>
+<ol>
+<li>代码段</li>
+</ol>
+<p>存放CPU要执行的机器指令</p>
+<p>权限通常为r-x</p>
+<p>傻逼NX开启的时候这里是唯一能执行代码的地方</p>
+<pre><code>低地址 0x400000    →  代码段 (.text)   [r-x]
+                   ↓
+                      数据段 (.data)   [rw-]  ← 有初值的全局变量
+                   ↓
+                      BSS 段 (.bss)    [rw-]  ← 无初值的全局变量（运行时清零）
+                   ↓
+                      堆 (Heap)        [rw-]  ← 动态分配（malloc）
+                   ↓
+                      ... 空闲区域 ...
+                   ↓
+                      栈 (Stack)       [rw-]  ← 局部变量，向下增长
+高地址 0x7FFFFFFF  →  环境变量 / 参数
+</code></pre>
+]]></content>
+    <author>
+      <name></name>
+    </author>
+    <category term="复习笔记"></category>
+  </entry>
   <entry>
     <title>SEH问题处理</title>
     <link href="https://dxfaker.top/posts/seh/" rel="alternate" type="text/html"/>
