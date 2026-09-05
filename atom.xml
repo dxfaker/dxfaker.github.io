@@ -5,8 +5,47 @@
   <link href="https://dxfaker.top/" rel="alternate" type="text/html"/>
   <link href="https://dxfaker.top/atom.xml" rel="self" type="application/atom+xml"/>
   <id>https://dxfaker.top/</id>
-  <updated>2026-09-04T01:15:57.442Z</updated>
+  <updated>2026-09-05T15:19:47.606Z</updated>
   <language>en</language>
+  <entry>
+    <title>假期总结以及未来规划</title>
+    <link href="https://dxfaker.top/posts/ready/" rel="alternate" type="text/html"/>
+    <id>https://dxfaker.top/posts/ready/</id>
+    <published>2026-09-05T00:00:00.000Z</published>
+    <updated>2026-09-05T00:00:00.000Z</updated>
+    <summary>讲讲现在，过去，还有将来</summary>
+    <content type="html"><![CDATA[<p>我用最直白最明了的话跟你讲，我焦虑了。</p>
+<p>大一下转专业确实成功了，但策略遗留问题终究还是暴露了。</p>
+<p>还是没有必要去花太多时间学习高数的</p>
+<p>总结来看，电分没过确实还是大问题，导致下学期还得重修，白花4学分空间，但是我又想提前修完的话又得提前多修别的。。。。</p>
+<p>想提前多修别的又得这学期绩点高，这学期绩点高又得把数电模电单片机大物信号与系统搞好。哦对了，下学期还得并补大物实验。</p>
+<p>这只是课内</p>
+<p>课外还有芯片加密，pwn，32,英语etc......</p>
+<p>确实很难以一种轻松的姿态度过剩下的校园生活了</p>
+<p>以一种焦虑的姿态，和白玉京以及henry去骑车去深圳湾坐了一会，聊了很久。</p>
+<p>还是说说结论吧</p>
+<p>新生杯我还是会打的</p>
+<p>但是最后重心可能还是在本专业上了。</p>
+<p>最后大概率是去考研吧，且不考本校，本校的集电给到拉完了</p>
+<p>大概率是去搞数字ic，也就意味着别的可能开始渐渐淡化或者转型到辅助自己专业能力上去了</p>
+<p>有点叛徒的意思？</p>
+<p>但是现在确实很迷茫</p>
+<p>毕竟确实有很明显的课业压力，pwn也才刚刚起步，一眼望不到自己的前路</p>
+<p>我真的能既要又要吗，就算能，也能都有起色，还是都平平无奇呢？</p>
+<p>但我真的是很平庸的一个人，无法做到立马给出答案，现阶段貌似最好能搞的就是走一步看一步了</p>
+<p>想想也是，而且我还没有太多精力，效率也不是高的那一档，那也只好做出取舍了</p>
+<p>即使这样做要否定过去的自己，但是就现状来说，所谓"明智"的自己做出的选择</p>
+<p>这学期以后，开始慢慢放下pwn，甚至ctf</p>
+<p>当然，至少现在的我是这样想的，但并不妨碍我更新完这篇文章就去学ret2slove(<a href="https://blog.leyi.live/archives/lazy-binding">由延迟绑定机制引发的漏洞（ret2dlresolve） - 楽の栈</a>)</p>
+<p>将来如何，我的前路如何？走一步看一步吧</p>
+<p>后面如果我的策略改变了，我肯定会更新的。</p>
+<p>就写到这里吧。</p>
+]]></content>
+    <author>
+      <name></name>
+    </author>
+    <category term="随便分享"></category>
+  </entry>
   <entry>
     <title>一点点汇编笔记</title>
     <link href="https://dxfaker.top/posts/sbassm/" rel="alternate" type="text/html"/>
