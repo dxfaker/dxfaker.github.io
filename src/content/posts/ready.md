@@ -1,15 +1,13 @@
 ---
-​---
 title: '假期总结以及未来规划'
 published: 2026-09-05
 description: '讲讲现在，过去，还有将来'
 author: 'dxfaker'
 image: '/images/post/26.9.5.png'
-tags: ['杂谈]
+tags: ['杂谈']
 category: '随便分享'
 toc: true
 
-​---
 ---
 
 我用最直白最明了的话跟你讲，我焦虑了。
