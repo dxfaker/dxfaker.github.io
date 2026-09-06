@@ -5,8 +5,22 @@
   <link href="https://dxfaker.top/" rel="alternate" type="text/html"/>
   <link href="https://dxfaker.top/atom.xml" rel="self" type="application/atom+xml"/>
   <id>https://dxfaker.top/</id>
-  <updated>2026-09-05T15:19:47.606Z</updated>
+  <updated>2026-09-06T14:55:58.564Z</updated>
   <language>en</language>
+  <entry>
+    <title>今晚聊完</title>
+    <link href="https://dxfaker.top/posts/2696/" rel="alternate" type="text/html"/>
+    <id>https://dxfaker.top/posts/2696/</id>
+    <published>2026-09-06T00:00:00.000Z</published>
+    <updated>2026-09-06T00:00:00.000Z</updated>
+    <summary></summary>
+    <content type="html"><![CDATA[<h1>没啥好说的</h1>
+<p>还是接着打pwn，干就完了。造他就完了，肏！</p>
+]]></content>
+    <author>
+      <name></name>
+    </author>
+  </entry>
   <entry>
     <title>假期总结以及未来规划</title>
     <link href="https://dxfaker.top/posts/ready/" rel="alternate" type="text/html"/>
