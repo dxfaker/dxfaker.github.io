@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>2026moectf第一周wp</title><link>https://dxfaker.top/posts/26moe1/</link><guid isPermaLink="true">https://dxfaker.top/posts/26moe1/</guid><description>我是苦手</description><pubDate>Tue, 08 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;走后门&lt;/h1&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>2026第一周WP</title><link>https://dxfaker.top/posts/26moe1/</link><guid isPermaLink="true">https://dxfaker.top/posts/26moe1/</guid><description>我是苦手</description><pubDate>Tue, 08 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;走后门&lt;/h1&gt;
 &lt;pre&gt;&lt;code&gt;ssize_t vuln()
 {
   int v1; // [rsp+Ch] [rbp-44h] BYREF
