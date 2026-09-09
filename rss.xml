@@ -252,7 +252,7 @@ p.sendline(b&apos;3&apos;)
 p.interactive()
 
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;你得考虑这个问题，我10点才写完这俩题的WP,12点又鸡巴要断电，所以大三题我决定明天再更&lt;/p&gt;
+&lt;p&gt;你得考虑这个问题，我10点才写完这俩题的WP,12点又鸡巴要断电，所以第三题我决定明天再更，哦对了静态博客是对的@へんしゅう&lt;/p&gt;
 </content:encoded></item><item><title>2026第一周WP</title><link>https://dxfaker.top/posts/26moe1/</link><guid isPermaLink="true">https://dxfaker.top/posts/26moe1/</guid><description>我是苦手</description><pubDate>Tue, 08 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;走后门&lt;/h1&gt;
 &lt;pre&gt;&lt;code&gt;ssize_t vuln()
 {
