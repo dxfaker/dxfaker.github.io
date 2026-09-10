@@ -1,5 +1,5 @@
 ---
-title: 'write的小巧思'
+title: 'printf的小巧思'
 published: 2026-09-10
 description: '你怎么知道我又来拉屎了'
 author: 'dxfaker'
@@ -64,7 +64,7 @@ int __fastcall __noreturn main(int argc, const char **argv, const char **envp)
 然后checksec
 
 ```bash
-  Arch:       amd64-64-little
+    Arch:       amd64-64-little
     RELRO:      Partial RELRO
     Stack:      No canary found
     NX:         NX enabled
@@ -86,8 +86,9 @@ int __fastcall __noreturn main(int argc, const char **argv, const char **envp)
 
 复习一下printf操作
 
+| 格式符 | 含义 |
+| ------ | ---- |
 | `%d` / `%i` | 有符号十进制整数                     |
-| ----------- | ------------------------------------ |
 | `%u`        | 无符号十进制整数                     |
 | `%x` / `%X` | 十六进制整数                         |
 | `%p`        | 指针地址（十六进制）                 |
@@ -96,11 +97,11 @@ int __fastcall __noreturn main(int argc, const char **argv, const char **envp)
 | `%n`        | **将已打印字符数写入参数指向的地址** |
 | `%hhn`      | 写 1 字节                            |
 | `%hn`       | 写 2 字节                            |
-| `%ln`       | 写 8 字节                            |
+| `%lln`      | 写 8 字节                            |
 
 以及经典的格式化字符串漏洞
 
-buf可以输入%p%s%n,以达到信息泄露以及任意内存写的操作
+format可以输入%p%s%n,以达到信息泄露以及任意内存写的操作
 
 而且你看栈布局
 
@@ -113,7 +114,7 @@ char *format;  // [rsp+10h] [rbp-10h]
 
 format紧接着要对比的buf以及v3
 
-再回顾printf的操作中可以读定向操作的%s,那我是不是可以尝试一下把buf的数据读出来，那不就可以在下一次输入的时候使其相同，那不就结束战斗了
+再回顾printf的操作中可以读任意地址的%7$llx,那我是不是可以尝试一下把buf的数据读出来，那不就可以在下一次输入的时候使其相同，那不就结束战斗了
 
 不开tmux
 
@@ -180,7 +181,7 @@ pwndbg>
 
 ```
 
-可以看到rbp的-8-10-18
+可以看到rbp-0x8、rbp-0x10、rbp-0x18
 
 fmtdump / fmtarg：栈上的第 N 格"直接翻译成"printf 的第 %N$ 个参数
 
@@ -231,11 +232,11 @@ if __name__ == '__main__':
     main()
 ```
 
->把 64 位无符号整数转成有符号：
+> 把 64 位无符号整数转成有符号：
 >
->若最高位为 1（x >= 2^63），减去 2^64 变成负数
->否则原样返回
->为什么必须做：printf("%llx") 把随机数按无符号打印（如 14346747841414464070），而 scanf("%lld") 是有符号解析，最大只接受 9223372036854775807。直接发会解析溢出 → v3 != buf → 登录失败。
+> 若最高位为 1（x >= 2^63），减去 2^64 变成负数
+> 否则原样返回
+> 为什么必须做：printf("%llx") 把随机数按无符号打印（如 14346747841414464070），而 scanf("%lld") 是有符号解析，最大只接受 9223372036854775807。直接发会解析溢出 → v3 != buf → 登录失败。
 >
->随机数最高位为 1 的概率是 50%，所以这函数直接决定成功率是 50% 还是 100%。
+> 随机数最高位为 1 的概率是 50%，所以这函数直接决定成功率是 50% 还是 100%。
 
