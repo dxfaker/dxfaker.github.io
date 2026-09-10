@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>write的小巧思</title><link>https://dxfaker.top/posts/printf/</link><guid isPermaLink="true">https://dxfaker.top/posts/printf/</guid><description>你怎么知道我又来拉屎了</description><pubDate>Thu, 10 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;写在前面&lt;/h1&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>printf的小巧思</title><link>https://dxfaker.top/posts/printf/</link><guid isPermaLink="true">https://dxfaker.top/posts/printf/</guid><description>你怎么知道我又来拉屎了</description><pubDate>Thu, 10 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;写在前面&lt;/h1&gt;
 &lt;p&gt;这个是25新生赛的题，一开始我以为UAF，但是后面发现他只用了堆，然后就以为可以通过格式化字符串漏洞来打，再到后面发现我又错了，看来还得练啊&lt;/p&gt;
 &lt;h1&gt;正文&lt;/h1&gt;
 &lt;pre&gt;&lt;code&gt;int __fastcall __noreturn main(int argc, const char **argv, const char **envp)
@@ -43,7 +43,7 @@
 &lt;p&gt;省流:开了一个文件读了一串字节，然后进行对比，相同就可以直接get shell&lt;/p&gt;
 &lt;p&gt;可是现在的问题是我哪知道他读的是哪里的文件，然后是有一个输入format存储到堆上的操作&lt;/p&gt;
 &lt;p&gt;然后checksec&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;  Arch:       amd64-64-little
+&lt;pre&gt;&lt;code&gt;    Arch:       amd64-64-little
     RELRO:      Partial RELRO
     Stack:      No canary found
     NX:         NX enabled
@@ -62,11 +62,15 @@
 &lt;table&gt;
 &lt;thead&gt;
 &lt;tr&gt;
-&lt;th&gt;&lt;code&gt;%d&lt;/code&gt; / &lt;code&gt;%i&lt;/code&gt;&lt;/th&gt;
-&lt;th&gt;有符号十进制整数&lt;/th&gt;
+&lt;th&gt;格式符&lt;/th&gt;
+&lt;th&gt;含义&lt;/th&gt;
 &lt;/tr&gt;
 &lt;/thead&gt;
 &lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;%d&lt;/code&gt; / &lt;code&gt;%i&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;有符号十进制整数&lt;/td&gt;
+&lt;/tr&gt;
 &lt;tr&gt;
 &lt;td&gt;&lt;code&gt;%u&lt;/code&gt;&lt;/td&gt;
 &lt;td&gt;无符号十进制整数&lt;/td&gt;
@@ -100,13 +104,13 @@
 &lt;td&gt;写 2 字节&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
-&lt;td&gt;&lt;code&gt;%ln&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;%lln&lt;/code&gt;&lt;/td&gt;
 &lt;td&gt;写 8 字节&lt;/td&gt;
 &lt;/tr&gt;
 &lt;/tbody&gt;
 &lt;/table&gt;
 &lt;p&gt;以及经典的格式化字符串漏洞&lt;/p&gt;
-&lt;p&gt;buf可以输入%p%s%n,以达到信息泄露以及任意内存写的操作&lt;/p&gt;
+&lt;p&gt;format可以输入%p%s%n,以达到信息泄露以及任意内存写的操作&lt;/p&gt;
 &lt;p&gt;而且你看栈布局&lt;/p&gt;
 &lt;pre&gt;&lt;code&gt;__int64 v3;    // [rsp+0h]  [rbp-20h]
 __int64 buf;   // [rsp+8h]  [rbp-18h]
@@ -114,7 +118,7 @@ char *format;  // [rsp+10h] [rbp-10h]
 
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;format紧接着要对比的buf以及v3&lt;/p&gt;
-&lt;p&gt;再回顾printf的操作中可以读定向操作的%s,那我是不是可以尝试一下把buf的数据读出来，那不就可以在下一次输入的时候使其相同，那不就结束战斗了&lt;/p&gt;
+&lt;p&gt;再回顾printf的操作中可以读任意地址的%7$llx,那我是不是可以尝试一下把buf的数据读出来，那不就可以在下一次输入的时候使其相同，那不就结束战斗了&lt;/p&gt;
 &lt;p&gt;不开tmux&lt;/p&gt;
 &lt;pre&gt;&lt;code&gt;pwndbg&amp;gt; break *0x4012da
 Breakpoint 1 at 0x4012da
@@ -177,7 +181,7 @@ pwndbg&amp;gt;
 
 
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;可以看到rbp的-8-10-18&lt;/p&gt;
+&lt;p&gt;可以看到rbp-0x8、rbp-0x10、rbp-0x18&lt;/p&gt;
 &lt;p&gt;fmtdump / fmtarg：栈上的第 N 格&quot;直接翻译成&quot;printf 的第 %N$ 个参数&lt;/p&gt;
 &lt;pre&gt;&lt;code&gt;pwndbg&amp;gt; fmtdump 8
 %-6$  0x0000000000000000 #v3

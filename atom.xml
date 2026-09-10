@@ -5,10 +5,10 @@
   <link href="https://dxfaker.top/" rel="alternate" type="text/html"/>
   <link href="https://dxfaker.top/atom.xml" rel="self" type="application/atom+xml"/>
   <id>https://dxfaker.top/</id>
-  <updated>2026-09-10T11:42:41.660Z</updated>
+  <updated>2026-09-10T12:15:20.916Z</updated>
   <language>en</language>
   <entry>
-    <title>write的小巧思</title>
+    <title>printf的小巧思</title>
     <link href="https://dxfaker.top/posts/printf/" rel="alternate" type="text/html"/>
     <id>https://dxfaker.top/posts/printf/</id>
     <published>2026-09-10T00:00:00.000Z</published>
@@ -59,7 +59,7 @@
 <p>省流:开了一个文件读了一串字节，然后进行对比，相同就可以直接get shell</p>
 <p>可是现在的问题是我哪知道他读的是哪里的文件，然后是有一个输入format存储到堆上的操作</p>
 <p>然后checksec</p>
-<pre><code>  Arch:       amd64-64-little
+<pre><code>    Arch:       amd64-64-little
     RELRO:      Partial RELRO
     Stack:      No canary found
     NX:         NX enabled
@@ -78,11 +78,15 @@
 <table>
 <thead>
 <tr>
-<th><code>%d</code> / <code>%i</code></th>
-<th>有符号十进制整数</th>
+<th>格式符</th>
+<th>含义</th>
 </tr>
 </thead>
 <tbody>
+<tr>
+<td><code>%d</code> / <code>%i</code></td>
+<td>有符号十进制整数</td>
+</tr>
 <tr>
 <td><code>%u</code></td>
 <td>无符号十进制整数</td>
@@ -116,13 +120,13 @@
 <td>写 2 字节</td>
 </tr>
 <tr>
-<td><code>%ln</code></td>
+<td><code>%lln</code></td>
 <td>写 8 字节</td>
 </tr>
 </tbody>
 </table>
 <p>以及经典的格式化字符串漏洞</p>
-<p>buf可以输入%p%s%n,以达到信息泄露以及任意内存写的操作</p>
+<p>format可以输入%p%s%n,以达到信息泄露以及任意内存写的操作</p>
 <p>而且你看栈布局</p>
 <pre><code>__int64 v3;    // [rsp+0h]  [rbp-20h]
 __int64 buf;   // [rsp+8h]  [rbp-18h]
@@ -130,7 +134,7 @@ char *format;  // [rsp+10h] [rbp-10h]
 
 </code></pre>
 <p>format紧接着要对比的buf以及v3</p>
-<p>再回顾printf的操作中可以读定向操作的%s,那我是不是可以尝试一下把buf的数据读出来，那不就可以在下一次输入的时候使其相同，那不就结束战斗了</p>
+<p>再回顾printf的操作中可以读任意地址的%7$llx,那我是不是可以尝试一下把buf的数据读出来，那不就可以在下一次输入的时候使其相同，那不就结束战斗了</p>
 <p>不开tmux</p>
 <pre><code>pwndbg&gt; break *0x4012da
 Breakpoint 1 at 0x4012da
@@ -193,7 +197,7 @@ pwndbg&gt;
 
 
 </code></pre>
-<p>可以看到rbp的-8-10-18</p>
+<p>可以看到rbp-0x8、rbp-0x10、rbp-0x18</p>
 <p>fmtdump / fmtarg：栈上的第 N 格"直接翻译成"printf 的第 %N$ 个参数</p>
 <pre><code>pwndbg&gt; fmtdump 8
 %-6$  0x0000000000000000 #v3
