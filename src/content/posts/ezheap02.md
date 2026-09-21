@@ -258,7 +258,7 @@ enter idx(0~15):
 
 ```
 
-![af013ba0-03a6-4a40-aa91-970b91e11591](D:\mywebsite\mizukii\public\images\post\af013ba0-03a6-4a40-aa91-970b91e11591.png)
+![af013ba0-03a6-4a40-aa91-970b91e11591](/images/post/af013ba0-03a6-4a40-aa91-970b91e11591.png)
 
 这里快了一步，直接释放了三个
 
@@ -310,7 +310,7 @@ tcache[0x30] head
 
 能泄露堆地址了
 
-![屏幕截图 2026-09-19 180015](D:\mywebsite\mizukii\public\images\post\屏幕截图 2026-09-19 180015.png)
+![屏幕截图 2026-09-19 180015](/images/post/屏幕截图 2026-09-19 180015.png)
 
 然后就是泄露libc基址,想要拿到libc基址，那么就得考虑unsortedbin
 
