@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>PyInstaller相关</title><link>https://dxfaker.top/posts/26moere2/</link><guid isPermaLink="true">https://dxfaker.top/posts/26moere2/</guid><description>怎么感觉有一亿年没写过逆向了</description><pubDate>Tue, 22 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;九转蛇肠&lt;/h1&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>一堆杂乱逆向的WP</title><link>https://dxfaker.top/posts/26moere2/</link><guid isPermaLink="true">https://dxfaker.top/posts/26moere2/</guid><description>OSU真好玩</description><pubDate>Sun, 27 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;九转蛇肠&lt;/h1&gt;
 &lt;p&gt;查壳没什么问题&lt;/p&gt;
 &lt;p&gt;进来看逻辑&lt;/p&gt;
 &lt;p&gt;ctrl+E&lt;/p&gt;
@@ -629,6 +629,219 @@ try:
     print(&quot;raw text :&quot;, raw.decode(&apos;utf-8&apos;))
 except Exception as e:
     print(&quot;decode error:&quot;, e)
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1&gt;MCb4ckd00r&lt;/h1&gt;
+&lt;p&gt;我是懒狗&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;(base) dxfaker@LAPTOP-US9FCLPD:/mnt/d/ctf/flag/re/moectf/MCb4ckd00r$ file CloudBlack.dll MANIFEST.sha256 server-edge-capture.pcapng
+cat MANIFEST.sha256
+sha256sum CloudBlack.dll server-edge-capture.pcapng
+CloudBlack.dll:             PE32+ executable (DLL) (GUI) x86-64, for MS Windows, 5 sections
+MANIFEST.sha256:            ASCII text, with CRLF line terminators
+server-edge-capture.pcapng: pcapng capture file - version 1.0
+272973f385614623692e39c487640c8bcbf95f5d86d5ae39fdc7ee1b20a53608  CloudBlack.dll
+58e89b806051f339e6ff7ee24c4ec9c182ac718deda27bb81f674be4ba7ee764  server-edge-capture.pcapng
+272973f385614623692e39c487640c8bcbf95f5d86d5ae39fdc7ee1b20a53608  CloudBlack.dll
+58e89b806051f339e6ff7ee24c4ec9c182ac718deda27bb81f674be4ba7ee764  server-edge-capture.pcapng
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1&gt;眼光「十七条のレーザー」&lt;/h1&gt;
+&lt;p&gt;查壳没什么问题&lt;/p&gt;
+&lt;p&gt;main&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int __fastcall main(int argc, const char **argv, const char **envp)
+{
+  size_t v3; // rax
+  char v5[16]; // [rsp+20h] [rbp-60h] BYREF
+  char Str[256]; // [rsp+30h] [rbp-50h] BYREF
+
+  _main();
+  genkey();
+  strcpy(v5, &quot;7h1s_1s_4Tr1a1&quot;);
+  v5[15] = 0;
+  memset(Str, 0, sizeof(Str));
+  printf(&quot;Gimme a key: &quot;);
+  scanf(&quot;%[^\n]48s&quot;, Str);
+  v3 = strlen(Str);
+  encrypt(Str, v3, v5);
+  if ( !strncmp_0(Str, &amp;amp;enc, 0x30u) )
+    puts_0(&quot;Correct key!&quot;);
+  else
+    puts_0(&quot;Wrong key!....or are you debugging me?&quot;);
+  return system_0(&quot;pause&quot;);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;整理数组&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;const unsigned char enc[48] = {
+    0x1D, 0x2C, 0xA6, 0x97, 0xAF, 0x53, 0x17, 0x8C,
+    0xB7, 0x8D, 0xC7, 0x48, 0x31, 0x3D, 0x3A, 0xC0,
+    0x92, 0x48, 0x46, 0x35, 0x88, 0x7B, 0x5F, 0x8B,
+    0x9F, 0xF3, 0xDD, 0x42, 0xE4, 0xE6, 0x41, 0x86,
+    0xCE, 0x7A, 0x5E, 0xFA, 0x51, 0xFD, 0x11, 0x46,
+    0x6C, 0x67, 0x6B, 0xE1, 0xD7, 0x6F, 0x1E, 0x14
+};
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;加密&lt;code&gt;encrypt(Str, strlen(Str), &apos;7h1s_1s_4Tr1a1&apos;);&lt;/code&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;unsigned __int64 __fastcall encrypt(__int64 a1, unsigned __int64 a2, __int64 a3)
+{
+  unsigned __int64 result; // rax
+  unsigned __int64 i; // [rsp+8h] [rbp-8h]
+
+  for ( i = 0; ; ++i )
+  {
+    result = i;
+    if ( i &amp;gt;= a2 )
+      break;
+    *(_BYTE *)(a1 + i) ^= BOX[(unsigned __int8)(*(_BYTE *)((i &amp;amp; 0xF) + a3) + *(_BYTE *)((((_BYTE)i + 1) &amp;amp; 0xF) + a3))];
+    *(_BYTE *)((i &amp;amp; 0xF) + a3) -= *(_BYTE *)((((_BYTE)i + 1) &amp;amp; 0xF) + a3);
+    *(_BYTE *)((((_BYTE)i + 1) &amp;amp; 0xF) + a3) ^= *(_BYTE *)((i &amp;amp; 0xF) + a3);
+  }
+  return result;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;对着逻辑:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;对每个数字从BOX里抽出第(key[i &amp;amp; 0xF] + key[(i + 1) &amp;amp; 0xF])位进行异或&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;key[i &amp;amp; 0xF] -= key[(i + 1) &amp;amp; 0xF],也就是更新密钥&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;key[(i+1) &amp;amp; 0xF] ^= key[i &amp;amp; 0xF];更新密钥&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;BOX&lt;/p&gt;
+&lt;p&gt;按X查看调用，点击第一个查看&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;__int64 GetParentProcessId()
+{
+  DWORD LastError; // eax
+  DWORD v2; // eax
+  PROCESSENTRY32 pe; // [rsp+20h] [rbp-60h] BYREF
+  HANDLE hSnapshot; // [rsp+158h] [rbp+D8h]
+  DWORD CurrentProcessId; // [rsp+164h] [rbp+E4h]
+  DWORD th32ParentProcessID; // [rsp+168h] [rbp+E8h]
+  int i; // [rsp+16Ch] [rbp+ECh]
+
+  for ( i = 0; i &amp;lt;= 255; ++i )
+    BOX[i] = i;
+  CurrentProcessId = GetCurrentProcessId();
+  th32ParentProcessID = 0;
+  hSnapshot = CreateToolhelp32Snapshot_0(2u, 0);
+  if ( hSnapshot == (HANDLE)-1LL )
+  {
+    LastError = GetLastError();
+    printf(&quot;CreateToolhelp32Snapshot failed (%lu)\n&quot;, LastError);
+    return 0;
+  }
+  else
+  {
+    pe.dwSize = 304;
+    if ( Process32First_0(hSnapshot, &amp;amp;pe) )
+    {
+      while ( CurrentProcessId != pe.th32ProcessID )
+      {
+        if ( !Process32Next(hSnapshot, &amp;amp;pe) )
+          goto LABEL_12;
+      }
+      th32ParentProcessID = pe.th32ParentProcessID;
+    }
+    else
+    {
+      v2 = GetLastError();
+      printf(&quot;Process32First failed (%lu)\n&quot;, v2);
+    }
+LABEL_12:
+    CloseHandle(hSnapshot);
+    return th32ParentProcessID;
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;BOX[i] = i&lt;/p&gt;
+&lt;p&gt;汇编段genkey就在加密上面，可以看到result带的是BOX的地址&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;HMODULE genkey()
+{
+  HMODULE result; // rax
+  unsigned __int64 v1; // [rsp+38h] [rbp-8h]
+
+  v1 = 0;
+  result = GetModuleHandleA(0) + 1024;
+  text_segment = (__int64)result;
+  while ( v1 &amp;lt;= 0x2FF )
+  {
+    result = (HMODULE)&amp;amp;BOX[4 * (v1 &amp;amp; 0x3F)];
+    *(_DWORD *)result ^= -1414812757 * *(_DWORD *)&amp;amp;BOX[4 * (((_BYTE)v1 - 1) &amp;amp; 0x3F)]
+                       - 842150451 * *(_DWORD *)(4 * v1 + text_segment);
+    ++v1;
+  }
+  return result;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;text_segment = GetModuleHandleA(0) + 1024;  // = 0x140000000 + 0x400 = 0x140000400
+&lt;/code&gt;&lt;/pre&gt;
+&lt;blockquote&gt;
+&lt;p&gt;GetModuleHandleA(0) 是 Windows API，作用是获取当前进程的指定模块的句柄（模块基址）。&lt;/p&gt;
+&lt;p&gt;传入 NULL/0 → 返回调用进程自身的主模块（即当前 exe）的加载基址。&lt;/p&gt;
+&lt;p&gt;因为 exe 是 PE 文件，在内存里被整个映射成一块连续的映像，所以&quot;模块句柄&quot;其实就是它的加载起始地址（ImageBase）。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;那不就可以写exp了&lt;/p&gt;
+&lt;p&gt;但是呢，你又不用管那么多，直接拿文件嗦不就好了&lt;/p&gt;
+&lt;p&gt;抛开更新key不谈，加密过程是不是对称的&lt;/p&gt;
+&lt;p&gt;那是不是复刻key的更新再进行加密不就把密码搞出来了&lt;/p&gt;
+&lt;p&gt;整体流程&lt;/p&gt;
+&lt;p&gt;生成BOX，然后对BOX变换，然后在传入进去加密，每轮更新key，最后再与enc进行比较&lt;/p&gt;
+&lt;p&gt;由于加密是对称的，不对称的是key的更新流程，所以拿到一开始的key就可以进行更新，然后拿到flag了&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;#define _CRT_SECURE_NO_WARNINGS
+#include &amp;lt;cstdio&amp;gt;
+#include &amp;lt;cstring&amp;gt;
+
+using u8 = unsigned char;
+using u32 = unsigned int;
+
+static u32 get_dw(const u8* p, size_t o) {
+    return (u32)p[o] | ((u32)p[o + 1] &amp;lt;&amp;lt; 8) | ((u32)p[o + 2] &amp;lt;&amp;lt; 16) | ((u32)p[o + 3] &amp;lt;&amp;lt; 24);
+}
+static void set_dw(u8* p, size_t o, u32 v) {
+    p[o] = v; p[o + 1] = v &amp;gt;&amp;gt; 8; p[o + 2] = v &amp;gt;&amp;gt; 16; p[o + 3] = v &amp;gt;&amp;gt; 24;
+}
+
+int main() {
+    FILE* f = fopen(&quot;D:\\ctf\\flag\\re\\aurora25\\debugme\\debugme.exe&quot;, &quot;rb&quot;);
+    fseek(f, 0, SEEK_END); long sz = ftell(f); fseek(f, 0, SEEK_SET);
+    u8* file = new u8[sz];
+    fread(file, 1, sz, f); fclose(f);
+
+    u8 BOX[256];
+    for (int i = 0; i &amp;lt; 256; ++i) BOX[i] = (u8)i;
+
+    u32 A = (u32)(-1414812757);
+    u32 B = (u32)(842150451);          // 正 842150451，减号在算式里
+    for (int v1 = 0; v1 &amp;lt;= 0x2FF; ++v1) {
+        int d = v1 &amp;amp; 0x3F, s = (v1 - 1) &amp;amp; 0x3F;
+        u32 srcA = get_dw(BOX, 4 * s);
+        u32 srcB = get_dw(file, 0x600 + 4 * v1);   // 偏移 0x600（.text 代码段）
+        set_dw(BOX, 4 * d, get_dw(BOX, 4 * d) ^ (A * srcA - B * srcB));
+    }
+
+    u8 enc[48] = {
+        0x1D,0x2C,0xA6,0x97,0xAF,0x53,0x17,0x8C,0xB7,0x8D,0xC7,0x48,0x31,0x3D,0x3A,0xC0,
+        0x92,0x48,0x46,0x35,0x88,0x7B,0x5F,0x8B,0x9F,0xF3,0xDD,0x42,0xE4,0xE6,0x41,0x86,
+        0xCE,0x7A,0x5E,0xFA,0x51,0xFD,0x11,0x46,0x6C,0x67,0x6B,0xE1,0xD7,0x6F,0x1E,0x14
+    };
+    u8 key[16];
+    memcpy(key, &quot;7h1s_1s_4Tr1a1&quot;, 14);
+    key[14] = 0; key[15] = 0;
+
+    u8 pt[48];
+    for (int i = 0; i &amp;lt; 48; ++i) {
+        int idx = (key[i &amp;amp; 15] + key[(i + 1) &amp;amp; 15]) &amp;amp; 0xFF;
+        pt[i] = (u8)(enc[i] ^ BOX[idx]);
+        key[i &amp;amp; 15] -= key[(i + 1) &amp;amp; 15];
+        key[(i + 1) &amp;amp; 15] ^= key[i &amp;amp; 15];
+    }
+
+    for (int i = 0; i &amp;lt; 48; ++i) putchar(pt[i]);
+    puts(&quot;&quot;);
+    return 0;
+}
 
 &lt;/code&gt;&lt;/pre&gt;
 </content:encoded></item><item><title>UAF+heap基础(第二版)</title><link>https://dxfaker.top/posts/ezheap02/</link><guid isPermaLink="true">https://dxfaker.top/posts/ezheap02/</guid><description>啊啊啊啊啊弄懂了跟蛇了一样有没有懂的,你懂你的哪个</description><pubDate>Mon, 21 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;1&lt;/h1&gt;
