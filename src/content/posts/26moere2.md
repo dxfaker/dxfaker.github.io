@@ -1,13 +1,12 @@
 ---
-title: 'PyInstaller相关'
-published: 2026-09-22
-description: '怎么感觉有一亿年没写过逆向了'
+title: '一堆杂乱逆向的WP'
+published: 2026-09-27
+description: 'OSU真好玩'
 author: 'dxfaker'
-image: '/images/post/ae43dbccbdcc3eeb9eddbe75722ee94e.jpg'
-tags: ['reverse','wp']
+image: '/images/post/f3b24b353fcb0427f115fc4c435cf3fd.png'
+tags: ['pwn','wp']
 category: 'wp'
 toc: true
-
 ---
 
 # 九转蛇肠
@@ -682,6 +681,259 @@ except Exception as e:
     print("decode error:", e)
 
 ```
+
+#  MCb4ckd00r
+
+我是懒狗
+
+```bash
+(base) dxfaker@LAPTOP-US9FCLPD:/mnt/d/ctf/flag/re/moectf/MCb4ckd00r$ file CloudBlack.dll MANIFEST.sha256 server-edge-capture.pcapng
+cat MANIFEST.sha256
+sha256sum CloudBlack.dll server-edge-capture.pcapng
+CloudBlack.dll:             PE32+ executable (DLL) (GUI) x86-64, for MS Windows, 5 sections
+MANIFEST.sha256:            ASCII text, with CRLF line terminators
+server-edge-capture.pcapng: pcapng capture file - version 1.0
+272973f385614623692e39c487640c8bcbf95f5d86d5ae39fdc7ee1b20a53608  CloudBlack.dll
+58e89b806051f339e6ff7ee24c4ec9c182ac718deda27bb81f674be4ba7ee764  server-edge-capture.pcapng
+272973f385614623692e39c487640c8bcbf95f5d86d5ae39fdc7ee1b20a53608  CloudBlack.dll
+58e89b806051f339e6ff7ee24c4ec9c182ac718deda27bb81f674be4ba7ee764  server-edge-capture.pcapng
+```
+
+# 眼光「十七条のレーザー」
+
+查壳没什么问题
+
+main
+
+```c
+int __fastcall main(int argc, const char **argv, const char **envp)
+{
+  size_t v3; // rax
+  char v5[16]; // [rsp+20h] [rbp-60h] BYREF
+  char Str[256]; // [rsp+30h] [rbp-50h] BYREF
+
+  _main();
+  genkey();
+  strcpy(v5, "7h1s_1s_4Tr1a1");
+  v5[15] = 0;
+  memset(Str, 0, sizeof(Str));
+  printf("Gimme a key: ");
+  scanf("%[^\n]48s", Str);
+  v3 = strlen(Str);
+  encrypt(Str, v3, v5);
+  if ( !strncmp_0(Str, &enc, 0x30u) )
+    puts_0("Correct key!");
+  else
+    puts_0("Wrong key!....or are you debugging me?");
+  return system_0("pause");
+}
+```
+
+整理数组
+
+```cpp
+const unsigned char enc[48] = {
+    0x1D, 0x2C, 0xA6, 0x97, 0xAF, 0x53, 0x17, 0x8C,
+    0xB7, 0x8D, 0xC7, 0x48, 0x31, 0x3D, 0x3A, 0xC0,
+    0x92, 0x48, 0x46, 0x35, 0x88, 0x7B, 0x5F, 0x8B,
+    0x9F, 0xF3, 0xDD, 0x42, 0xE4, 0xE6, 0x41, 0x86,
+    0xCE, 0x7A, 0x5E, 0xFA, 0x51, 0xFD, 0x11, 0x46,
+    0x6C, 0x67, 0x6B, 0xE1, 0xD7, 0x6F, 0x1E, 0x14
+};
+```
+
+加密`encrypt(Str, strlen(Str), '7h1s_1s_4Tr1a1');`
+
+```c
+unsigned __int64 __fastcall encrypt(__int64 a1, unsigned __int64 a2, __int64 a3)
+{
+  unsigned __int64 result; // rax
+  unsigned __int64 i; // [rsp+8h] [rbp-8h]
+
+  for ( i = 0; ; ++i )
+  {
+    result = i;
+    if ( i >= a2 )
+      break;
+    *(_BYTE *)(a1 + i) ^= BOX[(unsigned __int8)(*(_BYTE *)((i & 0xF) + a3) + *(_BYTE *)((((_BYTE)i + 1) & 0xF) + a3))];
+    *(_BYTE *)((i & 0xF) + a3) -= *(_BYTE *)((((_BYTE)i + 1) & 0xF) + a3);
+    *(_BYTE *)((((_BYTE)i + 1) & 0xF) + a3) ^= *(_BYTE *)((i & 0xF) + a3);
+  }
+  return result;
+}
+```
+
+对着逻辑:
+
+1. 对每个数字从BOX里抽出第(key[i & 0xF] + key[(i + 1) & 0xF])位进行异或 
+
+2. key[i & 0xF] -= key[(i + 1) & 0xF],也就是更新密钥
+3. key[(i+1) & 0xF] ^= key[i & 0xF];更新密钥
+
+BOX
+
+按X查看调用，点击第一个查看
+
+```c
+__int64 GetParentProcessId()
+{
+  DWORD LastError; // eax
+  DWORD v2; // eax
+  PROCESSENTRY32 pe; // [rsp+20h] [rbp-60h] BYREF
+  HANDLE hSnapshot; // [rsp+158h] [rbp+D8h]
+  DWORD CurrentProcessId; // [rsp+164h] [rbp+E4h]
+  DWORD th32ParentProcessID; // [rsp+168h] [rbp+E8h]
+  int i; // [rsp+16Ch] [rbp+ECh]
+
+  for ( i = 0; i <= 255; ++i )
+    BOX[i] = i;
+  CurrentProcessId = GetCurrentProcessId();
+  th32ParentProcessID = 0;
+  hSnapshot = CreateToolhelp32Snapshot_0(2u, 0);
+  if ( hSnapshot == (HANDLE)-1LL )
+  {
+    LastError = GetLastError();
+    printf("CreateToolhelp32Snapshot failed (%lu)\n", LastError);
+    return 0;
+  }
+  else
+  {
+    pe.dwSize = 304;
+    if ( Process32First_0(hSnapshot, &pe) )
+    {
+      while ( CurrentProcessId != pe.th32ProcessID )
+      {
+        if ( !Process32Next(hSnapshot, &pe) )
+          goto LABEL_12;
+      }
+      th32ParentProcessID = pe.th32ParentProcessID;
+    }
+    else
+    {
+      v2 = GetLastError();
+      printf("Process32First failed (%lu)\n", v2);
+    }
+LABEL_12:
+    CloseHandle(hSnapshot);
+    return th32ParentProcessID;
+  }
+}
+```
+
+BOX[i] = i
+
+汇编段genkey就在加密上面，可以看到result带的是BOX的地址
+
+```c
+HMODULE genkey()
+{
+  HMODULE result; // rax
+  unsigned __int64 v1; // [rsp+38h] [rbp-8h]
+
+  v1 = 0;
+  result = GetModuleHandleA(0) + 1024;
+  text_segment = (__int64)result;
+  while ( v1 <= 0x2FF )
+  {
+    result = (HMODULE)&BOX[4 * (v1 & 0x3F)];
+    *(_DWORD *)result ^= -1414812757 * *(_DWORD *)&BOX[4 * (((_BYTE)v1 - 1) & 0x3F)]
+                       - 842150451 * *(_DWORD *)(4 * v1 + text_segment);
+    ++v1;
+  }
+  return result;
+}
+```
+
+```c
+text_segment = GetModuleHandleA(0) + 1024;  // = 0x140000000 + 0x400 = 0x140000400
+```
+
+
+
+> GetModuleHandleA(0) 是 Windows API，作用是获取当前进程的指定模块的句柄（模块基址）。
+>
+> 传入 NULL/0 → 返回调用进程自身的主模块（即当前 exe）的加载基址。
+>
+> 因为 exe 是 PE 文件，在内存里被整个映射成一块连续的映像，所以"模块句柄"其实就是它的加载起始地址（ImageBase）。
+
+那不就可以写exp了
+
+但是呢，你又不用管那么多，直接拿文件嗦不就好了
+
+抛开更新key不谈，加密过程是不是对称的
+
+那是不是复刻key的更新再进行加密不就把密码搞出来了
+
+整体流程
+
+生成BOX，然后对BOX变换，然后在传入进去加密，每轮更新key，最后再与enc进行比较
+
+由于加密是对称的，不对称的是key的更新流程，所以拿到一开始的key就可以进行更新，然后拿到flag了
+
+```cpp
+#define _CRT_SECURE_NO_WARNINGS
+#include <cstdio>
+#include <cstring>
+
+using u8 = unsigned char;
+using u32 = unsigned int;
+
+static u32 get_dw(const u8* p, size_t o) {
+    return (u32)p[o] | ((u32)p[o + 1] << 8) | ((u32)p[o + 2] << 16) | ((u32)p[o + 3] << 24);
+}
+static void set_dw(u8* p, size_t o, u32 v) {
+    p[o] = v; p[o + 1] = v >> 8; p[o + 2] = v >> 16; p[o + 3] = v >> 24;
+}
+
+int main() {
+    FILE* f = fopen("D:\\ctf\\flag\\re\\aurora25\\debugme\\debugme.exe", "rb");
+    fseek(f, 0, SEEK_END); long sz = ftell(f); fseek(f, 0, SEEK_SET);
+    u8* file = new u8[sz];
+    fread(file, 1, sz, f); fclose(f);
+
+    u8 BOX[256];
+    for (int i = 0; i < 256; ++i) BOX[i] = (u8)i;
+
+    u32 A = (u32)(-1414812757);
+    u32 B = (u32)(842150451);          // 正 842150451，减号在算式里
+    for (int v1 = 0; v1 <= 0x2FF; ++v1) {
+        int d = v1 & 0x3F, s = (v1 - 1) & 0x3F;
+        u32 srcA = get_dw(BOX, 4 * s);
+        u32 srcB = get_dw(file, 0x600 + 4 * v1);   // 偏移 0x600（.text 代码段）
+        set_dw(BOX, 4 * d, get_dw(BOX, 4 * d) ^ (A * srcA - B * srcB));
+    }
+
+    u8 enc[48] = {
+        0x1D,0x2C,0xA6,0x97,0xAF,0x53,0x17,0x8C,0xB7,0x8D,0xC7,0x48,0x31,0x3D,0x3A,0xC0,
+        0x92,0x48,0x46,0x35,0x88,0x7B,0x5F,0x8B,0x9F,0xF3,0xDD,0x42,0xE4,0xE6,0x41,0x86,
+        0xCE,0x7A,0x5E,0xFA,0x51,0xFD,0x11,0x46,0x6C,0x67,0x6B,0xE1,0xD7,0x6F,0x1E,0x14
+    };
+    u8 key[16];
+    memcpy(key, "7h1s_1s_4Tr1a1", 14);
+    key[14] = 0; key[15] = 0;
+
+    u8 pt[48];
+    for (int i = 0; i < 48; ++i) {
+        int idx = (key[i & 15] + key[(i + 1) & 15]) & 0xFF;
+        pt[i] = (u8)(enc[i] ^ BOX[idx]);
+        key[i & 15] -= key[(i + 1) & 15];
+        key[(i + 1) & 15] ^= key[i & 15];
+    }
+
+    for (int i = 0; i < 48; ++i) putchar(pt[i]);
+    puts("");
+    return 0;
+}
+
+```
+
+
+
+
+
+
+
+
 
 
 
