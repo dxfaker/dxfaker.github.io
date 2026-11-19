@@ -38,8 +38,9 @@ if (!skipAstro) {
 
 // 2. 同步文章到 Classic
 if (!skipHexo) {
-  console.log('\n▶ 步骤 2/5: 同步文章...');
+  console.log('\n▶ 步骤 2/5: 同步文章 + 友链...');
   run('node scripts/sync-posts.cjs', ROOT, 'Posts');
+  run('node scripts/sync-friends.cjs', ROOT, 'Friends');
 
   // 3. 同步图片到 Classic
   console.log('\n▶ 步骤 3/5: 同步图片...');

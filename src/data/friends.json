@@ -4,55 +4,84 @@
 		"desc": "摆烂一小时 时候到了叫我 _(¦3」∠)_|",
 		"siteurl": "https://leyi.live",
 		"imgurl": "/images/friend/leyi.jpg",
-		"tags": ["网安", "miscpwnweb爷"]
+		"tags": ["kkkkkkkernel"]
 	},
 	{
 		"title": "坨子",
 		"desc": "qu",
 		"siteurl": "https://pluto-ming-cn.github.io/",
 		"imgurl": "/images/friend/qu.jpg",
-		"tags": ["后端", "区区"]
+		"tags": ["全栈", "区区"]
 	},
 	{
-		"title": "xiaochai",
+		"title": "decimo",
 		"desc": "aaa网络维修",
 		"siteurl": "https://xiaochai-123.github.io/",
 		"imgurl": "/images/friend/xiaochai.jpg",
 		"tags": ["比我强", "强悍的 web✌"]
 	},
 	{
-		"title": "晓堃",
+		"title": "btop251",
 		"desc": "OO有丝分裂就老了",
 		"siteurl": "https://blog.btop251.top/",
 		"imgurl": "/images/friend/xiaokun.jpg",
-		"tags": ["web✌", "你深是他的后花园"]
+		"tags": ["云原神？！", "你深是他的后花园"]
 	},
 	{
 		"title": "hinanawiteriko",
 		"desc": "爱玩种末地😋",
-		"siteurl": "https://hinanawiteriko.github.io/",
+		"siteurl": "https://blog.teriko.top",
 		"imgurl": "/images/friend/tianzi.jpg",
-		"tags": ["天子", "算法"]
+		"tags": ["任然在追寻春物的人生ing"]
+	},
+
+	{
+		"title": "quequ",
+		"desc": "鹊鸲",
+		"siteurl": "https://an2erika.github.io/",
+		"imgurl": "/images/friend/quequ.jpg",
+		"tags": ["社恐","密密的码"]
 	},
 	{
-		"title": "ruijian-huang",
-		"desc": "ruijianhaung先森",
-		"siteurl": "https://ruijian-huang.github.io/",
-		"imgurl": "/images/friend/xiaohai.jpg",
-		"tags": ["现充", "小孩"]
+		"title": "fchen",
+		"desc": "fchen",
+		"siteurl": "https://fchen2007.top/",
+		"imgurl": "https://fchen2007.top/_astro/demo-avatar.BNpS-Mqb_ZvpBcW.webp",
+		"tags": ["社恐"]
 	},
 	{
-		"title": "宁乐",
-		"desc": "I pack my rhoughts and throw them, to you",
-		"siteurl": "https://nkvd-1993.github.io/",
-		"imgurl": "/images/friend/ningle.jpg",
-		"tags": ["副歌？！", "大蛇"]
+		"title": "bagfrog",
+		"desc": "别翻了，我爱你",
+		"siteurl": "https://moriya.bagfrog.blog",
+		"imgurl": "https://moriya.bagfrog.blog/_astro/datou.CKNcbI12_Z1qW3X4.webp",
+		"tags": ["web✌","web区"]
 	},
 	{
-		"title": "nepenthe",
-		"desc": "我舍友",
-		"siteurl": "https://lzbfornepenthe.github.io/",
-		"imgurl": "/images/friend/nene.jpg",
-		"tags": ["比我强", "AI"]
+		"title": "takinol",
+		"desc": "我是耄耋",
+		"siteurl": "https://takinol.github.io",
+		"imgurl": "https://takinol.github.io/avatar.jpg",
+		"tags": ["cv爷"]
+	},
+	{
+		"title": "26610",
+		"desc": "想要成为管科大手子",
+		"siteurl": "https://cat26610.github.io/about/",
+		"imgurl": "https://cat26610.github.io/images/avatar.jpg",
+		"tags": ["re"]
+	},
+	{
+		"title": "树上的那些雪",
+		"desc": "书上的那些雪",
+		"siteurl": "https://snyi001.github.io",
+		"imgurl": "/images/friend/b_2976d4f04c1a9c13dba925db2aea3313.jpg",
+		"tags": ["IOT"]
+	},
+	{
+		"title": "殷袅",
+		"desc": "你曾相信并仍渴望相信的那一切，尽管幼稚，却也伟大。",
+		"siteurl": "https://yinniao23.github.io/Lynn_blog/",
+		"imgurl": "https://yinniao23.github.io/Lynn_blog/images/avatar.jpg",
+		"tags": ["cv爷"]
 	}
 ]
