@@ -5,8 +5,9 @@
 const fs = require('fs');
 const path = require('path');
 
-const ASTRO_POSTS_DIR = 'd:/mywebsite/mizukii/src/content/posts';
-const HEXO_POSTS_DIR = 'd:/mywebsite/mizukii/classic/source/_posts';
+const ROOT = path.resolve(__dirname, '..');
+const ASTRO_POSTS_DIR = path.join(ROOT, 'src', 'content', 'posts');
+const HEXO_POSTS_DIR = path.join(ROOT, 'classic', 'source', '_posts');
 
 fs.mkdirSync(HEXO_POSTS_DIR, { recursive: true });
 
@@ -30,7 +31,7 @@ for (const file of files) {
   // 把正文里的相对图片引用转成 <img> 标签
   //（Classic 站点的 hexo-renderer-marked 对含中文/空格的 markdown 图片语法不稳定，
   //   用 <img> 标签 100% 可靠）
-  const bodyFixed = body.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (m, alt, src) => {
+  const bodyFixed = body.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_m, alt, src) => {
     // 如果已经是绝对路径 /images/post/ 开头，保留
     const finalSrc = src.startsWith('/') ? src : `/images/post/${src}`;
     return `<img src="${finalSrc}" alt="${alt}" />`;

@@ -159,9 +159,3 @@ yolo predict model=best.pt source=test.mp4 save=True
 本文完整记录了一次基于YOLOv11的行人与车辆检测模型训练实践。通过对比小数据集与扩充数据集的实验结果，证明了**数据规模对深度学习模型性能具有决定性影响**。最终模型在515张图片上训练80轮后，整体mAP50达到0.905，推理速度145 FPS。本文总结的训练技巧和问题解决方案可为类似项目提供参考。
 
 后面还会对该项目进行进一步修理改进。
-
-详细内容放下文PDF。
-
-<embed src="/other/report.pdf" width="100%" height="800px" type="application/pdf">
-
-**致谢**：感谢深圳大学戴林蕙老师的课程指导，以及RoboFlow平台提供的开源数据集。

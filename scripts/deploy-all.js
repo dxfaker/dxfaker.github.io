@@ -105,6 +105,19 @@ async function main() {
 
 		log.step(2, "构建 Butterfly (Hexo)");
 
+		// 关键：CI 中 classic/source/_posts 可能不完整（未提交的同步产物）
+		// 因此从 Astro 单一数据源重新生成文章 / 友链 / 图片
+		log.info("从 Astro 数据源同步文章、友链、图片到 Classic...");
+		exec("node scripts/sync-posts.cjs", PATHS.mizuki);
+		exec("node scripts/sync-friends.cjs", PATHS.mizuki);
+
+		const srcImages = path.join(PATHS.mizuki, "public", "images");
+		const dstImages = path.join(PATHS.butterfly, "source", "images");
+		if (fs.existsSync(srcImages)) {
+			copyDir(srcImages, dstImages);
+			log.success("图片同步完成");
+		}
+
 		// 检查主题是否存在，若不存在则克隆
 		const themePath = path.join(PATHS.butterfly, "themes/butterfly");
 		const layoutPath = path.join(themePath, "layout");
