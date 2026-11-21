@@ -1,0 +1,698 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>一点点汇编笔记 | dxfaker's site</title><meta name="author" content="dxfaker"><meta name="copyright" content="dxfaker"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="纯水">
+<meta property="og:type" content="article">
+<meta property="og:title" content="一点点汇编笔记">
+<meta property="og:url" content="https://dxfaker.top/2026/09/03/sbassm/index.html">
+<meta property="og:site_name" content="dxfaker&#39;s site">
+<meta property="og:description" content="纯水">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://dxfaker.top/images/post/26.9.4.1.png">
+<meta property="article:published_time" content="2026-09-03T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-11-21T00:09:48.404Z">
+<meta property="article:author" content="dxfaker">
+<meta property="article:tag" content="pwn">
+<meta property="article:tag" content="reverse">
+<meta property="article:tag" content="汇编">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://dxfaker.top/images/post/26.9.4.1.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "一点点汇编笔记",
+  "url": "https://dxfaker.top/2026/09/03/sbassm/",
+  "image": "https://dxfaker.top/images/post/26.9.4.1.png",
+  "datePublished": "2026-09-03T16:00:00.000Z",
+  "dateModified": "2026-11-21T00:09:48.404Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "dxfaker",
+      "url": "https://dxfaker.top"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/classic/images/favicon_io/favicon.ico"><link rel="canonical" href="https://dxfaker.top/2026/09/03/sbassm/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/classic/css/index.css?v=5.7.2"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.1/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        try {
+          const data = { value }
+
+          if (ttl != null) {
+            data.expiry = Date.now() + ttl * 86400000
+          }
+
+          localStorage.setItem(key, JSON.stringify(data))
+        } catch (e) {
+          console.error(e)
+        }
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return
+
+        try {
+          const data = JSON.parse(itemStr)
+
+          if (data.expiry && Date.now() > data.expiry) {
+            localStorage.removeItem(key)
+            return
+          }
+
+          return data.value
+        } catch {
+          localStorage.removeItem(key)
+        }
+      }
+    }
+
+    const scriptCache = new Map()
+    const cssCache = new Map()
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => {
+        if (scriptCache.has(url)) {
+          return scriptCache.get(url)
+        }
+
+        const promise = new Promise((resolve, reject) => {
+          const script = document.createElement('script')
+
+          script.src = url
+          script.async = true
+
+          for (const key in attr) {
+            script.setAttribute(key, attr[key])
+          }
+
+          script.onload = resolve
+          script.onerror = reject
+
+          document.head.appendChild(script)
+        })
+
+        scriptCache.set(url, promise)
+
+        return promise
+      },
+      getCSS: (url, id) => {
+        if (cssCache.has(url)) {
+          return cssCache.get(url)
+        }
+
+        const promise = new Promise((resolve, reject) => {
+          const link = document.createElement('link')
+
+          link.rel = 'stylesheet'
+          link.href = url
+
+          if (id) {
+            link.id = id
+          }
+
+          link.onload = resolve
+          link.onerror = reject
+
+          document.head.appendChild(link)
+        })
+
+        cssCache.set(url, promise)
+
+        return promise
+      },
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const metaThemeColor = document.querySelector('meta[name="theme-color"]')
+      const activateDarkMode = () => {
+        document.documentElement.dataset.theme = 'dark'
+        if (metaThemeColor !== null) {
+          metaThemeColor.setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.dataset.theme = 'light'
+        if (metaThemeColor !== null) {
+          metaThemeColor.setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/classic/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.1/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '一点点汇编笔记',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 8.1.2"><style>
+/* === 全屏固定背景封面 === */
+body::before{content:"";position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-999;background:url(/classic/images/back.jpg) center/cover no-repeat;pointer-events:none}
+/* === 全屏 header，背景透明露出封面 === */
+#page-header{height:100vh!important;min-height:100vh!important;max-height:100vh!important;background:transparent!important}
+#page-header #page-site-info,#page-header #site-info{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:100%;text-align:center;z-index:10}
+#page-header #site-subtitle{margin-top:1rem!important;animation:fup 1s ease-out .3s both;color:#fff!important;font-weight:bold!important;text-shadow:0 0 10px rgba(0,0,0,.5)}
+/* === 主标题白字+炫彩边框动画 === */
+#page-header #site-title{font-size:3.5rem!important;letter-spacing:4px!important;animation:fup 1s ease-out}
+#page-header #site-title .rb-text{display:inline-block;color:#fff!important;-webkit-text-fill-color:#fff!important;animation:rb-glow 3s linear infinite}
+@keyframes rb-glow{
+  0%{text-shadow:3px 0 0 #ff0000,-3px 0 0 #00ffff,0 3px 0 #ffff00,0 -3px 0 #ff00ff}
+  20%{text-shadow:3px 0 0 #ff7f00,-3px 0 0 #00ffff,0 3px 0 #00ff00,0 -3px 0 #ff0000}
+  40%{text-shadow:3px 0 0 #ffff00,-3px 0 0 #7f00ff,0 3px 0 #0080ff,0 -3px 0 #ff7f00}
+  60%{text-shadow:3px 0 0 #00ff00,-3px 0 0 #ff00ff,0 3px 0 #ff0000,0 -3px 0 #0080ff}
+  80%{text-shadow:3px 0 0 #0080ff,-3px 0 0 #ff7f00,0 3px 0 #ff00ff,0 -3px 0 #00ff00}
+  100%{text-shadow:3px 0 0 #ff0000,-3px 0 0 #00ffff,0 3px 0 #ffff00,0 -3px 0 #ff00ff}
+}
+@keyframes fup{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+/* === 滚动箭头 === */
+.scroll-down-hint{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);color:#fff;font-size:2rem;animation:bounce-arrow 2s infinite;cursor:pointer;z-index:10}
+@keyframes bounce-arrow{0%,20%,50%,80%,100%{transform:translateX(-50%) translateY(0)}40%{transform:translateX(-50%) translateY(-15px)}60%{transform:translateX(-50%) translateY(-7px)}}
+@media(max-width:768px){#page-header #site-title{font-size:2rem!important}}
+/* === 毛玻璃内容区 === */
+#content-inner,#recent-posts,.aside-content{background:rgba(255,255,255,.85)!important;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.card-widget,.recent-post-item{background:rgba(255,255,255,.9)!important}
+[data-theme=dark] #content-inner,[data-theme=dark] #recent-posts,[data-theme=dark] .aside-content{background:rgba(30,30,30,.85)!important}
+[data-theme=dark] .card-widget,[data-theme=dark] .recent-post-item{background:rgba(45,45,45,.9)!important}
+canvas#fw-particles{z-index:0!important}
+/* === 页脚透明 === */
+#footer{background:transparent!important}#footer-wrap{background:transparent!important}
+/* === 标题居中 === */
+#page-header #site-info{padding:2.5rem 4rem!important;position:relative!important;background:transparent!important}
+@media(max-width:768px){#page-header #site-info{padding:1.5rem 1.5rem!important}}
+</style>
+</head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/classic/images/avatar.png" onerror="this.onerror=null;this.src='/classic/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/classic/archives/"><div class="headline">文章</div><div class="length-num">31</div></a><a href="/classic/tags/"><div class="headline">标签</div><div class="length-num">20</div></a><a href="/classic/categories/"><div class="headline">分类</div><div class="length-num">12</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/classic/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/classic/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><span class="site-page group"><span> Links</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" target="_blank" rel="noopener" href="https://github.com/dxfaker"><i class="fa-fw fab fa-github"></i><span> GitHub</span></a></li><li><a class="site-page child" target="_blank" rel="noopener" href="https://space.bilibili.com/479112329"><i class="fa-fw fab fa-bilibili"></i><span> Bilibili</span></a></li><li><a class="site-page child" target="_blank" rel="noopener" href="https://x.com/B0699914076454"><i class="fa-fw fab fa-twitter"></i><span> X</span></a></li><li><a class="site-page child" target="_blank" rel="noopener" href="https://tieba.baidu.com/home/main?id=tb.1.ed372b7b.6us6IlRvKC4N61tXujNKEQ"><i class="fa-fw fas fa-comments"></i><span> 贴吧</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><span> My</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/classic/diary/"><i class="fa-fw fas fa-book"></i><span> Diary</span></a></li><li><a class="site-page child" target="_blank" rel="noopener" href="https://space.bilibili.com/479112329/bangumi"><i class="fa-fw fab fa-bilibili"></i><span> 追番（先这样，后面改）</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><span> About</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/classic/about/"><i class="fa-fw fas fa-user"></i><span> About</span></a></li><li><a class="site-page child" href="/classic/friends/"><i class="fa-fw fas fa-heart"></i><span> Friends</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><span> Others</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/classic/projects/"><i class="fa-fw fas fa-briefcase"></i><span> Projects</span></a></li><li><a class="site-page child" href="/classic/skills/"><i class="fa-fw fas fa-brain"></i><span> Skills</span></a></li><li><a class="site-page child" href="/classic/timeline/"><i class="fa-fw fas fa-chart-line"></i><span> Timeline</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="https://dxfaker.top/"><i class="fa-fw fas fa-rocket"></i><span> 旧版主题</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(/classic/images/post/26.9.4.1.png);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/classic/"><img class="site-icon" src="/classic/images/avatar.png" alt="Logo"><span class="site-name">dxfaker's site</span></a><a class="nav-page-title" href="/classic/"><span class="site-name">一点点汇编笔记</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/classic/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/classic/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><span class="site-page group"><span> Links</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" target="_blank" rel="noopener" href="https://github.com/dxfaker"><i class="fa-fw fab fa-github"></i><span> GitHub</span></a></li><li><a class="site-page child" target="_blank" rel="noopener" href="https://space.bilibili.com/479112329"><i class="fa-fw fab fa-bilibili"></i><span> Bilibili</span></a></li><li><a class="site-page child" target="_blank" rel="noopener" href="https://x.com/B0699914076454"><i class="fa-fw fab fa-twitter"></i><span> X</span></a></li><li><a class="site-page child" target="_blank" rel="noopener" href="https://tieba.baidu.com/home/main?id=tb.1.ed372b7b.6us6IlRvKC4N61tXujNKEQ"><i class="fa-fw fas fa-comments"></i><span> 贴吧</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><span> My</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/classic/diary/"><i class="fa-fw fas fa-book"></i><span> Diary</span></a></li><li><a class="site-page child" target="_blank" rel="noopener" href="https://space.bilibili.com/479112329/bangumi"><i class="fa-fw fab fa-bilibili"></i><span> 追番（先这样，后面改）</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><span> About</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/classic/about/"><i class="fa-fw fas fa-user"></i><span> About</span></a></li><li><a class="site-page child" href="/classic/friends/"><i class="fa-fw fas fa-heart"></i><span> Friends</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><span> Others</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/classic/projects/"><i class="fa-fw fas fa-briefcase"></i><span> Projects</span></a></li><li><a class="site-page child" href="/classic/skills/"><i class="fa-fw fas fa-brain"></i><span> Skills</span></a></li><li><a class="site-page child" href="/classic/timeline/"><i class="fa-fw fas fa-chart-line"></i><span> Timeline</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="https://dxfaker.top/"><i class="fa-fw fas fa-rocket"></i><span> 旧版主题</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">一点点汇编笔记</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-09-03T16:00:00.000Z" title="发表于 2026-09-04 00:00:00">2026-09-04</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-11-21T00:09:48.404Z" title="更新于 2026-11-21 08:09:48">2026-11-21</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/classic/categories/%E5%A4%8D%E4%B9%A0%E7%AC%94%E8%AE%B0/">复习笔记</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><img src="/images/post/26.9.4.2.png" alt="26.9.4.2" />
+
+<h1 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h1><p>封面是辟浪。26拜年纪单品</p>
+<p>还有个pwnlearn后面再写吧，一上大二事情真几把多，我去你大坝的。</p>
+<p>今晚写汇编逆向又被整不会了，原来是又把调用给忘记了，故出一个复习一下</p>
+<h1 id="32位linux系统调用"><a href="#32位linux系统调用" class="headerlink" title="32位linux系统调用"></a>32位linux系统调用</h1><p><strong>EAX</strong>指定要调用的函数（系统调用号）</p>
+<p><strong>EBX</strong>传递函数的第一个参数</p>
+<p><strong>ECX</strong>传递函数的第二个参数</p>
+<p><strong>EDX</strong>传递函数的第三个参数</p>
+<p>返回值<strong>EAX</strong></p>
+<p>还有两个滚木esi和edi分别传第四第五个参数</p>
+<p>系统调用还有一个超大的表，这里仅列举5个常见的</p>
+<table>
+<thead>
+<tr>
+<th align="left">系统调用</th>
+<th align="left">编号 (eax)</th>
+<th align="left">参数 1 (ebx)</th>
+<th align="left">参数 2 (ecx)</th>
+<th align="left">参数 3 (edx)</th>
+<th align="left">使用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong><code>exit</code></strong></td>
+<td align="left"><strong>1</strong></td>
+<td align="left">返回码 (0)</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">让程序正常结束，避免 crash</td>
+</tr>
+<tr>
+<td align="left"><strong><code>read</code></strong></td>
+<td align="left"><strong>3</strong></td>
+<td align="left">fd (0&#x3D;stdin)</td>
+<td align="left">缓冲区地址</td>
+<td align="left">读取长度</td>
+<td align="left">读取输入</td>
+</tr>
+<tr>
+<td align="left"><strong><code>write</code></strong></td>
+<td align="left"><strong>4</strong></td>
+<td align="left">fd (1&#x3D;stdout)</td>
+<td align="left">缓冲区地址</td>
+<td align="left">写入长度</td>
+<td align="left">输出信息或泄露地址</td>
+</tr>
+<tr>
+<td align="left"><strong><code>open</code></strong></td>
+<td align="left"><strong>5</strong></td>
+<td align="left">文件名地址</td>
+<td align="left">flags (0&#x3D;只读)</td>
+<td align="left">mode (0)</td>
+<td align="left"><strong>ORW（Open-Read-Write）</strong> 中打开 <code>flag</code> 文件</td>
+</tr>
+<tr>
+<td align="left"><strong><code>execve</code></strong></td>
+<td align="left"><strong>11</strong></td>
+<td align="left">程序路径 (<code>/bin/sh</code>)</td>
+<td align="left">argv 地址 (0)</td>
+<td align="left">envp 地址 (0)</td>
+<td align="left"><strong>拿 Shell 的核心</strong>（最常用）</td>
+</tr>
+</tbody></table>
+<p>以及64位的纵向对比</p>
+<table>
+<thead>
+<tr>
+<th align="left">系统调用</th>
+<th align="left">32位 (int 0x80)</th>
+<th align="left">64位 (syscall)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>read</code></td>
+<td align="left">3</td>
+<td align="left"><strong>0</strong></td>
+</tr>
+<tr>
+<td align="left"><code>write</code></td>
+<td align="left">4</td>
+<td align="left"><strong>1</strong></td>
+</tr>
+<tr>
+<td align="left"><code>open</code></td>
+<td align="left">5</td>
+<td align="left"><strong>2</strong></td>
+</tr>
+<tr>
+<td align="left"><code>execve</code></td>
+<td align="left">11</td>
+<td align="left"><strong>59</strong></td>
+</tr>
+</tbody></table>
+<p><strong>Linux 系统调用 <code>read</code> 的返回值（存入 <code>eax</code>）是“实际读取的字节数”，而不是读取到的数据本身。</strong></p>
+<p>64位</p>
+<table>
+<thead>
+<tr>
+<th align="left">寄存器</th>
+<th align="left"><code>read</code> 调用前</th>
+<th align="left"><code>write</code> 调用前</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong><code>rax</code></strong></td>
+<td align="left"><strong>0</strong>（系统调用号）</td>
+<td align="left"><strong>1</strong>（系统调用号）</td>
+</tr>
+<tr>
+<td align="left"><strong><code>rdi</code></strong></td>
+<td align="left">文件描述符（<code>0</code>&#x3D;stdin）</td>
+<td align="left">文件描述符（<code>1</code>&#x3D;stdout）</td>
+</tr>
+<tr>
+<td align="left"><strong><code>rsi</code></strong></td>
+<td align="left">缓冲区地址（<code>buf</code>）</td>
+<td align="left">缓冲区地址（<code>buf</code>）</td>
+</tr>
+<tr>
+<td align="left"><strong><code>rdx</code></strong></td>
+<td align="left">读取长度（<code>count</code>）</td>
+<td align="left">写入长度（<code>count</code>）</td>
+</tr>
+<tr>
+<td align="left"><strong><code>r10</code></strong></td>
+<td align="left">未使用</td>
+<td align="left">未使用（注意：第4个参数用 <code>r10</code>，但 read&#x2F;write 只需3个）</td>
+</tr>
+</tbody></table>
+<ul>
+<li><strong><code>rax</code></strong>：变为返回值（<strong>成功</strong>时返回实际读&#x2F;写的字节数；<strong>失败</strong>时返回负数错误码，如 <code>-EFAULT</code>）。</li>
+<li><strong><code>rcx</code> 和 <code>r11</code></strong>：<strong>被破坏</strong>（这是关键！<code>syscall</code> 指令内部会使用 <code>rcx</code> 保存返回地址，用 <code>r11</code> 保存 <code>rflags</code>）。<strong>调用后这两个寄存器的值是不可预测的</strong>。</li>
+<li><strong>参数寄存器（<code>rdi</code>、<code>rsi</code>、<code>rdx</code>）</strong>：<strong>保持不变</strong>（内核会保存它们的值）。</li>
+</ul>
+<p>32位</p>
+<table>
+<thead>
+<tr>
+<th align="left">寄存器</th>
+<th align="left"><code>read</code> 调用前</th>
+<th align="left"><code>write</code> 调用前</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong><code>eax</code></strong></td>
+<td align="left"><strong>3</strong>（系统调用号）</td>
+<td align="left"><strong>4</strong>（系统调用号）</td>
+</tr>
+<tr>
+<td align="left"><strong><code>ebx</code></strong></td>
+<td align="left">文件描述符（<code>0</code>）</td>
+<td align="left">文件描述符（<code>1</code>）</td>
+</tr>
+<tr>
+<td align="left"><strong><code>ecx</code></strong></td>
+<td align="left">缓冲区地址</td>
+<td align="left">缓冲区地址</td>
+</tr>
+<tr>
+<td align="left"><strong><code>edx</code></strong></td>
+<td align="left">读取长度</td>
+<td align="left">写入长度</td>
+</tr>
+</tbody></table>
+<ul>
+<li><strong><code>eax</code></strong>：变为返回值（成功时返回实际字节数，失败时返回负错误码）。</li>
+<li><strong>所有参数寄存器（<code>ebx</code>、<code>ecx</code>、<code>edx</code>）</strong>：<strong>保持不变</strong>（<code>int 0x80</code> 会保存恢复寄存器上下文）。</li>
+</ul>
+<h1 id="NASM汇编器伪指令"><a href="#NASM汇编器伪指令" class="headerlink" title="NASM汇编器伪指令"></a>NASM汇编器伪指令</h1><p>数据传输相关</p>
+<table>
+<thead>
+<tr>
+<th><code>mov a, b</code></th>
+<th>将 b 的值赋给 a</th>
+<th>基础搬运</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>movzx a, b</code></td>
+<td>零扩展后搬运（小→大）</td>
+<td>处理 char 转 int</td>
+</tr>
+<tr>
+<td><code>movsx a, b</code></td>
+<td>符号扩展后搬运</td>
+<td>处理有符号数扩展</td>
+</tr>
+<tr>
+<td><code>lea a, [b + c*n]</code></td>
+<td>计算地址（不访存）</td>
+<td>常用于快速计算（如 <code>lea rax, [rax+rax*4]</code> 实现乘5）</td>
+</tr>
+</tbody></table>
+<p>逻辑运算</p>
+<table>
+<thead>
+<tr>
+<th><code>add a, b</code></th>
+<th>a &#x3D; a + b</th>
+<th>OF&#x2F;SF&#x2F;ZF&#x2F;AF&#x2F;CF&#x2F;PF</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>sub a, b</code></td>
+<td>a &#x3D; a - b</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>imul a</code></td>
+<td>有符号乘法（<code>rax *= a</code>，结果在 <code>rdx:rax</code>）</td>
+<td>OF&#x2F;CF</td>
+</tr>
+<tr>
+<td><code>mul a</code></td>
+<td>无符号乘法</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>idiv a</code></td>
+<td>有符号除法（<code>rdx:rax / a</code>，商→rax，余数→rdx）</td>
+<td>无</td>
+</tr>
+<tr>
+<td><code>div a</code></td>
+<td>无符号除法</td>
+<td>无</td>
+</tr>
+<tr>
+<td><code>inc a</code></td>
+<td>a++</td>
+<td>OF&#x2F;SF&#x2F;ZF&#x2F;AF&#x2F;PF（CF不变）</td>
+</tr>
+<tr>
+<td><code>dec a</code></td>
+<td>a–</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>and a, b</code></td>
+<td>a &amp;&#x3D; b</td>
+<td>OF&#x3D;0, CF&#x3D;0, 影响SF&#x2F;ZF&#x2F;PF</td>
+</tr>
+<tr>
+<td><code>or a, b</code></td>
+<td>a |&#x3D; b</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>xor a, b</code></td>
+<td>a ^&#x3D; b</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>not a</code></td>
+<td>a &#x3D; ~a</td>
+<td>不影响标志</td>
+</tr>
+<tr>
+<td><code>shl a, cl</code></td>
+<td>逻辑左移</td>
+<td>影响CF&#x2F;OF&#x2F;SF&#x2F;ZF&#x2F;PF</td>
+</tr>
+<tr>
+<td><code>shr a, cl</code></td>
+<td>逻辑右移（补0）</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>sar a, cl</code></td>
+<td>算术右移（补符号位）</td>
+<td>同上</td>
+</tr>
+</tbody></table>
+<p>栈</p>
+<table>
+<thead>
+<tr>
+<th><code>push a</code></th>
+<th><code>rsp -= 8; [rsp] = a</code></th>
+<th>栈向下增长</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>pop a</code></td>
+<td><code>a = [rsp]; rsp += 8</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>pushf</code></td>
+<td>压入 rflags</td>
+<td>少用</td>
+</tr>
+<tr>
+<td><code>popf</code></td>
+<td>弹出 rflags</td>
+<td>少用</td>
+</tr>
+</tbody></table>
+<p>跳转</p>
+<table>
+<thead>
+<tr>
+<th><code>jmp</code></th>
+<th>无条件跳转</th>
+<th>-</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>call func</code></td>
+<td>压入返回地址，跳转至 func</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>ret</code></td>
+<td>弹出返回地址，跳转</td>
+<td>-</td>
+</tr>
+</tbody></table>
+<p>条件跳转</p>
+<table>
+<thead>
+<tr>
+<th><code>je / jz</code></th>
+<th>同左</th>
+<th>相等 (ZF&#x3D;1)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>jne / jnz</code></td>
+<td>同左</td>
+<td>不等 (ZF&#x3D;0)</td>
+</tr>
+<tr>
+<td><code>jg / jnle</code></td>
+<td><code>ja / jnbe</code></td>
+<td>大于 (&gt;)，无符号用 <code>a</code> 表示 above</td>
+</tr>
+<tr>
+<td><code>jge / jnl</code></td>
+<td><code>jae / jnb</code></td>
+<td>大于等于 (&gt;&#x3D;)</td>
+</tr>
+<tr>
+<td><code>jl / jnge</code></td>
+<td><code>jb / jnae</code></td>
+<td>小于 (&lt;)</td>
+</tr>
+<tr>
+<td><code>jle / jng</code></td>
+<td><code>jbe / jna</code></td>
+<td>小于等于 (&lt;&#x3D;)</td>
+</tr>
+</tbody></table>
+<p>比较与测试</p>
+<table>
+<thead>
+<tr>
+<th><code>cmp a, b</code></th>
+<th>计算 <code>a - b</code>，不写结果</th>
+<th>影响 ZF&#x2F;OF&#x2F;SF&#x2F;CF&#x2F;AF&#x2F;PF</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>test a, b</code></td>
+<td>计算 <code>a &amp; b</code>，不写结果</td>
+<td>影响 ZF&#x2F;SF&#x2F;PF（OF&#x3D;0, CF&#x3D;0）</td>
+</tr>
+</tbody></table>
+<p>系统调用</p>
+<table>
+<thead>
+<tr>
+<th><code>syscall</code></th>
+<th>发起系统调用</th>
+<th>Linux x86-64 中，系统调用号放在 <code>rax</code>，参数依次放入 <code>rdi, rsi, rdx, r10, r8, r9</code>。</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>int 0x80</code></td>
+<td>32位系统调用</td>
+<td>较少见，通常在32位兼容模式或 shellcode 中。</td>
+</tr>
+</tbody></table>
+<h2 id="标志位"><a href="#标志位" class="headerlink" title="标志位"></a>标志位</h2><ol>
+<li>OF 溢出标志位</li>
+</ol>
+<p>OF &#x3D; 1 表示带符号整数运算时结果发生溢出。对无符号整数运算无意义</p>
+<ol start="2">
+<li><p>ZF 零标志位</p>
+<p>ZF &#x3D; 1 表示结果为0，无论是有符号数还是无符号数，ZF都有意义</p>
+</li>
+<li><p>CF 进&#x2F;借位标志</p>
+</li>
+</ol>
+<blockquote>
+<p>表示无符号整数数加&#x2F;减运算时的进位&#x2F;借位。</p>
+<ul>
+<li>加法时，CF &#x3D; 1表示无符号数加法溢出，CF&#x3D;最高进位输出</li>
+<li>减法时，CF &#x3D; 1表示有借位，即不够减，CF&#x3D;最高位进位输出取反</li>
+</ul>
+<p>对于有有符号数的整数运算没有意义</p>
+<ul>
+<li>但是真要看的话，CF&#x3D;最高位进位输出</li>
+</ul>
+</blockquote>
+<ol start="4">
+<li>SF 符号标志</li>
+</ol>
+<p>结果为负，即符号位为1时SF为1，否则为0</p>
+<ol start="5">
+<li>AF 辅助进位标志</li>
+</ol>
+<blockquote>
+<ul>
+<li><strong>触发条件</strong>：运算时，低 <strong>4 位（即 BCD 码的个位）</strong> 发生进位或借位。</li>
+<li><strong>用途</strong>：专用于 BCD（二进制编码的十进制）运算（如 <code>DAA</code>、<code>AAA</code> 指令）。在常规的字符串、整数逆向中基本用不到，只有遇到特殊加密或古老反调试技巧时才可能涉及。</li>
+</ul>
+</blockquote>
+<ol start="6">
+<li>PF 奇偶标志</li>
+</ol>
+<blockquote>
+<p>运算结果的<strong>低 8 位（最末字节）</strong> 中，含有偶数个 1 时，<code>PF = 1</code>。</p>
+</blockquote>
+<ul>
+<li><strong><code>db</code></strong>：定义字节串（<code>Define Byte</code>），末尾的 <code>0</code> 是 C 风格字符串的结束符。</li>
+<li><strong><code>equ</code></strong>：相当于 <code>#define</code>，不占内存，只在汇编时做文本替换。</li>
+</ul>
+<h1 id="然后是不知道哪的内容"><a href="#然后是不知道哪的内容" class="headerlink" title="然后是不知道哪的内容"></a>然后是不知道哪的内容</h1><p>(反正我又不用学)</p>
+<ol>
+<li>数据段</li>
+</ol>
+<p>存放赋了初始值的全局变量以及静态变量</p>
+<p>权限为rw-</p>
+<ol start="2">
+<li>BSS</li>
+</ol>
+<p>未初始化的全局变量区</p>
+<p>存放<strong>未初始化</strong>或初始化为 0 的全局变量和静态变量（如 C 语言中的 <code>char buf[100];</code>）</p>
+<p>权限一般为rw-</p>
+<ol start="3">
+<li>代码段</li>
+</ol>
+<p>存放CPU要执行的机器指令</p>
+<p>权限通常为r-x</p>
+<p>傻逼NX开启的时候这里是唯一能执行代码的地方</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">低地址 0x400000    →  代码段 (.text)   [r-x]</span><br><span class="line">                   ↓</span><br><span class="line">                      数据段 (.data)   [rw-]  ← 有初值的全局变量</span><br><span class="line">                   ↓</span><br><span class="line">                      BSS 段 (.bss)    [rw-]  ← 无初值的全局变量（运行时清零）</span><br><span class="line">                   ↓</span><br><span class="line">                      堆 (Heap)        [rw-]  ← 动态分配（malloc）</span><br><span class="line">                   ↓</span><br><span class="line">                      ... 空闲区域 ...</span><br><span class="line">                   ↓</span><br><span class="line">                      栈 (Stack)       [rw-]  ← 局部变量，向下增长</span><br><span class="line">高地址 0x7FFFFFFF  →  环境变量 / 参数</span><br></pre></td></tr></table></figure>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://dxfaker.top">dxfaker</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://dxfaker.top/2026/09/03/sbassm/">https://dxfaker.top/2026/09/03/sbassm/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://dxfaker.top" target="_blank">dxfaker's site</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/classic/tags/reverse/">reverse</a><a class="post-meta__tags" href="/classic/tags/%E6%B1%87%E7%BC%96/">汇编</a><a class="post-meta__tags" href="/classic/tags/pwn/">pwn</a></div><div class="post-share"><div class="social-share" data-image="/classic/images/post/26.9.4.1.png" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/classic/2026/09/04/ready/" title="假期总结以及未来规划"><img class="cover" src="/classic/images/post/26.9.5.png" onerror="onerror=null;src='/classic/img/404.jpg'" alt="cover of previous post"><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">假期总结以及未来规划</div></div><div class="info-2"><div class="info-item-1">我用最直白最明了的话跟你讲，我焦虑了。 大一下转专业确实成功了，但策略遗留问题终究还是暴露了。 还是没有必要去花太多时间学习高数的 总结来看，电分没过确实还是大问题，导致下学期还得重修，白花4学分空间，但是我又想提前修完的话又得提前多修别的。。。。 想提前多修别的又得这学期绩点高，这学期绩点高又得把数电模电单片机大物信号与系统搞好。哦对了，下学期还得并补大物实验。 这只是课内 课外还有芯片加密，pwn，32,英语etc…… 确实很难以一种轻松的姿态度过剩下的校园生活了 以一种焦虑的姿态，和白玉京以及henry去骑车去深圳湾坐了一会，聊了很久。 还是说说结论吧 新生杯我还是会打的 但是最后重心可能还是在本专业上了。 最后大概率是去考研吧，且不考本校，本校的集电给到拉完了 大概率是去搞数字ic，也就意味着别的可能开始渐渐淡化或者转型到辅助自己专业能力上去了 有点叛徒的意思？ 但是现在确实很迷茫 毕竟确实有很明显的课业压力，pwn也才刚刚起步，一眼望不到自己的前路 我真的能既要又要吗，就算能，也能都有起色，还是都平平无奇呢？ 但我真的是很平庸的一个人，无法做到立马给出答案，现阶段貌似最...</div></div></div></a><a class="pagination-related" href="/classic/2026/07/24/SEH/" title="SEH问题处理"><img class="cover" src="/classic/images/post/1bf95a7d88367cf98b58f9feac1c8ffd.jpg" onerror="onerror=null;src='/classic/img/404.jpg'" alt="cover of next post"><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">SEH问题处理</div></div><div class="info-2"><div class="info-item-1">前言感谢leyi提供的南区美照 经过了激烈的期末月斗争，我的电分还是挂了(目前还不清楚有没有补考)。 然后从暑假开始复健逆向。 第一天我就写了两个题目，一个是hex的，开010拉到底部就结束战斗了，另外一个就是今天讲的SEH。 你需要知道的 SEH是什么   SEH（Structured Exception Handling，结构化异常处理）是 Windows 操作系统提供的一种底层异常处理机制。它与 C++ 的 try/catch 不同，SEH 是操作系统层面的机制，而 try/catch 等 C++ 异常处理在 Windows 上通常也是基于 SEH 实现的。  异常发生后，大概顺序是：内核-&gt;调试器-&gt;VEH-&gt;SEH  在线程初始化的时候，会自动在栈中安装一个SEH结构体，作为默认异常处理，他的next就是0xFFFFFFFFF，而这个异常程序大家应该都很熟悉，就是windows程序崩溃时那个弹窗，打印出来出错函数地址。 如果程序中使用了try、excpt、assert来处理异常信息，那么编译器就会在栈中压入一个SEH结构体，同时插入链表中。 当出现异常...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/classic/2026/03/04/26.3.4/" title="处理线性方程组题型"><img class="cover" src="/classic/images/post/639b537954268493bfa2efea55389355.jpeg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-03-05</div><div class="info-item-2">处理线性方程组题型</div></div><div class="info-2"><div class="info-item-1">写在前面镇楼：届不到的爱恋 感谢leyi发的新生赛RE题，不愧是逆神的题目，我第二题就卡住了，脱壳没有什么问题，但是我点开IDA后发现流程图长这样： 这个时候，有人就要问了：B哥，B哥，这他妈什么jb？ 那我问你，我才刚学，我知道个蛋 于是我去问了AI，说是有两种题型： 1.线性方程组题型 2.控制流平坦化题型 线性方程组题型的典型特征 结构：主函数中只有一个巨大的 if 语句，里面包含几十个由 &amp;&amp; 连接的等式。 表达式形式：每个等式都是形如 (系数1 * 字节1 + 系数2 * 字节2 + ... + 系数32 * 字节32) == 常数 的线性组合。 变量命名：IDA 可能会自动将输入分解为几个连续的变量（如 v4, v5, v6, v7），每个变量通过 SBYTE1、SBYTE2 等宏访问其内部的字节。 没有循环&#x2F;switch：除了输入读取和字符范围检查的循环外，验证部分全是顺序的数学运算，没有复杂跳转。  控制流平坦化题型的典型特征 结构：反编译后是一个巨大的 while(1) 循环，里面嵌套 switch 或大量 if-else，所有功能块都...</div></div></div></a><a class="pagination-related" href="/classic/2026/03/01/26.3.2/" title="词条本1"><img class="cover" src="/classic/images/post/26.3.2.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-03-02</div><div class="info-item-2">词条本1</div></div><div class="info-2"><div class="info-item-1">写在前面老婆镇楼 这个就相当于是词条了，我后面复习直接 ctrl+f 用。 ylg基础知识这个就不是写给我看的了(bushi) 内联循环在编程中，“内联”（inline）指的是将函数体的代码直接插入到调用它的地方，而不是通过常规的 call 指令跳转过去。将函数体的循环直接插入，循环次数由运行时决定。这样做的好处是： ·省去了函数调用和返回时的栈操作（压栈、跳转、恢复等），提高执行速度。 ·对于小函数尤其有利，比如 strlen、memcpy 等。 12345678size_t strlen(const char *s) &#123;    size_t len = 0;    while (*s != &#x27;\0&#x27;) &#123;        len++;        s++;    &#125;    return len;&#125; 如果编译器决定内联这个函数，那么在调用 strlen(str) 的地方，它不会生成 call strlen，而是直接生成一段循环指令来扫描字符串。 使用IDA反汇编时,可能会遇到的两种情况： ·直接调用 strlen：反编...</div></div></div></a><a class="pagination-related" href="/classic/2026/09/12/26moe5/" title="2026第一周wp05"><img class="cover" src="/classic/images/post/a281c68d9c2dda6392245f027fcfafb6_720.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-09-13</div><div class="info-item-2">2026第一周wp05</div></div><div class="info-2"><div class="info-item-1">写在前面第一双神了，有了点问题于是12号鸽了，现在是13号1:14，更新完准备睡觉 第二版说明:早上起来发现没更新到，故修复一下 外卖补贴checksec 12345678Arch:       amd64-64-little   RELRO:      Partial RELRO   Stack:      No canary found   NX:         NX enabled   PIE:        PIE enabled   SHSTK:      Enabled   IBT:        Enabled   Stripped:   No  PIE+NX 看看机翻main 12345678910111213141516171819202122232425262728293031323334353637383940414243444546474849505152int __fastcall main(int argc, const char **argv, const char **envp)&#123;  unsigned __int64 number; /...</div></div></div></a><a class="pagination-related" href="/classic/2026/10/28/fastbin_atk/" title="第一个fastbin_attack的题"><img class="cover" src="/classic/images/post/b4064f2acfb72aa9840fc8fd48dcc0a6.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-10-29</div><div class="info-item-2">第一个fastbin_attack的题</div></div><div class="info-2"><div class="info-item-1">写在前面这个是遇到的第一个用fastbin attack的题 因为没学过，还是狠狠的恶补了一下 0ctf_2017_babyheapwsl指令下载glibc2.23	 123456789101112131415# 1. 克隆工具git clone https://github.com/matrix1001/glibc-all-in-one.gitcd glibc-all-in-one# 2. 给脚本执行权限chmod a+x build download extract update_list# 3. 更新可用列表./update_list# 4. 查找 2.23 的 amd64 包名（按你的题选，一般选 ubuntu 版本）cat list | grep 2.23# 5. 下载（以 2.23-0ubuntu11.3_amd64 为例，按上一步实际列表里的名字填）./download 2.23-0ubuntu11.3_amd64  1234567891011121314151617181920212223242526272829__int64 __fastcall main(__...</div></div></div></a><a class="pagination-related" href="/classic/2026/09/09/printf/" title="printf的小巧思"><img class="cover" src="/classic/images/post/1dfec58f-abdf-453c-b237-db6e8ed237d6.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-09-10</div><div class="info-item-2">printf的小巧思</div></div><div class="info-2"><div class="info-item-1">写在前面这个是25新生赛的题，一开始我以为UAF，但是后面发现他只用了堆，然后就以为可以通过格式化字符串漏洞来打，再到后面发现我又错了，看来还得练啊 正文12345678910111213141516171819202122232425262728293031323334353637int __fastcall __noreturn main(int argc, const char **argv, const char **envp)&#123;  __int64 v3; // [rsp+0h] [rbp-20h] BYREF  __int64 buf; // [rsp+8h] [rbp-18h] BYREF  char *format; // [rsp+10h] [rbp-10h]  int fd; // [rsp+1Ch] [rbp-4h]  init(argc, argv, envp);  buf = 0;  v3 = 0;  fd = open(&quot;/dev/urandom&quot;, 0);  if ( fd &lt; 0 )  &#123;    perr...</div></div></div></a><a class="pagination-related" href="/classic/2026/09/07/26moe1/" title="2026第一周WP"><img class="cover" src="/classic/images/post/e92d923c-fb3f-4764-b46f-b47734742ce5.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-09-08</div><div class="info-item-2">2026第一周WP</div></div><div class="info-2"><div class="info-item-1">走后门12345678910111213141516ssize_t vuln()&#123;  int v1; // [rsp+Ch] [rbp-44h] BYREF  _BYTE buf[64]; // [rsp+10h] [rbp-40h] BYREF  puts(aMaybeIfYouGive);  puts(&quot;So how many do you want to give?&quot;);  __isoc99_scanf(&quot;%d&quot;, &amp;v1);  puts(&quot;Now plz give it to me&quot;);  if ( v1 &lt;= 0 )  &#123;    puts(&quot;Don&#x27;t get cute with me and I am not the genie.&quot;);    exit(0);  &#125;  return read(0, buf, v1);&#125;  很明显的栈溢出：读取的长度由我们自己决定，程序就原样往 buf 里写入这么多字节。 buf 长度为 64，...</div></div></div></a></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/classic/images/avatar.png" onerror="this.onerror=null;this.src='/classic/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">dxfaker</div><div class="author-info-description">随心所欲的分享</div><div class="site-data"><a href="/classic/archives/"><div class="headline">文章</div><div class="length-num">31</div></a><a href="/classic/tags/"><div class="headline">标签</div><div class="length-num">20</div></a><a href="/classic/categories/"><div class="headline">分类</div><div class="length-num">12</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/dxfaker"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/dxfaker" target="_blank" title="GitHub"><i class="fab fa-github"></i></a><a class="social-icon" href="https://space.bilibili.com/479112329" target="_blank" title="Bilibili"><i class="fab fa-bilibili"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">随缘更新不定内容，敬请期待！！！</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%86%99%E5%9C%A8%E5%89%8D%E9%9D%A2"><span class="toc-number">1.</span> <span class="toc-text">写在前面</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#32%E4%BD%8Dlinux%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="toc-number">2.</span> <span class="toc-text">32位linux系统调用</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#NASM%E6%B1%87%E7%BC%96%E5%99%A8%E4%BC%AA%E6%8C%87%E4%BB%A4"><span class="toc-number">3.</span> <span class="toc-text">NASM汇编器伪指令</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A0%87%E5%BF%97%E4%BD%8D"><span class="toc-number">3.1.</span> <span class="toc-text">标志位</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%84%B6%E5%90%8E%E6%98%AF%E4%B8%8D%E7%9F%A5%E9%81%93%E5%93%AA%E7%9A%84%E5%86%85%E5%AE%B9"><span class="toc-number">4.</span> <span class="toc-text">然后是不知道哪的内容</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/classic/2026/11/06/SROP/" title="SROP入门"><img src="/classic/images/post/5514b186-7535-4e38-a9bd-e72b09b09e02.png" onerror="this.onerror=null;this.src='/classic/img/404.jpg'" alt="SROP入门"/></a><div class="content"><a class="title" href="/classic/2026/11/06/SROP/" title="SROP入门">SROP入门</a><time datetime="2026-11-06T16:00:00.000Z" title="发表于 2026-11-07 00:00:00">2026-11-07</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/classic/2026/10/28/fastbin_atk/" title="第一个fastbin_attack的题"><img src="/classic/images/post/b4064f2acfb72aa9840fc8fd48dcc0a6.jpg" onerror="this.onerror=null;this.src='/classic/img/404.jpg'" alt="第一个fastbin_attack的题"/></a><div class="content"><a class="title" href="/classic/2026/10/28/fastbin_atk/" title="第一个fastbin_attack的题">第一个fastbin_attack的题</a><time datetime="2026-10-28T16:00:00.000Z" title="发表于 2026-10-29 00:00:00">2026-10-29</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/classic/2026/10/26/ycbpwn1/" title="手撕ycb pwn 01"><img src="/classic/images/post/772bd1ec-f42a-42af-a79e-563150e891cf.png" onerror="this.onerror=null;this.src='/classic/img/404.jpg'" alt="手撕ycb pwn 01"/></a><div class="content"><a class="title" href="/classic/2026/10/26/ycbpwn1/" title="手撕ycb pwn 01">手撕ycb pwn 01</a><time datetime="2026-10-26T16:00:00.000Z" title="发表于 2026-10-27 00:00:00">2026-10-27</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/classic/2026/09/30/2026moectfre/" title="2026moectf第一周wp"><img src="/classic/images/post/c4a6ab6283cd9d80f5f5b235cb1ab97b.jpg" onerror="this.onerror=null;this.src='/classic/img/404.jpg'" alt="2026moectf第一周wp"/></a><div class="content"><a class="title" href="/classic/2026/09/30/2026moectfre/" title="2026moectf第一周wp">2026moectf第一周wp</a><time datetime="2026-09-30T16:00:00.000Z" title="发表于 2026-10-01 00:00:00">2026-10-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/classic/2026/09/26/26moere2/" title="一堆杂乱逆向的WP"><img src="/classic/images/post/f3b24b353fcb0427f115fc4c435cf3fd.png" onerror="this.onerror=null;this.src='/classic/img/404.jpg'" alt="一堆杂乱逆向的WP"/></a><div class="content"><a class="title" href="/classic/2026/09/26/26moere2/" title="一堆杂乱逆向的WP">一堆杂乱逆向的WP</a><time datetime="2026-09-26T16:00:00.000Z" title="发表于 2026-09-27 00:00:00">2026-09-27</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By dxfaker</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 8.1.2</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.7.2</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/classic/js/utils.js?v=5.7.2"></script><script src="/classic/js/main.js?v=5.7.2"></script><div class="js-pjax"></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div><script src="/classic/js/particles.js"></script>
+<script>(function(){
+  var t=document.querySelector('#page-header #site-title');
+  if(t&&!t.querySelector('.rb-text')){var s=t.textContent.trim();t.innerHTML='<span class="rb-text">'+s+'</span>'}
+})();</script>
+</body></html>
